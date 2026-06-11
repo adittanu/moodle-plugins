@@ -4,6 +4,9 @@ deploy.log
 .update.lock
 .last_commit
 
+# Secrets
+.env
+
 # OS files
 .DS_Store
 Thumbs.db
