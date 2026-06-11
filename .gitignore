@@ -1,0 +1,19 @@
+# Deploy artifacts
+*.bak.*
+deploy.log
+.update.lock
+.last_commit
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Zip files (keep source code only)
+*.zip

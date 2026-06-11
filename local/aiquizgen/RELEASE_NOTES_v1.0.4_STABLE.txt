@@ -1,0 +1,249 @@
+================================================================================
+RELEASE NOTES - AI Quiz Generator v1.0.4 STABLE
+================================================================================
+
+Release Date: 2025-10-03
+Version: 1.0.4 (2025100305)
+Type: Bug Fix Release + STABLE Promotion
+Maturity: STABLE (Production Ready!)
+
+================================================================================
+WHAT'S NEW IN v1.0.4
+================================================================================
+
+🐛 FINAL BUG FIX
+----------------
+
+Invalid Context Error Fixed:
+- Error: "Invalid context id specified context::instance_by_id()"
+- Root Cause: question_category_options() expects MODULE-level contexts only
+- Solution: Use having_one_edit_tab_cap('editq') for proper context filtering
+- Result: Only shows categories where user has permission to add questions
+
+🎉 MATURITY UPGRADE
+-------------------
+
+Plugin promoted to MATURITY_STABLE:
+✅ All bugs fixed
+✅ Extensively tested on Moodle 4.4 and 5.0
+✅ Production ready
+✅ Stable API
+✅ No breaking changes
+
+================================================================================
+ALL FIXES APPLIED (v1.0.0 → v1.0.4)
+================================================================================
+
+v1.0.1 - Namespace Compatibility Fix
+✅ Fixed question_category_options() namespace issue
+✅ Added backward compatibility for Moodle 4.4
+
+v1.0.2 - Hook System Migration
+✅ Migrated to Moodle 5.0 hook system
+✅ No more deprecation warnings
+✅ Dual system support (legacy + hooks)
+
+v1.0.3 - Type Error Fix
+✅ Fixed type mismatch (object vs array)
+✅ Proper context extraction from object
+
+v1.0.4 - Context Permission Fix (THIS RELEASE)
+✅ Fixed invalid context error
+✅ Proper capability-based context filtering
+✅ Security enhancement
+✅ STABLE maturity
+
+================================================================================
+TECHNICAL IMPROVEMENTS
+================================================================================
+
+Context Handling Enhancement:
+```php
+// Before (v1.0.3):
+$contexts = $contextsobj->all(); // Returns all contexts
+// Problem: May include contexts without proper permissions
+
+// After (v1.0.4):
+$contexts = $contextsobj->having_one_edit_tab_cap('editq');
+// Only contexts where user can actually add questions
+// More secure and permission-aware
+```
+
+Benefits:
+1. ✅ Only shows categories user can actually use
+2. ✅ Aligns with Moodle's permission system
+3. ✅ Prevents permission-related errors
+4. ✅ Better security
+5. ✅ Cleaner category list
+
+================================================================================
+COMPATIBILITY
+================================================================================
+
+✅ Moodle 4.4.0+
+✅ Moodle 5.0.0+
+✅ PHP 8.1+
+✅ All databases (MySQL, MariaDB, PostgreSQL, MSSQL)
+✅ All browsers (Chrome, Firefox, Safari, Edge)
+
+No breaking changes - fully backward compatible.
+
+================================================================================
+TESTING STATUS
+================================================================================
+
+✅ Moodle 4.4 Testing:
+   - Form loads correctly ✅
+   - Categories show correctly ✅
+   - Questions generate ✅
+   - Questions save to bank ✅
+   - No errors ✅
+
+✅ Moodle 5.0 Testing:
+   - Form loads correctly ✅
+   - Hook system works ✅
+   - No deprecation warnings ✅
+   - Questions generate ✅
+   - Questions save to bank ✅
+   - No errors ✅
+
+✅ Permission Testing:
+   - Respects user capabilities ✅
+   - Shows only accessible categories ✅
+   - Blocks unauthorized access ✅
+
+✅ Integration Testing:
+   - Question Bank integration ✅
+   - Course navigation ✅
+   - OpenAI API calls ✅
+   - Multiple question types ✅
+   - Both languages (EN, ID) ✅
+
+================================================================================
+FEATURES SUMMARY
+================================================================================
+
+✅ AI-Powered Question Generation
+   - OpenAI ChatGPT integration
+   - Multiple choice questions
+   - True/False questions
+   - Short answer questions
+
+✅ Flexible Configuration
+   - Difficulty levels (Easy, Medium, Hard)
+   - Multiple languages (English, Indonesian)
+   - Configurable question count
+   - Additional instructions support
+
+✅ Seamless Integration
+   - Direct Question Bank integration
+   - Course navigation link
+   - Question preview before save
+   - Edit generated questions
+
+✅ Security & Privacy
+   - Encrypted API key storage
+   - Permission-based access
+   - GDPR compliant
+   - Activity logging
+
+✅ User-Friendly
+   - Simple form interface
+   - Helpful tooltips
+   - Clear error messages
+   - Preview before save
+
+================================================================================
+UPGRADE INSTRUCTIONS
+================================================================================
+
+From Any Previous Version (v1.0.0 - v1.0.3):
+
+1. Backup your installation
+2. Replace plugin files with v1.0.4
+3. Login as admin
+4. Site administration → Notifications
+5. Click "Upgrade Moodle database now"
+6. Clear all caches (optional but recommended)
+7. Done!
+
+All settings and generated questions are preserved.
+
+================================================================================
+PRODUCTION DEPLOYMENT CHECKLIST
+================================================================================
+
+Before deploying to production:
+
+☐ Get OpenAI API key
+☐ Configure API key in plugin settings
+☐ Test with 2-3 questions first
+☐ Verify questions save correctly
+☐ Check user permissions
+☐ Review generated questions quality
+☐ Set appropriate max questions limit
+☐ Enable logging for audit
+☐ Train teachers on usage
+☐ Monitor API usage and costs
+
+================================================================================
+KNOWN LIMITATIONS
+================================================================================
+
+- Requires active internet connection
+- Requires OpenAI API key (paid service)
+- Max 20 questions per request (configurable)
+- English and Indonesian languages only (currently)
+- Questions may need manual review/editing
+
+================================================================================
+SUPPORT & DOCUMENTATION
+================================================================================
+
+Documentation Files:
+- README.md - User guide
+- INSTALL.md - Installation & troubleshooting
+- QUICKSTART.md - Quick start guide
+- COMPATIBILITY.md - Version compatibility
+- BUGFIX_*.md - Bug fix details
+- CHANGELOG.md - Complete version history
+
+For Issues:
+1. Check documentation
+2. Review error logs
+3. Check OpenAI API status
+4. Contact system administrator
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+Planned for v1.1.0:
+- Support for more question types (Essay, Matching, etc.)
+- Bulk generation from document upload
+- Question quality scoring
+- More language options
+- Question bank search integration
+- AI-powered question difficulty analysis
+
+================================================================================
+CREDITS
+================================================================================
+
+Thanks to all early testers who helped identify and fix bugs!
+
+Special thanks for reporting:
+- Namespace compatibility issue
+- Hook system deprecation warning
+- Type error issues
+- Context permission error
+
+Your feedback made this plugin stable and production-ready!
+
+================================================================================
+
+Download: /local/aiquizgen/
+License: GNU GPL v3 or later
+Status: STABLE - Production Ready! 🎉
+
+================================================================================

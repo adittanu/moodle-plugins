@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<libraries>
+  <library>
+    <location>mediapipe/face_detection</location>
+    <name>MediaPipe Face Detection JavaScript Solution</name>
+    <description>Local browser-side face detection assets used for Webcam Guard quiz monitoring.</description>
+    <version>0.4.1646425229</version>
+    <license>Apache</license>
+    <licenseversion>2.0</licenseversion>
+    <repository>https://www.npmjs.com/package/@mediapipe/face_detection</repository>
+    <copyrights>
+      <copyright>Copyright 2022 The MediaPipe Authors</copyright>
+    </copyrights>
+  </library>
+  <library>
+    <location>faceapi</location>
+    <name>face-api.js</name>
+    <description>Browser-side face descriptor and identity comparison used by optional Webcam Guard identity verification.</description>
+    <version>0.22.2</version>
+    <license>MIT</license>
+    <repository>https://www.npmjs.com/package/face-api.js</repository>
+    <copyrights>
+      <copyright>Copyright 2018 Vincent Muehlematter</copyright>
+    </copyrights>
+  </library>
+  <library>
+    <location>livekit</location>
+    <name>LiveKit client SDK</name>
+    <description>Browser-side WebRTC client used for optional teacher-requested live Webcam Guard monitoring.</description>
+    <version>2.18.9</version>
+    <license>Apache</license>
+    <licenseversion>2.0</licenseversion>
+    <repository>https://www.npmjs.com/package/livekit-client</repository>
+    <copyrights>
+      <copyright>Copyright 2025 LiveKit</copyright>
+    </copyrights>
+  </library>
+</libraries>

@@ -1,0 +1,119 @@
+================================================================================
+RELEASE NOTES - AI Quiz Generator v1.0.1
+================================================================================
+
+Release Date: 2025-10-03
+Version: 1.0.1 (2025100302)
+Type: Bug Fix Release
+
+================================================================================
+WHAT'S NEW IN v1.0.1
+================================================================================
+
+🐛 BUG FIXES
+------------
+
+1. Fixed Moodle 4.4+ Compatibility Issue
+   - Problem: "Call to undefined method" error when loading generate form
+   - Cause: question_category_options() moved to different namespace in Moodle 4.4
+   - Solution: Added backward compatibility check with multiple fallbacks
+   - Impact: Plugin now works correctly on both Moodle 4.4 and 5.0
+
+Technical Details:
+- Added runtime check for qbank_managecategories\helper class
+- Falls back to core_question\local\bank\helper if needed
+- Last resort fallback to questionlib function
+- Zero code duplication, single codebase for all versions
+
+================================================================================
+UPGRADE INSTRUCTIONS
+================================================================================
+
+From v1.0.0 to v1.0.1:
+1. Replace plugin files with new version
+2. Login as admin
+3. Site administration → Notifications
+4. Click "Upgrade Moodle database now"
+5. Done! No additional configuration needed
+
+Note: Settings and generated questions are preserved during upgrade.
+
+================================================================================
+TESTING PERFORMED
+================================================================================
+
+✅ Tested on Moodle 4.4
+   - Form loads without errors
+   - Categories populate correctly
+   - Question generation works
+   - Questions save to Question Bank
+
+✅ Tested on Moodle 5.0
+   - All features work as expected
+   - No regressions detected
+   - Performance unchanged
+
+================================================================================
+FILES CHANGED
+================================================================================
+
+Modified Files:
+- classes/form/generate_form.php (compatibility check added)
+- version.php (version bumped to 1.0.1)
+- CHANGELOG.md (release notes added)
+- PLUGIN_SUMMARY.txt (version updated)
+
+New Files:
+- BUGFIX_COMPATIBILITY.md (detailed bug fix documentation)
+- RELEASE_NOTES_v1.0.1.txt (this file)
+
+================================================================================
+COMPATIBILITY
+================================================================================
+
+✅ Moodle 4.4.0+
+✅ Moodle 5.0.0+
+✅ PHP 8.1+
+✅ All supported databases
+
+No breaking changes - fully backward compatible with v1.0.0
+
+================================================================================
+KNOWN ISSUES
+================================================================================
+
+None reported for this release.
+
+================================================================================
+WHAT'S NEXT
+================================================================================
+
+Planned for v1.1.0:
+- Support for more question types (Essay, Matching, etc.)
+- Bulk generation from document upload
+- Question quality scoring
+- More language support
+
+================================================================================
+SUPPORT
+================================================================================
+
+For issues or questions:
+1. Check BUGFIX_COMPATIBILITY.md for technical details
+2. Review INSTALL.md for installation/troubleshooting
+3. Check Moodle logs for errors
+4. Contact system administrator
+
+================================================================================
+CREDITS
+================================================================================
+
+Thanks to early testers who reported the compatibility issue!
+
+================================================================================
+
+Download: /local/aiquizgen/
+Documentation: README.md, INSTALL.md, QUICKSTART.md
+Bug Fix Details: BUGFIX_COMPATIBILITY.md
+
+================================================================================
