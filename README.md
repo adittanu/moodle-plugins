@@ -18,51 +18,40 @@ Centralized repository untuk semua custom Moodle plugins dengan auto-deploy ke m
 
 ## Quick Start
 
-### 1. Clone di Server
+### Option A: Auto Setup (Recommended)
 
 ```bash
+# 1. Clone
+git clone https://adittanu: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@github.com/adittanu/moodle-plugins.git /opt/moodle-plugins
+cd /opt/moodle-plugins
+
+# 2. Jalankan setup (interactive)
+bash server-setup.sh
+```
+
+Script akan bertanya:
+- Mau tambah Moodle instances (y/n)
+- Path dan URL setiap instance
+- Mau setup cron job (y/n)
+- Interval update (5/10/15/30/60 menit)
+
+### Option B: Manual Setup
+
+```bash
+# 1. Clone
 git clone https://adittanu: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@github.com/adittanu/moodle-plugins.git /opt/moodle-plugins
 cd /opt/moodle-plugins
 chmod +x deploy.sh server-auto-update.sh
-```
 
-### 2. Setup Deploy Config
-
-```bash
+# 2. Edit deploy.conf
 nano deploy.conf
-```
 
-Tambahkan Moodle instances:
-
-```bash
-# Format: NAMA|PATH_MOODLE|URL_MOODLE
-production|/var/www/moodle|https://lms.example.com
-staging|/var/www/moodle-staging|https://staging.example.com
-```
-
-### 3. Test Deploy
-
-```bash
-# Preview (tanpa copy)
+# 3. Test deploy
 ./deploy.sh --dry-run
 
-# Deploy ke semua
-./deploy.sh
-
-# Deploy ke satu instance
-./deploy.sh production
-```
-
-### 4. Setup Auto-Update (Cron)
-
-```bash
+# 4. Setup cron
 crontab -e
-```
-
-Tambahkan:
-
-```bash
-*/5 * * * * /opt/moodle-plugins/server-auto-update.sh >> /var/log/moodle-plugins-update.log 2>&1
+# Tambah: */5 * * * * /opt/moodle-plugins/server-auto-update.sh >> /var/log/moodle-plugins-update.log 2>&1
 ```
 
 ---
@@ -110,6 +99,7 @@ git push
 
 | Command | Fungsi |
 |---------|--------|
+| `bash server-setup.sh` | Setup interaktif (pertama kali) |
 | `./deploy.sh` | Deploy ke semua instance |
 | `./deploy.sh nama-instance` | Deploy ke instance tertentu |
 | `./deploy.sh --dry-run` | Preview tanpa copy |
@@ -132,6 +122,8 @@ git add .
 git commit -m "Add newplugin"
 git push
 ```
+---
+
 
 ---
 
@@ -170,6 +162,7 @@ moodle-plugins/
 ├── deploy.conf             ← Daftar Moodle instances
 ├── deploy.sh               ← Script deploy
 ├── server-auto-update.sh   ← Script auto-pull (cron)
+├── server-setup.sh         ← Setup interaktif (pertama kali)
 ├── README.md               ← File ini
 ├── SETUP_GUIDE.md          ← Panduan lengkap setup
 ├── local/

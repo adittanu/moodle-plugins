@@ -64,6 +64,28 @@ Panduan lengkap untuk setup auto-deploy plugin Moodle dari local ke server.
 
 ## Setup di Server
 
+### Option A: Auto Setup (Recommended)
+
+```bash
+# Login ke server via SSH
+ssh user@server-ip
+
+# Clone repository
+git clone https://adittanu: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@github.com/adittanu/moodle-plugins.git /opt/moodle-plugins
+cd /opt/moodle-plugins
+
+# Jalankan setup interaktif
+bash server-setup.sh
+```
+
+Script akan bertanya:
+1. Mau tambah Moodle instances (y/n)
+2. Path dan URL setiap instance
+3. Mau setup cron job (y/n)
+4. Interval update (5/10/15/30/60 menit)
+
+### Option B: Manual Setup
+
 ### Step 1: Clone Repository
 
 ```bash
