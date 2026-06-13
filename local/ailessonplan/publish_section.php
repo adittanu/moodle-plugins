@@ -36,8 +36,17 @@ if (!is_array($section)) {
     throw new moodle_exception('invalidjson', 'local_ailessonplan');
 }
 
-$selectedactivities = $selectionsent ? optional_param_array('selectedactivities', [], PARAM_ALPHANUMEXT) : null;
-$result = publisher::publish_single_section($record, $course, $section, $targetsection, $selectedactivities);
+try {
+    $selectedactivities = $selectionsent ? optional_param_array('selectedactivities', [], PARAM_ALPHANUMEXT) : null;
+    $result = publisher::publish_single_section($record, $course, $section, $targetsection, $selectedactivities);
+} catch (\Throwable $e) {
+    header('Content-Type: application/json; charset=utf-8', true, 500);
+    echo json_encode([
+        'success' => false,
+        'error' => $e->getMessage(),
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
 $plan = json_decode($record->planjson, true);
 if (is_array($plan)) {

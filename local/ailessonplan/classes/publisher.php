@@ -450,6 +450,8 @@ class publisher {
      * @return array{status:string, cmid:int}
      */
     private static function create_or_update_activity(\stdClass $course, int $sectionnum, string $activityid, array $activity): array {
+        global $DB;
+
         $existing = self::find_existing_activity($course, $activityid);
         if ($existing) {
             self::update_activity_record($existing, $activity, $activityid);
@@ -462,16 +464,77 @@ class publisher {
             self::move_existing_activity_to_section($course, (int)$created->coursemodule, $sectionnum);
             return ['status' => 'created', 'cmid' => (int)$created->coursemodule];
         } catch (\Throwable $e) {
-            $fallback = [
-                'mod' => 'label',
-                'title' => self::activity_title($activity),
-                'text' => get_string('activityfallback', 'local_ailessonplan', $e->getMessage()) . '<br>' . self::activity_intro_html($activity, $activityid),
-            ];
-            $created = self::create_activity($course, $sectionnum, $fallback, $activityid);
-            self::move_existing_activity_to_section($course, (int)$created->coursemodule, $sectionnum);
-            return ['status' => 'created', 'cmid' => (int)$created->coursemodule];
+            // Do NOT call add_moduleinfo() again here — it starts a delegated
+            // transaction that leaks when the first one was not cleaned up.
+            // Instead, create the fallback label via direct DB inserts.
+            try {
+                $cmid = self::create_label_fallback($course, $sectionnum, $activity, $activityid);
+                return ['status' => 'created', 'cmid' => $cmid];
+            } catch (\Throwable $e2) {
+                return ['status' => 'error', 'cmid' => 0];
+            }
         }
     }
+    /**
+     * Create a fallback label activity via direct DB inserts.
+     *
+     * This avoids add_moduleinfo() which opens a delegated transaction that
+     * leaks when called inside a catch block after a previous failure.
+     *
+     * @param \stdClass $course
+     * @param int $sectionnum
+     * @param array $activity Original activity data
+     * @param string $activityid AI marker ID
+     * @return int The new course module ID
+     */
+    private static function create_label_fallback(\stdClass $course, int $sectionnum, array $activity, string $activityid): int {
+        global $DB;
+
+        require_once($CFG->dirroot . '/course/lib.php');
+
+        $title = self::activity_title($activity);
+        $intro = self::activity_intro_html($activity, $activityid);
+
+        // Get the label module ID.
+        $labelmodule = $DB->get_record('modules', ['name' => 'label'], 'id', MUST_EXIST);
+
+        // Insert the label instance.
+        $label = new \stdClass();
+        $label->course = $course->id;
+        $label->name = $title;
+        $label->intro = $intro;
+        $label->introformat = FORMAT_HTML;
+        $label->timemodified = time();
+        $label->id = $DB->insert_record('label', $label);
+
+        // Ensure section exists.
+        course_create_sections_if_missing($course, [$sectionnum]);
+        $section = $DB->get_record('course_sections', ['course' => $course->id, 'section' => $sectionnum], '*', MUST_EXIST);
+
+        // Insert the course module.
+        $cm = new \stdClass();
+        $cm->course = $course->id;
+        $cm->module = $labelmodule->id;
+        $cm->instance = $label->id;
+        $cm->section = $section->id;
+        $cm->addedby = $DB->get_field('course', 'userid', ['id' => $course->id]) ?: 2;
+        $cm->visible = 1;
+        $cm->visibleoncoursepage = 1;
+        $cm->showdescription = 0;
+        $cm->id = $DB->insert_record('course_modules', $cm);
+
+        // Append to section sequence.
+        $seq = $section->sequence ? $section->sequence . ',' . $cm->id : (string)$cm->id;
+        $DB->set_field('course_sections', 'sequence', $seq, ['id' => $section->id]);
+
+        // Create context and set role capabilities.
+        $context = \context_module::instance($cm->id, MUST_EXIST);
+
+        rebuild_course_cache((int)$course->id, true);
+
+        return (int)$cm->id;
+    }
+
 
     /**
      * Create a module instance using Moodle APIs.
