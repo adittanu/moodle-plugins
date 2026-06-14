@@ -1,0 +1,11 @@
+shortname,fullname,summary,category,idnumber,visible
+TIK-001,Pengantar Teknologi Informasi,"Materi dasar pengenalan teknologi informasi dan komunikasi untuk pemula",1,CS001,1
+TIK-002,Dasar Pemrograman Web,"Belajar HTML, CSS, dan JavaScript dari nol",1,CS002,1
+TIK-003,Database dan SQL,"Pengenalan database relasional dan query SQL",1,CS003,1
+TIK-004,Jaringan Komputer,"Dasar-dasar jaringan, protokol, dan konfigurasi",1,CS004,1
+TIK-005,Keamanan Sistem Informasi,"Konsep dan praktik keamanan data serta jaringan",1,CS005,1
+TIK-006,Microsoft Office Lanjutan,"Word, Excel, dan PowerPoint tingkat lanjut",1,CS006,1
+TIK-007,Digital Marketing,"Pemasaran digital dan media sosial untuk bisnis",1,CS007,1
+TIK-008,Desain Grafis Dasar,"Pengenalan tools desain grafis dan prinsip visual",1,CS008,1
+TIK-009,Manajemen Proyek IT,"Pengelolaan proyek teknologi informasi berbasis Agile",1,CS009,1
+TIK-010,Cloud Computing Dasar,"Pengenalan komputasi awan dan layanan AWS/Azure",1,CS010,1

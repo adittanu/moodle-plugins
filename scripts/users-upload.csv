@@ -1,0 +1,11 @@
+username,firstname,lastname,email,password,city,country,auth,role1,course1
+admin1,Admin,Satu,admin1@moodle43.dev.websku.com,Diklat2026!,Jakarta,ID,manual,manager,
+user01,Budi,Santoso,budi.santoso@moodle43.dev.websku.com,Diklat2026!,Jakarta,ID,manual,student,
+user02,Sari,Indah,sari.indah@moodle43.dev.websku.com,Diklat2026!,Surabaya,ID,manual,student,
+user03,Andi,Pratama,andi.pratama@moodle43.dev.websku.com,Diklat2026!,Bandung,ID,manual,student,
+user04,Rina,Wulan,rina.wulan@moodle43.dev.websku.com,Diklat2026!,Semarang,ID,manual,student,
+user05,Dimas,Arya,dimas.arya@moodle43.dev.websku.com,Diklat2026!,Yogyakarta,ID,manual,student,
+user06,Lestari,Putri,lestari.putri@moodle43.dev.websku.com,Diklat2026!,Malang,ID,manual,student,
+user07,Rizki,Pratama,rizki.pratama@moodle43.dev.websku.com,Diklat2026!,Medan,ID,manual,student,
+user08,Maya,Sari,maya.sari@moodle43.dev.websku.com,Diklat2026!,Makassar,ID,manual,student,
+user09,Fajar,Rahman,fajar.rahman@moodle43.dev.websku.com,Diklat2026!,Palembang,ID,manual,student,
