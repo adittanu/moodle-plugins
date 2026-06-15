@@ -41,7 +41,7 @@ if ($status !== '') {
     $params['status'] = $status;
 }
 
-$namefields = 'u.firstname AS firstname, u.lastname AS lastname';
+$namefields = get_all_user_name_fields(true, 'u');
 $sql = "SELECT r.id, r.attemptid, r.quizid, r.userid, r.status, qa.attempt,
                $namefields,
                COALESCE(ev.eventcount, 0) AS eventcount,
@@ -206,7 +206,7 @@ echo $OUTPUT->footer();
 function quizaccess_webcamguard_get_live_candidates($quiz, $cmid) {
     global $DB;
 
-    $namefields = 'u.firstname AS firstname, u.lastname AS lastname';
+    $namefields = get_all_user_name_fields(true, 'u');
     $attempts = $DB->get_records_sql(
         "SELECT qa.id AS attemptid, qa.userid, qa.attempt, qa.timestart, qa.timemodified,
                 $namefields
