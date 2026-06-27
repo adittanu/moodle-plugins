@@ -206,4 +206,15 @@ $string['risksummaryclean'] = 'Tidak ada violation yang tercatat pada attempt in
 $string['risksummarytext'] = 'Peserta memiliki {$a->violations} violation. Jenis terbanyak: {$a->toptype} sebanyak {$a->topcount} kali. Pola violation terjadi antara {$a->first} sampai {$a->last}.';
 
 $string['taskcleanup'] = 'Hapus bukti Webcam Guard lama';
+$string['cleanupsettings'] = 'Retensi data';
+$string['cleanupsettings_desc'] = 'Atur berapa lama bukti Webcam Guard (event, snapshot, review) disimpan sebelum dihapus otomatis.';
+$string['retentiondays'] = 'Periode retensi';
+$string['retentiondays_desc'] = 'Hapus otomatis data Webcam Guard yang lebih lama dari periode ini.';
+$string['retention7'] = '7 hari';
+$string['retention14'] = '14 hari';
+$string['retention30'] = '30 hari (default)';
+$string['retention60'] = '60 hari';
+$string['retention90'] = '90 hari';
+$string['retention180'] = '180 hari';
+$string['retention365'] = '365 hari (1 tahun)';
 $string['httpwarning'] = 'Webcam Guard membutuhkan HTTPS. Situs ini sedang menggunakan HTTP. Fitur kamera tidak akan berfungsi dengan benar.';

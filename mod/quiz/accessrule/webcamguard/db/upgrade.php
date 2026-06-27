@@ -114,5 +114,13 @@ function xmldb_quizaccess_webcamguard_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026062701, 'quizaccess', 'webcamguard');
     }
 
+    if ($oldversion < 2026062702) {
+        // Set default retention days if not already configured.
+        if (get_config('quizaccess_webcamguard', 'retentiondays') === false) {
+            set_config('retentiondays', '30', 'quizaccess_webcamguard');
+        }
+        upgrade_plugin_savepoint(true, 2026062702, 'quizaccess', 'webcamguard');
+    }
+
     return true;
 }

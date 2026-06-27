@@ -36,6 +36,24 @@ if ($hassiteconfig) {
         get_string('livekitttl', 'quizaccess_webcamguard'),
         get_string('livekitttl_desc', 'quizaccess_webcamguard'), 300, PARAM_INT));
 
+    $settings->add(new admin_setting_heading('quizaccess_webcamguard_cleanup',
+        get_string('cleanupsettings', 'quizaccess_webcamguard'),
+        get_string('cleanupsettings_desc', 'quizaccess_webcamguard')));
+
+    $retentionchoices = [
+        '7' => get_string('retention7', 'quizaccess_webcamguard'),
+        '14' => get_string('retention14', 'quizaccess_webcamguard'),
+        '30' => get_string('retention30', 'quizaccess_webcamguard'),
+        '60' => get_string('retention60', 'quizaccess_webcamguard'),
+        '90' => get_string('retention90', 'quizaccess_webcamguard'),
+        '180' => get_string('retention180', 'quizaccess_webcamguard'),
+        '365' => get_string('retention365', 'quizaccess_webcamguard'),
+    ];
+    $settings->add(new admin_setting_configselect('quizaccess_webcamguard/retentiondays',
+        get_string('retentiondays', 'quizaccess_webcamguard'),
+        get_string('retentiondays_desc', 'quizaccess_webcamguard'),
+        '30', $retentionchoices));
+
 
     if (strpos($CFG->wwwroot, 'http://') === 0) {
         $settings->add(new admin_setting_heading('quizaccess_webcamguard_httpwarning',

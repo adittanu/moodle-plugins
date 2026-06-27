@@ -206,4 +206,15 @@ $string['risksummaryclean'] = 'No violations recorded for this attempt.';
 $string['risksummarytext'] = 'Student has {$a->violations} violations. Most frequent: {$a->toptype} ({$a->topcount} times). Violations occurred between {$a->first} and {$a->last}.';
 
 $string['taskcleanup'] = 'Clean up old Webcam Guard evidence';
+$string['cleanupsettings'] = 'Data retention';
+$string['cleanupsettings_desc'] = 'Configure how long Webcam Guard evidence (events, snapshots, reviews) is kept before automatic deletion.';
+$string['retentiondays'] = 'Retention period';
+$string['retentiondays_desc'] = 'Automatically delete Webcam Guard data older than this period.';
+$string['retention7'] = '7 days';
+$string['retention14'] = '14 days';
+$string['retention30'] = '30 days (default)';
+$string['retention60'] = '60 days';
+$string['retention90'] = '90 days';
+$string['retention180'] = '180 days';
+$string['retention365'] = '365 days (1 year)';
 $string['httpwarning'] = 'Webcam Guard requires HTTPS. The site is currently using HTTP. Camera features will not work correctly.';

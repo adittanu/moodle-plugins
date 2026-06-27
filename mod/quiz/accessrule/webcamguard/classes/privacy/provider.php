@@ -176,14 +176,16 @@ class provider implements
             return;
         }
 
+        $userid = $contextlist->get_user()->id;
         $fs = get_file_storage();
 
         foreach ($contextlist as $contextid) {
             $context = \context::instance_by_id($contextid);
             $cmid = $context->instanceid;
 
-            // Export events.
-            $events = $DB->get_records('quizaccess_wg_events', ['cmid' => $cmid], 'timecreated ASC');
+            // Export events for this user only.
+            $events = $DB->get_records('quizaccess_wg_events',
+                ['cmid' => $cmid, 'userid' => $userid], 'timecreated ASC');
             foreach ($events as $event) {
                 $data = (object)[
                     'eventtype' => $event->eventtype,
@@ -217,15 +219,15 @@ class provider implements
                 }
             }
 
-            // Export reviews.
+            // Export reviews for this user only.
             $reviews = $DB->get_records_sql(
                 "SELECT r.*
                    FROM {quizaccess_wg_reviews} r
                    JOIN {quiz_attempts} qa ON qa.id = r.attemptid
                    JOIN {quiz} q ON q.id = qa.quiz
                    JOIN {course_modules} cm ON cm.instance = q.id
-                  WHERE cm.id = :cmid",
-                ['cmid' => $cmid]
+                  WHERE cm.id = :cmid AND r.userid = :userid",
+                ['cmid' => $cmid, 'userid' => $userid]
             );
             foreach ($reviews as $review) {
                 $data = (object)[
@@ -242,8 +244,9 @@ class provider implements
                 );
             }
 
-            // Export live monitoring records.
-            $lives = $DB->get_records('quizaccess_wg_live', ['cmid' => $cmid], 'timecreated ASC');
+            // Export live monitoring records for this user only.
+            $lives = $DB->get_records('quizaccess_wg_live',
+                ['cmid' => $cmid, 'userid' => $userid], 'timecreated ASC');
             foreach ($lives as $live) {
                 $data = (object)[
                     'status' => $live->status,

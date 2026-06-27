@@ -183,15 +183,8 @@ function quizaccess_webcamguard_live_risk_level($score) {
  * @return int
  */
 function quizaccess_webcamguard_live_event_weight($eventtype) {
-    $weights = [
-        'no_face' => 2,
-        'multiple_faces' => 4,
-        'window_blur' => 3,
-        'camera_stopped' => 5,
-        'camera_error' => 3,
-        'identity_check' => 4,
-    ];
-    return $weights[$eventtype] ?? 1;
+    // Delegate to the canonical weight map in rule.php.
+    return quizaccess_webcamguard::event_weight($eventtype);
 }
 
 /**

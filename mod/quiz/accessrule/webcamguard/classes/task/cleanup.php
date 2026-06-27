@@ -17,8 +17,8 @@ defined('MOODLE_INTERNAL') || die();
  * Scheduled cleanup task.
  */
 class cleanup extends \core\task\scheduled_task {
-    /** Retention in days. */
-    const RETENTION_DAYS = 30;
+    /** Default retention in days (fallback if admin setting is missing). */
+    const DEFAULT_RETENTION_DAYS = 30;
 
     /**
      * Task name.
@@ -35,7 +35,11 @@ class cleanup extends \core\task\scheduled_task {
     public function execute() {
         global $DB;
 
-        $cutoff = time() - (self::RETENTION_DAYS * DAYSECS);
+        $retentiondays = (int)get_config('quizaccess_webcamguard', 'retentiondays');
+        if ($retentiondays < 1) {
+            $retentiondays = self::DEFAULT_RETENTION_DAYS;
+        }
+        $cutoff = time() - ($retentiondays * DAYSECS);
         $fs = get_file_storage();
 
         $limitfrom = 0;
