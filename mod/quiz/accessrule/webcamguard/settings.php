@@ -36,5 +36,12 @@ if ($hassiteconfig) {
         get_string('livekitttl', 'quizaccess_webcamguard'),
         get_string('livekitttl_desc', 'quizaccess_webcamguard'), 300, PARAM_INT));
 
+
+    if (strpos($CFG->wwwroot, 'http://') === 0) {
+        $settings->add(new admin_setting_heading('quizaccess_webcamguard_httpwarning',
+            '<span style="color:#c82333;font-weight:bold;">HTTPS Required</span>',
+            '<span style="color:#c82333;">Webcam Guard requires HTTPS for getUserMedia(). The site is currently using HTTP. Webcam features will not work.</span>'));
+    }
+
     $ADMIN->add('modsettings', $settings);
 }

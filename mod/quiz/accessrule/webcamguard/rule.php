@@ -49,6 +49,26 @@ class quizaccess_webcamguard extends quiz_access_rule_base {
     /** @var array Allowed identity modes. */
     const ALLOWED_IDENTITY_MODES = ['flag', 'block'];
 
+    /** @var array Risk weights for webcam guard event types. */
+    const EVENT_WEIGHTS = [
+        'no_face' => 2,
+        'multiple_faces' => 4,
+        'window_blur' => 3,
+        'camera_stopped' => 5,
+        'camera_error' => 3,
+        'identity_check' => 4,
+    ];
+
+    /**
+     * Get the risk weight for a given event type.
+     *
+     * @param string $eventtype Event type key.
+     * @return int Risk weight (defaults to 1 for unknown types).
+     */
+    public static function event_weight($eventtype) {
+        return isset(self::EVENT_WEIGHTS[$eventtype]) ? self::EVENT_WEIGHTS[$eventtype] : 1;
+    }
+
     /**
      * Return an instance of this rule if Webcam Guard is enabled.
      *
@@ -350,9 +370,6 @@ class quizaccess_webcamguard extends quiz_access_rule_base {
             'class' => 'wcg-check-btn',
             'data-webcamguard-action' => 'startcheck',
         ];
-        if (!$identityenabled) {
-            $buttonattributes['onclick'] = $this->get_inline_preflight_check_js();
-        }
         $mform->addElement('button', 'webcamguardstartcheck', get_string('startcheck', 'quizaccess_webcamguard'),
             $buttonattributes);
 
@@ -456,14 +473,6 @@ class quizaccess_webcamguard extends quiz_access_rule_base {
         return $CFG->wwwroot . '/pluginfile.php/' . $usercontext->id . '/user/icon/f1?rev=' . $USER->picture;
     }
 
-    /**
-     * Render an inline live similarity bar shown beneath the preview video.
-     *
-     * @return string
-     */
-    protected static function render_similarity_bar() {
-        return self::render_similarity_gauge('');
-    }
 
     /**
      * Render a circular gauge similarity indicator.
@@ -606,12 +615,36 @@ class quizaccess_webcamguard extends quiz_access_rule_base {
      * @param int|null $attemptid Attempt id.
      */
     public function notify_preflight_check_passed($attemptid) {
-        global $SESSION;
+        global $SESSION, $DB;
         $SESSION->webcamguardchecked[$this->get_session_key($attemptid)] = true;
         // Also store under the fallback key so subsequent checks that already know the
         // real attempt id (summary.php / attempt.php) can match when this notification
         // arrived from startattempt.php with attemptid still unallocated (=0).
         $SESSION->webcamguardchecked[$this->get_session_key(0)] = true;
+
+        // Store identity check event server-side for teacher review.
+        if ($attemptid > 0) {
+            $attemptrecord = $DB->get_record('quiz_attempts', ['id' => (int)$attemptid], 'id,userid,quizid');
+            if ($attemptrecord) {
+                $identitykey = $this->get_session_key($attemptid);
+                $fallbackkey = $this->get_session_key(0);
+                $identitydata = !empty($SESSION->webcamguardidentity[$identitykey])
+                    ? $SESSION->webcamguardidentity[$identitykey]
+                    : (!empty($SESSION->webcamguardidentity[$fallbackkey])
+                        ? $SESSION->webcamguardidentity[$fallbackkey] : []);
+                $event = (object)[
+                    'attemptid' => (int)$attemptid,
+                    'quizid' => (int)$this->quiz->id,
+                    'courseid' => (int)$this->quizobj->get_courseid(),
+                    'cmid' => (int)$this->quizobj->get_cmid(),
+                    'userid' => (int)$attemptrecord->userid,
+                    'eventtype' => 'identity_check',
+                    'eventdata' => json_encode($identitydata),
+                    'timecreated' => time(),
+                ];
+                $DB->insert_record('quizaccess_wg_events', $event);
+            }
+        }
     }
 
     /**
@@ -634,14 +667,13 @@ class quizaccess_webcamguard extends quiz_access_rule_base {
      * @param moodle_page $page Page object.
      */
     public function setup_attempt_page($page) {
-        global $CFG, $SESSION;
+        global $CFG, $PAGE, $SESSION;
 
         if ($this->is_real_preview_user()) {
             return;
         }
 
-        $script = basename($_SERVER['SCRIPT_NAME']);
-        if ($script !== 'attempt.php') {
+        if ($PAGE->pagetype !== 'mod-quiz-attempt') {
             return;
         }
 

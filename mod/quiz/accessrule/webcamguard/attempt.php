@@ -44,7 +44,11 @@ if (!$review) {
         'timemodified' => $now,
         'timereviewed' => null,
     ];
-    $review->id = $DB->insert_record('quizaccess_wg_reviews', $review);
+    try {
+        $review->id = $DB->insert_record('quizaccess_wg_reviews', $review);
+    } catch (\dml_exception $e) {
+        $review = $DB->get_record('quizaccess_wg_reviews', ['attemptid' => $attemptid]);
+    }
 }
 
 if (data_submitted() && confirm_sesskey()) {

@@ -28,7 +28,9 @@ define(['core/ajax'], function(ajax) {
         lastEvents: {},
         queue: [],
         stopped: false,
-        activeKey: null
+        activeKey: null,
+        faceLoopId: null,
+        flushLoopId: null
     };
 
     var createElements = function() {
@@ -104,9 +106,10 @@ define(['core/ajax'], function(ajax) {
                 snapshot: snap
             }
         };
-
         ajax.call([request])[0].fail(function() {
-            state.queue.push(request);
+            if (state.queue.length < 50) {
+                state.queue.push(request);
+            }
         });
     };
 
@@ -302,10 +305,10 @@ define(['core/ajax'], function(ajax) {
                     }
                 };
                 state.detector.send({image: state.video}).catch(function() {
-                    state.mediaPipeBusy = false;
-                    state.mediaPipeResolver = null;
                     if (!done) {
                         done = true;
+                        state.mediaPipeBusy = false;
+                        state.mediaPipeResolver = null;
                         resolve(null);
                     }
                 });
@@ -417,7 +420,7 @@ define(['core/ajax'], function(ajax) {
     };
 
     var startLoops = function(config) {
-        setInterval(function() {
+        state.faceLoopId = setInterval(function() {
             if (state.stopped) {
                 return;
             }
@@ -426,9 +429,10 @@ define(['core/ajax'], function(ajax) {
             });
         }, 1000);
 
-        setInterval(function() {
+        state.flushLoopId = setInterval(function() {
             flushQueue();
         }, 10000);
+
 
         scheduleIntervalSnapshots(config);
     };
@@ -479,6 +483,8 @@ define(['core/ajax'], function(ajax) {
 
     var stop = function() {
         state.stopped = true;
+        if (state.faceLoopId) { clearInterval(state.faceLoopId); state.faceLoopId = null; }
+        if (state.flushLoopId) { clearInterval(state.flushLoopId); state.flushLoopId = null; }
         if (state.activeKey && window.quizaccessWebcamguardActiveAttempts) {
             delete window.quizaccessWebcamguardActiveAttempts[state.activeKey];
             state.activeKey = null;

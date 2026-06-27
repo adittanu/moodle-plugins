@@ -17,6 +17,7 @@ define(["core/ajax", "require"], function (ajax, require) {
 		pollInflight: false,
 		pollVisible: false,
 		lastSeenViolationId: {},
+		consecutiveFailures: 0,
 	};
 
 	var POLL_INTERVAL_MS = 4000;
@@ -202,9 +203,16 @@ define(["core/ajax", "require"], function (ajax, require) {
 							candidate.lastViolationEventId || 0;
 					}
 				});
+				state.consecutiveFailures = 0;
 			})
 			.catch(function () {
-				// Swallow polling errors to avoid breaking the modal.
+				state.consecutiveFailures++;
+				if (state.consecutiveFailures >= 3) {
+					var countRegion = root.querySelector('[data-region="webcamguard-live-count"]');
+					if (countRegion) {
+						countRegion.textContent = '⚠ Polling failed — check connection';
+					}
+				}
 			})
 			.then(function () {
 				state.pollInflight = false;

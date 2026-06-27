@@ -58,7 +58,7 @@ class token_service {
      * @return string
      */
     public static function room_name($quizid, $attemptid) {
-        return 'wg-q' . (int)$quizid . '-a' . (int)$attemptid;
+        return 'wg-q' . (int)$quizid . '-a' . (int)$attemptid . '-' . substr(bin2hex(random_bytes(4)), 0, 8);
     }
 
     /**

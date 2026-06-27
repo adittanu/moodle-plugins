@@ -123,12 +123,15 @@ class log_event extends external_api {
             require_capability('mod/quiz:attempt', $context);
         }
 
+        $transaction = $DB->start_delegated_transaction();
+
         if ($params['eventtype'] === 'monitoring_started') {
             $existingeventid = $DB->get_field('quizaccess_wg_events', 'id', [
                 'attemptid' => $attempt->id,
                 'eventtype' => 'monitoring_started',
             ], IGNORE_MULTIPLE);
             if ($existingeventid) {
+                $transaction->allow_commit();
                 return [
                     'status' => 'duplicate',
                     'eventid' => $existingeventid,
@@ -164,7 +167,6 @@ class log_event extends external_api {
             'timecreated' => time(),
         ];
 
-        $transaction = $DB->start_delegated_transaction();
         $eventid = $DB->insert_record('quizaccess_wg_events', $record);
 
         if (!empty($params['snapshot'])) {

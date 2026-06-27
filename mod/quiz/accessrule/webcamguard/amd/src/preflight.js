@@ -10,7 +10,6 @@
 define([], function() {
     'use strict';
 
-    var LIVE_INTERVAL_MS = 800;
     var REQUIRED_MATCHES = 2;
     var GAUGE_CIRCUMFERENCE = 2 * Math.PI * 26; // r=26 in SVG
 
@@ -156,7 +155,7 @@ define([], function() {
         if (config.liveState) { stopLiveLoop(config.liveState); }
 
         var requiredMatches = (config.identity && config.identity.requiredMatches) || REQUIRED_MATCHES;
-        var tickMs = (config.identity && config.identity.liveIntervalMs) || LIVE_INTERVAL_MS;
+        var tickMs = (config.identity && config.identity.liveIntervalMs) || 800;
         var state = { running: true, inFlight: false, intervalId: null, consecutiveMatches: 0, locked: false };
         config.liveState = state;
 
@@ -195,6 +194,8 @@ define([], function() {
 
                     if (state.consecutiveMatches >= requiredMatches) {
                         state.locked = true;
+                        clearInterval(state.intervalId);
+                        state.intervalId = null;
                         setReadyValue(config, '1');
                         setIdentityResult(config, 'match', dist, config.strings.identitymatched);
                         setSimilarityStatus(config.strings.identitymatched, 'matched');
@@ -414,6 +415,11 @@ define([], function() {
                 form.dataset.wcgSubmitBound = '1';
                 form.addEventListener('submit', function() {
                     if (config.liveState) { stopLiveLoop(config.liveState); }
+                    var video = document.getElementById(config.videoId);
+                    if (video && video.srcObject) {
+                        video.srcObject.getTracks().forEach(function(t) { t.stop(); });
+                        video.srcObject = null;
+                    }
                 });
             }
         };

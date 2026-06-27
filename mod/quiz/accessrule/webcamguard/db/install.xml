@@ -106,7 +106,8 @@
         <INDEX NAME="quizid" UNIQUE="false" FIELDS="quizid"/>
         <INDEX NAME="status" UNIQUE="false" FIELDS="status"/>
         <INDEX NAME="expiresat" UNIQUE="false" FIELDS="expiresat"/>
-      </INDEXES>
+        <INDEX NAME="attemptid_status_expiresat" UNIQUE="false" FIELDS="attemptid, status, expiresat"/>
+       </INDEXES>
     </TABLE>
   </TABLES>
 </XMLDB>

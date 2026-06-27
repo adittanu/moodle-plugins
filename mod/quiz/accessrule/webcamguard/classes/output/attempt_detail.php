@@ -114,54 +114,7 @@ class attempt_detail {
      * @return string
      */
     protected static function render_summary_styles() {
-        return \html_writer::tag('style', '
-.quizaccess-webcamguard-attemptsummary {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(150px, 1fr)) minmax(280px, 1.6fr);
-    gap: .75rem;
-    margin: .75rem 0 1.25rem;
-}
-.quizaccess-webcamguard-attemptsummarycard {
-    background: #fff;
-    border: 1px solid #e7eaef;
-    border-radius: 8px;
-    padding: .85rem 1rem;
-    box-shadow: 0 1px 5px rgba(20, 30, 50, .05);
-}
-.quizaccess-webcamguard-summarylabel {
-    color: #6c757d;
-    font-size: .78rem;
-    font-weight: 700;
-    letter-spacing: .02em;
-    text-transform: uppercase;
-}
-.quizaccess-webcamguard-summaryvalue {
-    margin-top: .25rem;
-    color: #20252b;
-    font-size: 1.55rem;
-    font-weight: 800;
-    line-height: 1.1;
-}
-.quizaccess-webcamguard-summaryvalue-danger {
-    color: #c82333;
-}
-.quizaccess-webcamguard-summaryvalue-warning {
-    color: #8a6200;
-}
-.quizaccess-webcamguard-summaryvalue-success {
-    color: #2f8f46;
-}
-@media (max-width: 991.98px) {
-    .quizaccess-webcamguard-attemptsummary {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-@media (max-width: 575.98px) {
-    .quizaccess-webcamguard-attemptsummary {
-        grid-template-columns: 1fr;
-    }
-}
-');
+        return '';
     }
 
     /**
@@ -270,87 +223,7 @@ class attempt_detail {
      * @return string
      */
     protected static function render_grid_styles() {
-        return \html_writer::tag('style', '
-.quizaccess-webcamguard-eventcards {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: .75rem;
-    align-items: start;
-}
-.quizaccess-webcamguard-eventcard {
-    display: block;
-    width: 100%;
-    padding: 0;
-    overflow: hidden;
-    text-align: left;
-    background: #fff;
-    border: 1px solid #e7eaef;
-    border-radius: 8px;
-    box-shadow: 0 1px 5px rgba(20, 30, 50, .06);
-    cursor: pointer;
-}
-.quizaccess-webcamguard-eventcard:hover,
-.quizaccess-webcamguard-eventcard:focus {
-    box-shadow: 0 6px 18px rgba(20, 30, 50, .14);
-    outline: 2px solid rgba(15, 93, 191, .18);
-    outline-offset: 2px;
-}
-.quizaccess-webcamguard-eventcard-body {
-    padding: .55rem .65rem .65rem;
-}
-.quizaccess-webcamguard-eventcard-badges {
-    display: flex;
-    align-items: center;
-    gap: .35rem;
-    min-width: 0;
-}
-.quizaccess-webcamguard-eventbadge {
-    max-width: 72%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-.quizaccess-webcamguard-eventstatus {
-    font-size: .78rem;
-    font-weight: 700;
-    white-space: nowrap;
-}
-.quizaccess-webcamguard-eventstatus-info {
-    color: #2f8f46;
-}
-.quizaccess-webcamguard-eventstatus-warning {
-    color: #8a6200;
-}
-.quizaccess-webcamguard-eventstatus-violation {
-    color: #c82333;
-}
-.quizaccess-webcamguard-eventmeta {
-    margin-top: .35rem;
-    color: #6c757d;
-    font-size: .78rem;
-    line-height: 1.2;
-}
-@media (max-width: 1199.98px) {
-    .quizaccess-webcamguard-eventcards {
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-}
-@media (max-width: 991.98px) {
-    .quizaccess-webcamguard-eventcards {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-}
-@media (max-width: 767.98px) {
-    .quizaccess-webcamguard-eventcards {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-}
-@media (max-width: 479.98px) {
-    .quizaccess-webcamguard-eventcards {
-        grid-template-columns: 1fr;
-    }
-}
-');
+        return '';
     }
 
     /**
@@ -503,15 +376,7 @@ class attempt_detail {
      * @return int
      */
     protected static function event_weight($eventtype) {
-        $weights = [
-            'no_face' => 2,
-            'multiple_faces' => 4,
-            'window_blur' => 3,
-            'camera_stopped' => 5,
-            'camera_error' => 3,
-            'identity_check' => 4,
-        ];
-        return isset($weights[$eventtype]) ? $weights[$eventtype] : 1;
+        return \quizaccess_webcamguard::event_weight($eventtype);
     }
 
     /**

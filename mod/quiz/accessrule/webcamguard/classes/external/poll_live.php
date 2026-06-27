@@ -98,9 +98,10 @@ class poll_live extends external_api {
 
         $live = reset($records);
         if ($live->status === 'requested') {
+            $DB->set_field_select('quizaccess_wg_live', 'status', 'active',
+                'id = :id AND status = :st', ['id' => $live->id, 'st' => 'requested']);
+            $DB->set_field('quizaccess_wg_live', 'timemodified', $now, ['id' => $live->id]);
             $live->status = 'active';
-            $live->timemodified = $now;
-            $DB->update_record('quizaccess_wg_live', $live);
         }
 
         $identity = 'student-' . $USER->id . '-attempt-' . $attempt->id;

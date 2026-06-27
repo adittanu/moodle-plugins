@@ -168,7 +168,7 @@ define(['core/ajax', 'require'], function(ajax, require) {
     };
 
     var poll = function(config) {
-        call('quizaccess_webcamguard_poll_live', {
+        return call('quizaccess_webcamguard_poll_live', {
             courseid: config.courseid,
             cmid: config.cmid,
             quizid: config.quizid,
@@ -194,10 +194,15 @@ define(['core/ajax', 'require'], function(ajax, require) {
                 return;
             }
 
-            poll(config);
             state.pollTimer = window.setInterval(function() {
                 poll(config);
             }, Math.max(3, config.pollSeconds || 5) * 1000);
+            poll(config).catch(function() {
+                if (state.pollTimer) {
+                    window.clearInterval(state.pollTimer);
+                    state.pollTimer = null;
+                }
+            });
 
             window.addEventListener('beforeunload', function() {
                 if (state.pollTimer) {

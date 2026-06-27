@@ -38,17 +38,23 @@ class cleanup extends \core\task\scheduled_task {
         $cutoff = time() - (self::RETENTION_DAYS * DAYSECS);
         $fs = get_file_storage();
 
-        $events = $DB->get_records_select('quizaccess_wg_events', 'timecreated < :cutoff', ['cutoff' => $cutoff], '', 'id, cmid');
-        foreach ($events as $event) {
-            try {
-                $context = \context_module::instance($event->cmid, IGNORE_MISSING);
-                if ($context) {
-                    $fs->delete_area_files($context->id, 'quizaccess_webcamguard', 'snapshot', $event->id);
+        $limitfrom = 0;
+        $limitnum = 1000;
+        do {
+            $events = $DB->get_records_select('quizaccess_wg_events',
+                'timecreated < :cutoff', ['cutoff' => $cutoff],
+                '', 'id, cmid', $limitfrom, $limitnum);
+            foreach ($events as $event) {
+                try {
+                    $context = \context_module::instance($event->cmid, IGNORE_MISSING);
+                    if ($context) {
+                        $fs->delete_area_files($context->id, 'quizaccess_webcamguard', 'snapshot', $event->id);
+                    }
+                } catch (\Exception $e) {
+                    mtrace('Webcam Guard cleanup: could not delete files for event ' . $event->id . ': ' . $e->getMessage());
                 }
-            } catch (\Exception $e) {
-                mtrace('Webcam Guard cleanup: could not delete files for event ' . $event->id . ': ' . $e->getMessage());
             }
-        }
+        } while (count($events) === $limitnum);
 
         $DB->delete_records_select('quizaccess_wg_events', 'timecreated < :cutoff', ['cutoff' => $cutoff]);
         $DB->delete_records_select('quizaccess_wg_reviews', 'timecreated < :cutoff', ['cutoff' => $cutoff]);

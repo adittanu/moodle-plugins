@@ -82,6 +82,9 @@ class poll_live_stats extends external_api {
         }
 
         $ids = array_values(array_unique(array_map('intval', $params['attemptids'])));
+        if (count($ids) > 50) {
+            $ids = array_slice($ids, 0, 50);
+        }
         if (empty($ids)) {
             return ['attempts' => []];
         }
