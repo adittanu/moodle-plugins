@@ -140,6 +140,8 @@ $string['livenoactiveattempts'] = 'Tidak ada attempt aktif yang bisa dimonitor.'
 $string['liveemptytitle'] = 'Belum ada peserta aktif';
 $string['liveemptybody'] = 'Live Monitor akan terisi otomatis saat peserta sedang mengerjakan quiz dan halaman attempt mereka masih aktif.';
 $string['liveselectedcount'] = '{$a->shown} dari {$a->total} attempt aktif dipilih.';
+$string['liveactiveattempts'] = 'attempt aktif';
+$string['livepollfailed'] = 'Polling gagal — periksa koneksi';
 
 $string['event_no_face'] = 'Wajah tidak terdeteksi';
 $string['event_multiple_faces'] = 'Terdeteksi lebih dari satu wajah';

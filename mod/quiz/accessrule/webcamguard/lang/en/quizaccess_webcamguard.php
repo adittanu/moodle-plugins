@@ -140,6 +140,8 @@ $string['livenoactiveattempts'] = 'No active attempts available for monitoring.'
 $string['liveemptytitle'] = 'No active students yet';
 $string['liveemptybody'] = 'Live Monitor will fill automatically when students are taking the quiz and their attempt pages are still active.';
 $string['liveselectedcount'] = '{$a->shown} of {$a->total} active attempts selected.';
+$string['liveactiveattempts'] = 'active attempts';
+$string['livepollfailed'] = 'Polling failed — check connection';
 
 $string['event_no_face'] = 'No face detected';
 $string['event_multiple_faces'] = 'Multiple faces detected';

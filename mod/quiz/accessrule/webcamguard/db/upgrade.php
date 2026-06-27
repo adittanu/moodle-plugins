@@ -95,5 +95,24 @@ function xmldb_quizaccess_webcamguard_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026050910, 'quizaccess', 'webcamguard');
     }
 
+    if ($oldversion < 2026062701) {
+        $table = new xmldb_table('quizaccess_wg_live');
+
+        // Add composite index for the common poll_live query pattern.
+        $index = new xmldb_index('attemptid_status_expiresat', XMLDB_INDEX_NOTUNIQUE,
+            ['attemptid', 'status', 'expiresat']);
+        if (!$dbman->index_exists($table, $index)) {
+            $dbman->add_index($table, $index);
+        }
+
+        // Remove redundant standalone attemptid index (covered by composite).
+        $oldindex = new xmldb_index('attemptid', XMLDB_INDEX_NOTUNIQUE, ['attemptid']);
+        if ($dbman->index_exists($table, $oldindex)) {
+            $dbman->drop_index($table, $oldindex);
+        }
+
+        upgrade_plugin_savepoint(true, 2026062701, 'quizaccess', 'webcamguard');
+    }
+
     return true;
 }

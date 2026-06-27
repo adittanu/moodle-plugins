@@ -207,7 +207,7 @@ define(["core/ajax", "require"], function (ajax, require) {
 				var countRegion = root.querySelector('[data-region="webcamguard-live-count"]');
 				if (countRegion && countRegion.dataset.pollError) {
 					delete countRegion.dataset.pollError;
-					countRegion.textContent = state.selected.length + " / " + state.candidates.length + " attempt aktif";
+				countRegion.textContent = state.selected.length + " / " + state.candidates.length + " " + (config.strings.activeAttempts || "active attempts");
 				}
 			})
 			.catch(function () {
@@ -215,7 +215,7 @@ define(["core/ajax", "require"], function (ajax, require) {
 				if (state.consecutiveFailures >= 3) {
 					var countRegion = root.querySelector('[data-region="webcamguard-live-count"]');
 					if (countRegion) {
-						countRegion.textContent = '⚠ Polling failed — check connection';
+					countRegion.textContent = '⚠ ' + (config.strings.pollFailed || 'Polling failed — check connection');
 						countRegion.dataset.pollError = '1';
 					}
 				}
@@ -328,11 +328,11 @@ define(["core/ajax", "require"], function (ajax, require) {
 		state.selected = pickCandidates(mode, limit);
 
 		if (count) {
-			count.textContent =
-				state.selected.length +
-				" / " +
-				state.candidates.length +
-				" attempt aktif";
+		count.textContent =
+			state.selected.length +
+			" / " +
+			state.candidates.length +
+			" " + (config.strings.activeAttempts || "active attempts");
 		}
 
 		if (!grid) {

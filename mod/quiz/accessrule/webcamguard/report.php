@@ -190,6 +190,8 @@ if ($liveenabled) {
             'empty' => get_string('livenoactiveattempts', 'quizaccess_webcamguard'),
             'emptyTitle' => get_string('liveemptytitle', 'quizaccess_webcamguard'),
             'emptyBody' => get_string('liveemptybody', 'quizaccess_webcamguard'),
+            'activeAttempts' => get_string('liveactiveattempts', 'quizaccess_webcamguard'),
+            'pollFailed' => get_string('livepollfailed', 'quizaccess_webcamguard'),
         ],
     ]]);
 }
