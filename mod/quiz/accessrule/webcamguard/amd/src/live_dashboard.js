@@ -204,6 +204,11 @@ define(["core/ajax", "require"], function (ajax, require) {
 					}
 				});
 				state.consecutiveFailures = 0;
+				var countRegion = root.querySelector('[data-region="webcamguard-live-count"]');
+				if (countRegion && countRegion.dataset.pollError) {
+					delete countRegion.dataset.pollError;
+					countRegion.textContent = state.selected.length + " / " + state.candidates.length + " attempt aktif";
+				}
 			})
 			.catch(function () {
 				state.consecutiveFailures++;
@@ -211,6 +216,7 @@ define(["core/ajax", "require"], function (ajax, require) {
 					var countRegion = root.querySelector('[data-region="webcamguard-live-count"]');
 					if (countRegion) {
 						countRegion.textContent = '⚠ Polling failed — check connection';
+						countRegion.dataset.pollError = '1';
 					}
 				}
 			})

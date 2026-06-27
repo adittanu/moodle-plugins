@@ -102,7 +102,6 @@
         <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
       </KEYS>
       <INDEXES>
-        <INDEX NAME="attemptid" UNIQUE="false" FIELDS="attemptid"/>
         <INDEX NAME="quizid" UNIQUE="false" FIELDS="quizid"/>
         <INDEX NAME="status" UNIQUE="false" FIELDS="status"/>
         <INDEX NAME="expiresat" UNIQUE="false" FIELDS="expiresat"/>

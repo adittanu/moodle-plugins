@@ -197,11 +197,9 @@ define(['core/ajax', 'require'], function(ajax, require) {
             state.pollTimer = window.setInterval(function() {
                 poll(config);
             }, Math.max(3, config.pollSeconds || 5) * 1000);
+            // ponytail: first poll failure should not kill polling; the interval keeps retrying.
             poll(config).catch(function() {
-                if (state.pollTimer) {
-                    window.clearInterval(state.pollTimer);
-                    state.pollTimer = null;
-                }
+                // Swallow — interval will retry.
             });
 
             window.addEventListener('beforeunload', function() {

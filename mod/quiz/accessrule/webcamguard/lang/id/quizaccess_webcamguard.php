@@ -204,3 +204,4 @@ $string['risksummaryclean'] = 'Tidak ada violation yang tercatat pada attempt in
 $string['risksummarytext'] = 'Peserta memiliki {$a->violations} violation. Jenis terbanyak: {$a->toptype} sebanyak {$a->topcount} kali. Pola violation terjadi antara {$a->first} sampai {$a->last}.';
 
 $string['taskcleanup'] = 'Hapus bukti Webcam Guard lama';
+$string['httpwarning'] = 'Webcam Guard membutuhkan HTTPS. Situs ini sedang menggunakan HTTP. Fitur kamera tidak akan berfungsi dengan benar.';

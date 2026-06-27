@@ -211,7 +211,8 @@ class provider implements
                    FROM {quizaccess_wg_reviews} r
                    JOIN {quiz_attempts} qa ON qa.id = r.attemptid
                    JOIN {quiz} q ON q.id = qa.quiz
-                  WHERE q.course IN (SELECT q2.course FROM {quiz} q2 JOIN {course_modules} cm ON cm.instance = q2.id WHERE cm.id = :cmid)",
+                   JOIN {course_modules} cm ON cm.instance = q.id
+                  WHERE cm.id = :cmid",
                 ['cmid' => $cmid]
             );
             foreach ($reviews as $review) {
@@ -348,11 +349,8 @@ class provider implements
     private static function get_quiz_module_id() : int {
         static $modid = null;
         if ($modid === null) {
-            $modid = get_coursemodule_from_id('quiz', 0)->module ?? 0;
-            if (!$modid) {
-                global $DB;
-                $modid = (int)$DB->get_field('modules', 'id', ['name' => 'quiz']);
-            }
+            global $DB;
+            $modid = (int)$DB->get_field('modules', 'id', ['name' => 'quiz']);
         }
         return $modid;
     }

@@ -624,7 +624,7 @@ class quizaccess_webcamguard extends quiz_access_rule_base {
 
         // Store identity check event server-side for teacher review.
         if ($attemptid > 0) {
-            $attemptrecord = $DB->get_record('quiz_attempts', ['id' => (int)$attemptid], 'id,userid,quizid');
+            $attemptrecord = $DB->get_record('quiz_attempts', ['id' => (int)$attemptid], 'id, userid');
             if ($attemptrecord) {
                 $identitykey = $this->get_session_key($attemptid);
                 $fallbackkey = $this->get_session_key(0);
@@ -639,7 +639,7 @@ class quizaccess_webcamguard extends quiz_access_rule_base {
                     'cmid' => (int)$this->quizobj->get_cmid(),
                     'userid' => (int)$attemptrecord->userid,
                     'eventtype' => 'identity_check',
-                    'eventdata' => json_encode($identitydata),
+                    'metadata' => json_encode($identitydata),
                     'timecreated' => time(),
                 ];
                 $DB->insert_record('quizaccess_wg_events', $event);
