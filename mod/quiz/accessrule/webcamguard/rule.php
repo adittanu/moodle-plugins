@@ -748,46 +748,6 @@ class quizaccess_webcamguard extends quiz_access_rule_base {
         return !empty($SESSION->webcamguardidentity[$fallbackkey]) ? $SESSION->webcamguardidentity[$fallbackkey] : null;
     }
 
-    /**
-     * Build a no-dependency inline click handler for themes where AMD binding is delayed or rewritten.
-     *
-     * @return string JavaScript event handler body.
-     */
-    protected function get_inline_preflight_check_js() {
-        $config = [
-            'readyFieldId' => 'id_' . self::FIELD_READY,
-            'readyFieldName' => self::FIELD_READY,
-            'videoId' => 'quizaccess-webcamguard-video',
-            'statusId' => 'quizaccess-webcamguard-status',
-            'identityEnabled' => !empty($this->quiz->webcamguard_identityenabled),
-            'checking' => get_string('checking', 'quizaccess_webcamguard'),
-            'ready' => get_string('ready', 'quizaccess_webcamguard'),
-            'identityunavailable' => get_string('identityunavailable', 'quizaccess_webcamguard'),
-            'permissiondenied' => get_string('permissiondenied', 'quizaccess_webcamguard'),
-            'cameranotfound' => get_string('cameranotfound', 'quizaccess_webcamguard'),
-            'detectorunavailable' => get_string('detectorunavailable', 'quizaccess_webcamguard'),
-        ];
-        $json = json_encode($config);
-
-        return "event.preventDefault();(function(c,b){" .
-            "var r=document.getElementById(c.readyFieldId)||document.getElementsByName(c.readyFieldName)[0]," .
-                "v=document.getElementById(c.videoId),s=document.getElementById(c.statusId);" .
-            "if(!r){return false;}" .
-            "if(!s){s=document.createElement('div');s.id=c.statusId;s.className='mt-2';b.parentNode.insertBefore(s,b.nextSibling);}" .
-            "if(!v){v=document.createElement('video');v.id=c.videoId;v.autoplay=true;v.playsInline=true;v.muted=true;" .
-                "v.style.maxWidth='320px';v.style.width='100%';v.style.display='none';v.style.marginBottom='0.5rem';" .
-                "b.parentNode.insertBefore(v,b);}" .
-            "r.value='0';s.className='mt-2 alert alert-info';s.textContent=c.checking;" .
-            "if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){s.className='mt-2 alert alert-danger';s.textContent=c.cameranotfound;return false;}" .
-            "navigator.mediaDevices.getUserMedia({video:true,audio:false}).then(function(stream){" .
-                "v.srcObject=stream;v.style.display='block';return v.play().catch(function(){});" .
-            "}).then(function(){" .
-                "if(c.identityEnabled){s.className='mt-2 alert alert-danger';s.textContent=c.identityunavailable;return;}" .
-                "r.value='1';s.className='mt-2 alert alert-success';s.textContent=c.ready;" .
-            "}).catch(function(e){s.className='mt-2 alert alert-danger';" .
-                "s.textContent=(e&&(e.name==='NotAllowedError'||e.name==='PermissionDeniedError'))?c.permissiondenied:c.cameranotfound;" .
-            "});return false;}($json,this));return false;";
-    }
 
     /**
      * Build a delegated click fallback for pages where AMD binding or inline attributes are not applied.

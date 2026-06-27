@@ -153,6 +153,15 @@ class provider implements
                  WHERE cm.id = :cmid";
 
         $userlist->add_from_sql('userid', $sql, ['cmid' => $userlist->get_context()->instanceid]);
+
+        $sql = "SELECT r.userid
+                  FROM {quizaccess_wg_reviews} r
+                  JOIN {quiz_attempts} qa ON qa.id = r.attemptid
+                  JOIN {quiz} q ON q.id = qa.quiz
+                  JOIN {course_modules} cm ON cm.instance = q.id
+                 WHERE cm.id = :cmid";
+
+        $userlist->add_from_sql('userid', $sql, ['cmid' => $userlist->get_context()->instanceid]);
     }
 
     /**

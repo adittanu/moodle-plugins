@@ -14,7 +14,7 @@ namespace quizaccess_webcamguard\external;
 defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->libdir . '/externallib.php');
-require_once($CFG->dirroot . '/mod/quiz/accessrule/webcamguard/report.php');
+require_once($CFG->dirroot . '/mod/quiz/accessrule/webcamguard/locallib.php');
 
 use external_api;
 use external_function_parameters;
