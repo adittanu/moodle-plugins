@@ -198,19 +198,22 @@ class provider implements
                     \core_privacy\local\request\transform::string('events'),
                 ];
                 writer::with_context($context)->export_data(
-                    array_merge($subcontext, [get_string('event', 'quizaccess_webcamguard') . '_' . $event->id]),
+                    array_merge($subcontext, ['event_' . $event->id]),
                     $data
                 );
 
                 // Export snapshot file if present.
-                if ($event->hassnapshot && $fs->file_exists($context->id, 'quizaccess_webcamguard', 'snapshot', $event->id, '/', 'snapshot.png')) {
-                    writer::with_context($context)->export_area_files(
-                        $subcontext,
-                        get_string('snapshot', 'quizaccess_webcamguard'),
-                        'quizaccess_webcamguard',
-                        'snapshot',
-                        $event->id
-                    );
+                if ($event->hassnapshot) {
+                    $files = $fs->get_area_files($context->id, 'quizaccess_webcamguard', 'snapshot', $event->id, 'filename', false);
+                    if (!empty($files)) {
+                        writer::with_context($context)->export_area_files(
+                            $subcontext,
+                            'snapshot',
+                            'quizaccess_webcamguard',
+                            'snapshot',
+                            $event->id
+                        );
+                    }
                 }
             }
 
@@ -234,7 +237,7 @@ class provider implements
                     \core_privacy\local\request\transform::string('reviews'),
                 ];
                 writer::with_context($context)->export_data(
-                    array_merge($subcontext, [get_string('review', 'quizaccess_webcamguard') . '_' . $review->id]),
+                    array_merge($subcontext, ['review_' . $review->id]),
                     $data
                 );
             }
@@ -252,7 +255,7 @@ class provider implements
                     \core_privacy\local\request\transform::string('live'),
                 ];
                 writer::with_context($context)->export_data(
-                    array_merge($subcontext, [get_string('live', 'quizaccess_webcamguard') . '_' . $live->id]),
+                    array_merge($subcontext, ['live_' . $live->id]),
                     $data
                 );
             }
