@@ -213,6 +213,22 @@ define(["core/ajax", "require"], function (ajax, require) {
 							candidate.lastViolationEventId || 0;
 					}
 				});
+
+				// Auto-reorder tiles by risk score (highest first).
+				var grid = root.querySelector('[data-region="webcamguard-live-grid"]');
+				if (grid) {
+					state.selected.sort(function (a, b) {
+						if (b.riskScore !== a.riskScore) return b.riskScore - a.riskScore;
+						if (b.violationCount !== a.violationCount) return b.violationCount - a.violationCount;
+						return b.lastEventTime - a.lastEventTime;
+					});
+					state.selected.forEach(function (candidate) {
+						var tile = grid.querySelector('[data-tile-for="' + candidate.attemptid + '"]');
+						if (tile) {
+							grid.appendChild(tile);
+						}
+					});
+				}
 				state.consecutiveFailures = 0;
 				var countRegion = root.querySelector('[data-region="webcamguard-live-count"]');
 				if (countRegion && countRegion.dataset.pollError) {
