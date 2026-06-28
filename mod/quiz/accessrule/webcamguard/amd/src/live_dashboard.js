@@ -312,9 +312,8 @@ define(["core/ajax", "require"], function (ajax, require) {
 			});
 		}
 
-		if (mode !== "all") {
-			picked.sort(prioritySort);
-		}
+		// Always sort by risk — ensures top-N shown are the highest risk from ALL candidates.
+		picked.sort(prioritySort);
 
 		return picked.slice(0, limit);
 	};
