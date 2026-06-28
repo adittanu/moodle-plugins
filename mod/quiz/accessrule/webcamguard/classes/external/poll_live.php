@@ -106,6 +106,12 @@ class poll_live extends external_api {
 
         $identity = 'student-' . $USER->id . '-attempt-' . $attempt->id;
         $token = token_service::create_token($identity, fullname($USER), $live->roomname, true, false);
+        $warning = '';
+        if (!empty($live->warning)) {
+            $warning = $live->warning;
+            // Clear warning after delivery.
+            $DB->set_field('quizaccess_wg_live', 'warning', null, ['id' => $live->id]);
+        }
 
         return [
             'status' => 'active',
@@ -114,6 +120,7 @@ class poll_live extends external_api {
             'token' => $token,
             'roomname' => $live->roomname,
             'expiresat' => (int)$live->expiresat,
+            'warning' => $warning,
         ];
     }
 
@@ -130,15 +137,16 @@ class poll_live extends external_api {
             'token' => new external_value(PARAM_RAW, 'LiveKit token'),
             'roomname' => new external_value(PARAM_TEXT, 'LiveKit room name'),
             'expiresat' => new external_value(PARAM_INT, 'Expiry unix timestamp'),
+            'warning' => new external_value(PARAM_TEXT, 'Warning message from teacher', VALUE_DEFAULT, ''),
         ]);
     }
+
 
     /**
      * Empty response.
      *
      * @param string $status Status.
      * @return array
-     */
     protected static function empty_response($status) {
         return [
             'status' => $status,
@@ -147,6 +155,7 @@ class poll_live extends external_api {
             'token' => '',
             'roomname' => '',
             'expiresat' => 0,
+            'warning' => '',
         ];
     }
 }

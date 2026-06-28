@@ -597,3 +597,17 @@
         grid-template-columns: 1fr;
     }
 }
+
+/* Live tile warning input */
+.quizaccess-webcamguard-livewarning {
+    display: flex;
+    gap: 4px;
+    padding: 6px 12px 10px;
+}
+.quizaccess-webcamguard-livewarning input {
+    flex: 1;
+    min-width: 0;
+}
+.quizaccess-webcamguard-livewarning button {
+    white-space: nowrap;
+}

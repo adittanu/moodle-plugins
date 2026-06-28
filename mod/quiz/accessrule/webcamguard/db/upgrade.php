@@ -122,5 +122,14 @@ function xmldb_quizaccess_webcamguard_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026062702, 'quizaccess', 'webcamguard');
     }
 
+    if ($oldversion < 2026062801) {
+        $table = new xmldb_table('quizaccess_wg_live');
+        $field = new xmldb_field('warning', XMLDB_TYPE_TEXT, null, null, null, null, null, 'expiresat');
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+        upgrade_plugin_savepoint(true, 2026062801, 'quizaccess', 'webcamguard');
+    }
+
     return true;
 }

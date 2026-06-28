@@ -726,6 +726,7 @@ class quizaccess_webcamguard extends quiz_access_rule_base {
                     'live' => get_string('liveactive', 'quizaccess_webcamguard'),
                     'stopped' => get_string('livestopped', 'quizaccess_webcamguard'),
                     'failed' => get_string('livefailed', 'quizaccess_webcamguard'),
+                    'warningFromTeacher' => get_string('warningfromteacher', 'quizaccess_webcamguard'),
                 ],
             ]]);
         }

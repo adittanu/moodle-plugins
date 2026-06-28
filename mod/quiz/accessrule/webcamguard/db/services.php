@@ -61,4 +61,13 @@ $functions = [
         'ajax' => true,
         'capabilities' => 'quizaccess/webcamguard:viewreport',
     ],
+    'quizaccess_webcamguard_send_warning' => [
+        'classname' => 'quizaccess_webcamguard\\external\\send_warning',
+        'methodname' => 'execute',
+        'classpath' => '',
+        'description' => 'Send a warning message to a participant during live monitoring.',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'quizaccess/webcamguard:viewreport',
+    ],
 ];

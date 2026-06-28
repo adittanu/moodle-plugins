@@ -63,6 +63,16 @@ define(["core/ajax", "require"], function (ajax, require) {
 		});
 	};
 
+	var sendWarning = function (config, attemptid, message) {
+		return call("quizaccess_webcamguard_send_warning", {
+			courseid: config.courseid,
+			cmid: config.cmid,
+			quizid: config.quizid,
+			attemptid: attemptid,
+			message: message,
+		});
+	};
+
 	var escapeHtml = function (value) {
 		var div = document.createElement("div");
 		div.textContent =
@@ -395,6 +405,14 @@ define(["core/ajax", "require"], function (ajax, require) {
 						" - " +
 						escapeHtml(candidate.lastEventDisplay),
 					"</div>",
+					'<div class="quizaccess-webcamguard-livewarning">',
+					'<input type="text" class="form-control form-control-sm" ' +
+						'placeholder="' + escapeHtml(config.strings.warningPlaceholder || "Type warning...") + '" ' +
+						'data-warning-for="' + candidate.attemptid + '" ' +
+						'style="font-size:12px;">',
+					'<button class="btn btn-sm btn-outline-warning" data-send-warning="' +
+						candidate.attemptid + '" style="font-size:11px;padding:2px 8px;">' +
+						escapeHtml(config.strings.sendWarning || "Send") + "</button>",
 					"</div>",
 					"</div>",
 				].join("");
@@ -577,6 +595,31 @@ define(["core/ajax", "require"], function (ajax, require) {
 					stopAll(config, root);
 				});
 			}
+
+			// Delegated handler for warning send buttons.
+			root.addEventListener("click", function (e) {
+				var btn = e.target;
+				if (!btn || !btn.dataset || !btn.dataset.sendWarning) {
+					return;
+				}
+				var attemptid = Number(btn.dataset.sendWarning);
+				var input = root.querySelector('[data-warning-for="' + attemptid + '"]');
+				if (!input || !input.value.trim()) {
+					return;
+				}
+				var message = input.value.trim();
+				input.value = "";
+				sendWarning(config, attemptid, message).then(function (res) {
+					if (res && res.success) {
+						btn.textContent = config.strings.warningSent || "Sent!";
+						setTimeout(function () {
+							btn.textContent = config.strings.sendWarning || "Send";
+						}, 2000);
+					}
+				}).catch(function () {
+					// Swallow.
+				});
+			});
 
 			if (window.jQuery) {
 				var $root = window.jQuery(root);

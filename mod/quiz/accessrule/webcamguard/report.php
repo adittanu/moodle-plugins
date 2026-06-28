@@ -193,6 +193,9 @@ if ($liveenabled) {
             'emptyBody' => get_string('liveemptybody', 'quizaccess_webcamguard'),
             'activeAttempts' => get_string('liveactiveattempts', 'quizaccess_webcamguard'),
             'pollFailed' => get_string('livepollfailed', 'quizaccess_webcamguard'),
+            'sendWarning' => get_string('sendwarning', 'quizaccess_webcamguard'),
+            'warningPlaceholder' => get_string('sendwarningplaceholder', 'quizaccess_webcamguard'),
+            'warningSent' => get_string('warningsent', 'quizaccess_webcamguard'),
         ],
     ]]);
 }

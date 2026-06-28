@@ -167,6 +167,25 @@ define(['core/ajax', 'require'], function(ajax, require) {
         });
     };
 
+    var showWarning = function(config, message) {
+        var overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);';
+        var box = document.createElement('div');
+        box.style.cssText = 'background:#fff;border:4px solid #dc3545;border-radius:12px;padding:32px 48px;max-width:600px;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.3);';
+        box.innerHTML = '<div style="font-size:24px;font-weight:800;color:#dc3545;margin-bottom:12px;">' +
+            (config.strings.warningFromTeacher || 'Warning from trainer') + '</div>' +
+            '<div style="font-size:18px;color:#1f2937;line-height:1.5;">' +
+            message.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>' +
+            '<div style="margin-top:20px;font-size:13px;color:#6b7280;">Click anywhere to dismiss</div>';
+        overlay.appendChild(box);
+        overlay.addEventListener('click', function() {
+            overlay.remove();
+        });
+        document.body.appendChild(overlay);
+        // Auto-dismiss after 30 seconds.
+        setTimeout(function() { if (overlay.parentNode) overlay.remove(); }, 30000);
+    };
+
     var poll = function(config) {
         return call('quizaccess_webcamguard_poll_live', {
             courseid: config.courseid,
@@ -174,8 +193,15 @@ define(['core/ajax', 'require'], function(ajax, require) {
             quizid: config.quizid,
             attemptid: config.attemptid
         }).then(function(live) {
+            // Show warning if any (even if no active live session).
+            if (live && live.warning) {
+                showWarning(config, live.warning);
+            }
             if (live && live.active) {
-                connect(config, live);
+                // Only connect to LiveKit if there's a room.
+                if (live.roomname) {
+                    connect(config, live);
+                }
                 return;
             }
             if (state.room) {
