@@ -25,6 +25,7 @@ define(['core/ajax'], function(ajax) {
         noFaceStarted: null,
         multiFaceStarted: null,
         blurStarted: null,
+        paused: false,
         lastEvents: {},
         queue: [],
         stopped: false,
@@ -39,8 +40,8 @@ define(['core/ajax'], function(ajax) {
         video.muted = true;
         video.playsInline = true;
         video.style.position = 'fixed';
-        video.style.right = '12px';
-        video.style.bottom = '12px';
+        video.style.right = 'max(12px, env(safe-area-inset-right))';
+        video.style.bottom = 'max(12px, env(safe-area-inset-bottom))';
         video.style.width = '160px';
         video.style.maxWidth = '25vw';
         video.style.opacity = '0.75';
@@ -421,7 +422,7 @@ define(['core/ajax'], function(ajax) {
 
     var startLoops = function(config) {
         state.faceLoopId = setInterval(function() {
-            if (state.stopped) {
+            if (state.stopped || state.paused) {
                 return;
             }
             detectFaces().then(function(count) {
@@ -471,11 +472,14 @@ define(['core/ajax'], function(ajax) {
         };
 
         window.addEventListener('blur', onBlur);
-        window.addEventListener('focus', onFocus);
         document.addEventListener('visibilitychange', function() {
             if (document.hidden) {
+                state.paused = true;
                 onBlur();
             } else {
+                state.paused = false;
+                state.noFaceStarted = null;
+                state.multiFaceStarted = null;
                 onFocus();
             }
         });
@@ -513,7 +517,10 @@ define(['core/ajax'], function(ajax) {
             return;
         }
 
-        navigator.mediaDevices.getUserMedia({video: true, audio: false}).then(function(stream) {
+        navigator.mediaDevices.getUserMedia({
+            video: {facingMode: 'user', width: {ideal: 640}, height: {ideal: 480}, frameRate: {ideal: 15}},
+            audio: false
+        }).then(function(stream) {
             state.stream = stream;
             state.video.srcObject = stream;
             stream.getVideoTracks().forEach(function(track) {

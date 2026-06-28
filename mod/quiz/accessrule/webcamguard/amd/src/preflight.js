@@ -277,7 +277,10 @@ define([], function() {
             return;
         }
 
-        navigator.mediaDevices.getUserMedia({video: true, audio: false}).then(function(stream) {
+        navigator.mediaDevices.getUserMedia({
+            video: {facingMode: 'user', width: {ideal: 640}, height: {ideal: 480}},
+            audio: false
+        }).then(function(stream) {
             video.srcObject = stream;
             video.style.display = 'block';
             if (placeholder) { placeholder.style.display = 'none'; }

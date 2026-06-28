@@ -3,7 +3,7 @@
 /* Force the YUI/Moodle preflight popup to be wide enough. */
 .mod_quiz_preflight_popup,
 .moodle-dialogue.mod_quiz_preflight_popup {
-    min-width: 680px !important;
+    min-width: min(680px, 92vw) !important;
     max-width: 94vw !important;
 }
 .mod_quiz_preflight_popup .moodle-dialogue-bd {
@@ -14,6 +14,16 @@
     .mod_quiz_preflight_popup,
     .moodle-dialogue.mod_quiz_preflight_popup {
         min-width: auto !important;
+        width: 96vw !important;
+    }
+    .wcg-grid {
+        grid-template-columns: 1fr !important;
+        grid-template-areas:
+            "warning"
+            "camera"
+            "consent"
+            "indicator"
+            "profile" !important;
     }
 }
 
