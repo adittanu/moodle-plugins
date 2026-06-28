@@ -1,28 +1,28 @@
 # Webcam Guard — Panduan Pengguna
 
-Panduan untuk **Guru** dan **Mahasiswa**.
+Panduan untuk **Admin/Trainer** dan **Peserta**.
 
 ---
 
 ## Daftar Isi
 
-- [Untuk Mahasiswa](#untuk-mahasiswa)
+- [Untuk Peserta](#untuk-peserta)
   - [Apa itu Webcam Guard?](#apa-itu-webcam-guard)
   - [Sebelum Memulai Quiz](#sebelum-memulai-quiz)
   - [Selama Mengerjakan Quiz](#selama-mengerjakan-quiz)
   - [Yang Perlu Diperhatikan](#yang-perlu-diperhatikan)
-  - [Troubleshooting Mahasiswa](#troubleshooting-mahasiswa)
-- [Untuk Guru](#untuk-guru)
+  - [Troubleshooting Peserta](#troubleshooting-peserta)
+- [Untuk Admin/Trainer](#untuk-admintrainer)
   - [Mengaktifkan Webcam Guard](#mengaktifkan-webcam-guard)
   - [Melihat Report](#melihat-report)
   - [Memahami Risk Score](#memahami-risk-score)
   - [Review Attempt](#review-attempt)
   - [Live Monitoring](#live-monitoring)
-  - [Troubleshooting Guru](#troubleshooting-guru)
+  - [Troubleshooting Admin/Trainer](#troubleshooting-admintrainer)
 
 ---
 
-# Untuk Mahasiswa
+# Untuk Peserta
 
 ## Apa itu Webcam Guard?
 
@@ -31,7 +31,7 @@ Webcam Guard adalah sistem pengawasan otomatis untuk quiz online. Ketika Anda me
 - **Webcam Anda akan aktif** selama mengerjakan quiz
 - **Sistem akan memantau** apakah wajah Anda terlihat di kamera
 - **Foto akan diambil** secara otomatis jika terdeteksi pelanggaran
-- **Semua data** akan disimpan untuk review oleh guru Anda
+- **Semua data** akan disimpan untuk review oleh admin/trainer Anda
 
 **Yang TIDAK dilakukan Webcam Guard:**
 - ❌ Tidak merekam video secara terus-menerus
@@ -90,7 +90,7 @@ Ketika Anda membuka quiz yang menggunakan Webcam Guard, akan muncul **jendela pe
 
 ### 4. Verifikasi Identitas (Jika Diaktifkan)
 
-Jika guru mengaktifkan verifikasi identitas:
+Jika admin/trainer mengaktifkan verifikasi identitas:
 
 - Sistem akan membandingkan wajah Anda di webcam dengan **foto profil Moodle**
 - Tampilan **lingkaran similarity** akan menunjukkan persentase kecocokan
@@ -113,16 +113,16 @@ Jika guru mengaktifkan verifikasi identitas:
 
 | Apa | Kapan Dianggap Pelanggaran |
 |-----|--------------------------|
-| Wajah tidak terlihat | Lebih dari 10 detik (bisa diatur guru) |
-| Lebih dari satu wajah | Lebih dari 3 detik (bisa diatur guru) |
-| Pindah tab/window | Lebih dari 5 detik (bisa diatur guru) |
+| Wajah tidak terlihat | Lebih dari 10 detik (bisa diatur admin/trainer) |
+| Lebih dari satu wajah | Lebih dari 3 detik (bisa diatur admin/trainer) |
+| Pindah tab/window | Lebih dari 5 detik (bisa diatur admin/trainer) |
 | Kamera mati/blokir | Langsung dicatat |
 
 ### Apa yang Terjadi Saat Pelanggaran?
 
 1. Sistem mengambil **foto** dari webcam Anda
 2. Event **dicatat** di server
-3. Guru bisa melihat di **report**
+3. Admin/Trainer bisa melihat di **report**
 4. **Tidak ada notifikasi** yang muncul di layar Anda saat pelanggaran
 
 ### Preview Kamera
@@ -166,7 +166,7 @@ Preview ini hanya untuk memastikan webcam Anda aktif. Tidak mempengaruhi pengerj
 
 ---
 
-## Troubleshooting Mahasiswa
+## Troubleshooting Peserta
 
 ### "Webcam tidak ditemukan"
 
@@ -187,7 +187,7 @@ Preview ini hanya untuk memastikan webcam Anda aktif. Tidak mempengaruhi pengerj
 2. Pastikan pencahayaan cukup terang
 3. Posisikan wajah di tengah kamera
 4. Jika mode "Flag": Anda tetap bisa mulai quiz
-5. Jika mode "Block": hubungi guru Anda
+5. Jika mode "Block": hubungi admin/trainer Anda
 
 ### Preview kamera tidak muncul
 
@@ -198,7 +198,7 @@ Preview ini hanya untuk memastikan webcam Anda aktif. Tidak mempengaruhi pengerj
 
 ---
 
-# Untuk Guru
+# Untuk Admin/Trainer
 
 ## Mengaktifkan Webcam Guard
 
@@ -340,7 +340,7 @@ Klik kartu untuk melihat **detail lengkap** termasuk metadata.
 
 ### Apa itu Live Monitoring?
 
-Live monitoring memungkinkan Anda **melihat webcam mahasiswa secara langsung** selama mereka mengerjakan quiz. Ini menggunakan teknologi **LiveKit** (WebRTC).
+Live monitoring memungkinkan Anda **melihat webcam peserta secara langsung** selama mereka mengerjakan quiz. Ini menggunakan teknologi **LiveKit** (WebRTC).
 
 ### Cara Menggunakan
 
@@ -357,7 +357,7 @@ Live monitoring memungkinkan Anda **melihat webcam mahasiswa secara langsung** s
    - Acak 20 peserta
 
 5. Klik **"Start pilihan"** untuk mulai monitoring
-6. Anda akan melihat **grid video** dari mahasiswa yang dipilih
+6. Anda akan melihat **grid video** dari peserta yang dipilih
 
 ### Mode Filter
 
@@ -373,27 +373,27 @@ Live monitoring memungkinkan Anda **melihat webcam mahasiswa secara langsung** s
 
 ---
 
-## Troubleshooting Guru
+## Troubleshooting Admin/Trainer
 
 ### Report kosong / tidak ada data
 
 1. Pastikan Webcam Guard **enabled** di quiz settings
-2. Pastikan ada mahasiswa yang **sudah mulai attempt**
+2. Pastikan ada peserta yang **sudah mulai attempt**
 3. Cek filter status → coba "All"
-4. Tunggu beberapa menit setelah mahasiswa mulai quiz
+4. Tunggu beberapa menit setelah peserta mulai quiz
 
 ### Snapshot tidak muncul
 
 1. Cek quiz settings → "Capture snapshot on violation" centang
-2. Cek apakah mahasiswa menggunakan **HTTPS**
-3. Cek apakah browser mahasiswa mendukung **getUserMedia**
+2. Cek apakah peserta menggunakan **HTTPS**
+3. Cek apakah browser peserta mendukung **getUserMedia**
 
 ### Live monitoring tidak bisa
 
 1. Cek LiveKit config di Site administration (admin)
 2. Cek quiz settings → "Enable optional live monitoring" centang
 3. Cek capability Anda → harus punya `quizaccess/webcamguard:viewreport`
-4. Cek apakah ada mahasiswa yang sedang **aktif mengerjakan**
+4. Cek apakah ada peserta yang sedang **aktif mengerjakan**
 
 ### Risk score 0 tapi ada pelanggaran
 
@@ -403,7 +403,7 @@ Risk score 0 berarti tidak ada event dengan severity "violation". Event "info" a
 
 ## FAQ
 
-### Untuk Mahasiswa
+### Untuk Peserta
 
 **Q: Apakah webcam saya direkam?**
 A: Tidak. Hanya foto (snapshot) yang diambil saat pelanggaran terdeteksi. Tidak ada video yang direkam.
@@ -415,9 +415,9 @@ A: Tergantung setting admin, default 30 hari. Setelah itu, data otomatis dihapus
 A: Jika quiz menggunakan Webcam Guard, Anda harus mengizinkan webcam untuk bisa mengerjakan quiz.
 
 **Q: Apakah foto saya dilihat oleh semua orang?**
-A: Tidak. Hanya guru yang mengampu mata kuliah tersebut yang bisa melihat.
+A: Tidak. Hanya admin/trainer yang mengampu mata kuliah tersebut yang bisa melihat.
 
-### Untuk Guru
+### Untuk Admin/Trainer
 
 **Q: Apakah saya bisa mengubah setting setelah quiz dimulai?**
 A: Setting bisa diubah, tapi hanya berlaku untuk attempt baru. Attempt yang sudah berjalan tetap menggunakan setting lama.
