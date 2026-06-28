@@ -376,7 +376,15 @@ class attempt_detail {
      * @return int
      */
     protected static function event_weight($eventtype) {
-        return \quizaccess_webcamguard::event_weight($eventtype);
+        $weights = [
+            'no_face' => 2,
+            'multiple_faces' => 4,
+            'window_blur' => 3,
+            'camera_stopped' => 5,
+            'camera_error' => 3,
+            'identity_check' => 4,
+        ];
+        return isset($weights[$eventtype]) ? $weights[$eventtype] : 1;
     }
 
     /**
