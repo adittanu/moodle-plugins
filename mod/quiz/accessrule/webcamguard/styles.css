@@ -611,3 +611,16 @@
 .quizaccess-webcamguard-livewarning button {
     white-space: nowrap;
 }
+
+/* Global warning bar */
+.quizaccess-webcamguard-warningbar {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+.quizaccess-webcamguard-warningbar input {
+    flex: 1;
+}
+

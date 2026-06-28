@@ -223,3 +223,5 @@ $string['sendwarningplaceholder'] = 'Type warning message...';
 $string['warningsent'] = 'Warning sent';
 $string['warningfromteacher'] = 'Warning from trainer';
 $string['event_warning_sent'] = 'Warning sent to participant';
+$string['sendwarningall'] = 'Send to All';
+$string['warningsentall'] = 'Warning sent to all';

@@ -621,6 +621,34 @@ define(["core/ajax", "require"], function (ajax, require) {
 				});
 			});
 
+			// Send warning to all selected participants.
+			var sendAllBtn = root.querySelector('[data-action="webcamguard-send-warning-all"]');
+			var globalInput = root.querySelector('[data-region="webcamguard-global-warning"]');
+			if (sendAllBtn && globalInput) {
+				sendAllBtn.addEventListener("click", function () {
+					var message = globalInput.value.trim();
+					if (!message) {
+						return;
+					}
+					globalInput.value = "";
+					var targets = state.selected.length ? state.selected : state.candidates;
+					var count = 0;
+					targets.forEach(function (candidate) {
+						sendWarning(config, candidate.attemptid, message).then(function (res) {
+							if (res && res.success) {
+								count++;
+							}
+						}).catch(function () {
+							// Swallow.
+						});
+					});
+					sendAllBtn.textContent = (config.strings.warningSentAll || "Sent!") + " (" + targets.length + ")";
+					setTimeout(function () {
+						sendAllBtn.textContent = config.strings.sendWarningAll || "Send to All";
+					}, 3000);
+				});
+			}
+
 			if (window.jQuery) {
 				var $root = window.jQuery(root);
 				var isModal = $root.hasClass('modal') || $root.closest('.modal').length > 0;

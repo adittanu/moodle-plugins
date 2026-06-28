@@ -223,3 +223,5 @@ $string['sendwarningplaceholder'] = 'Ketik pesan peringatan...';
 $string['warningsent'] = 'Peringatan terkirim';
 $string['warningfromteacher'] = 'Peringatan dari trainer';
 $string['event_warning_sent'] = 'Peringatan dikirim ke peserta';
+$string['sendwarningall'] = 'Kirim ke Semua';
+$string['warningsentall'] = 'Peringatan dikirim ke semua';

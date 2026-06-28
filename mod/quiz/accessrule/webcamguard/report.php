@@ -196,6 +196,8 @@ if ($liveenabled) {
             'sendWarning' => get_string('sendwarning', 'quizaccess_webcamguard'),
             'warningPlaceholder' => get_string('sendwarningplaceholder', 'quizaccess_webcamguard'),
             'warningSent' => get_string('warningsent', 'quizaccess_webcamguard'),
+            'sendWarningAll' => get_string('sendwarningall', 'quizaccess_webcamguard'),
+            'warningSentAll' => get_string('warningsentall', 'quizaccess_webcamguard'),
         ],
     ]]);
 }

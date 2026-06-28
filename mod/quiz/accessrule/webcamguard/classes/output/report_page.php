@@ -100,6 +100,22 @@ class report_page {
         ]);
         $output .= \html_writer::end_div();
 
+        // Global warning bar — send to all visible participants.
+        $output .= \html_writer::start_div('quizaccess-webcamguard-warningbar');
+        $output .= \html_writer::tag('input', '', [
+            'type' => 'text',
+            'class' => 'form-control form-control-sm',
+            'placeholder' => get_string('sendwarningplaceholder', 'quizaccess_webcamguard'),
+            'data-region' => 'webcamguard-global-warning',
+        ]);
+        $output .= \html_writer::tag('button', get_string('sendwarningall', 'quizaccess_webcamguard'), [
+            'type' => 'button',
+            'class' => 'btn btn-sm btn-warning',
+            'data-action' => 'webcamguard-send-warning-all',
+        ]);
+        $output .= \html_writer::end_div();
+
+
         $output .= \html_writer::div('', 'quizaccess-webcamguard-livegrid', [
             'data-region' => 'webcamguard-live-grid',
         ]);
