@@ -623,7 +623,10 @@ class quizaccess_webcamguard extends quiz_access_rule_base {
         $SESSION->webcamguardchecked[$this->get_session_key(0)] = true;
 
         // Store identity check event server-side for teacher review.
-        if ($attemptid > 0) {
+        // Only when identity is enabled AND we have actual identity data.
+        // monitor.js also sends identity_check via the external API, so this
+        // server-side insert only fires once at preflight time.
+        if ($attemptid > 0 && !empty($this->quiz->webcamguard_identityenabled)) {
             $attemptrecord = $DB->get_record('quiz_attempts', ['id' => (int)$attemptid], 'id, userid');
             if ($attemptrecord) {
                 $identitykey = $this->get_session_key($attemptid);
@@ -632,17 +635,24 @@ class quizaccess_webcamguard extends quiz_access_rule_base {
                     ? $SESSION->webcamguardidentity[$identitykey]
                     : (!empty($SESSION->webcamguardidentity[$fallbackkey])
                         ? $SESSION->webcamguardidentity[$fallbackkey] : []);
-                $event = (object)[
-                    'attemptid' => (int)$attemptid,
-                    'quizid' => (int)$this->quiz->id,
-                    'courseid' => (int)$this->quizobj->get_courseid(),
-                    'cmid' => (int)$this->quizobj->get_cmid(),
-                    'userid' => (int)$attemptrecord->userid,
-                    'eventtype' => 'identity_check',
-                    'metadata' => json_encode($identitydata),
-                    'timecreated' => time(),
-                ];
-                $DB->insert_record('quizaccess_wg_events', $event);
+                if (!empty($identitydata)) {
+                    $status = $identitydata['status'] ?? '';
+                    $severity = ($status === 'match') ? 'info' : (($status === 'mismatch') ? 'violation' : 'warning');
+                    $event = (object)[
+                        'attemptid' => (int)$attemptid,
+                        'quizid' => (int)$this->quiz->id,
+                        'courseid' => (int)$this->quizobj->get_courseid(),
+                        'cmid' => (int)$this->quizobj->get_cmid(),
+                        'userid' => (int)$attemptrecord->userid,
+                        'eventtype' => 'identity_check',
+                        'severity' => $severity,
+                        'durationms' => 0,
+                        'clienttime' => time(),
+                        'metadata' => json_encode($identitydata),
+                        'timecreated' => time(),
+                    ];
+                    $DB->insert_record('quizaccess_wg_events', $event);
+                }
             }
         }
     }
@@ -656,6 +666,13 @@ class quizaccess_webcamguard extends quiz_access_rule_base {
             foreach (array_keys($SESSION->webcamguardchecked) as $key) {
                 if (strpos($key, $this->quiz->id . ':') === 0) {
                     unset($SESSION->webcamguardchecked[$key]);
+                }
+            }
+        }
+        if (!empty($SESSION->webcamguardidentity)) {
+            foreach (array_keys($SESSION->webcamguardidentity) as $key) {
+                if (strpos($key, $this->quiz->id . ':') === 0) {
+                    unset($SESSION->webcamguardidentity[$key]);
                 }
             }
         }

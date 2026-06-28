@@ -188,7 +188,7 @@ Composite index: `(attemptid, status, expiresat)`.
 | `quizaccess_webcamguard_log_event` | Write | mod/quiz:attempt | Mahasiswa kirim event monitoring |
 | `quizaccess_webcamguard_request_live` | Write | viewreport | Guru mulai/stop live monitoring |
 | `quizaccess_webcamguard_poll_live` | Read | mod/quiz:attempt | Mahasiswa cek request live |
-| `quizaccess_webcamguard_poll_live_stats` | Read | viewdashboard | Dashboard guru refresh stats |
+| `quizaccess_webcamguard_poll_live_stats` | Read | viewreport | Dashboard guru refresh stats |
 
 ---
 

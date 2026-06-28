@@ -42,6 +42,7 @@ if ($status !== '') {
     $params['status'] = $status;
 }
 
+// Risk score SQL below uses weights matching quizaccess_webcamguard::EVENT_WEIGHTS.
 $namefields = get_all_user_name_fields(true, 'u');
 $sql = "SELECT r.id, r.attemptid, r.quizid, r.userid, r.status, qa.attempt,
                $namefields,
