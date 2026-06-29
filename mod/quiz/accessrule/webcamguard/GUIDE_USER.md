@@ -432,7 +432,7 @@ Threshold ini menentukan **jarak Euclidean** maksimum antara face descriptor web
 
 ## 1.5 Melihat Report
 
-### Langkah-Langkah
+### Langkah-Langkah Membuka Report
 
 1. Buka **quiz** yang menggunakan Webcam Guard
 2. Di halaman quiz, klik **"View Webcam Guard report"**
@@ -440,29 +440,59 @@ Threshold ini menentukan **jarak Euclidean** maksimum antara face descriptor web
 
 ![Report Page](pix/guide/10.png)
 
-### Apa yang Ditampilkan?
+### Bagian 1: Filter Status
 
-**Summary Cards (Kartu Ringkasan):**
-- **Total Events**: Jumlah total event monitoring
-- **Total Violations**: Jumlah total pelanggaran
-- **Attempts with Violations**: Jumlah attempt yang punya pelanggaran
-- **Top Violations**: Jenis pelanggaran yang paling sering terjadi
+Di bagian atas halaman report, ada **dropdown filter** untuk memfilter attempt berdasarkan status review:
 
-**Tabel Review:**
-- **Student**: Nama peserta
-- **Attempt**: Nomor attempt
-- **Status**: Pending/Cleared/Suspicious
-- **Events**: Jumlah event monitoring
-- **Violation**: Jumlah pelanggaran
-- **Risk Score**: Skor risiko
-- **Top Violation Type**: Jenis pelanggaran terbanyak
-- **Actions**: Link ke detail attempt
+| Filter | Keterangan | Kapan Digunakan |
+--------|-----------|-----------------|
+| **All** | Menampilkan semua attempt yang pernah mengerjakan quiz | Melihat gambaran keseluruhan |
+| **Pending** | Hanya attempt yang belum direview oleh trainer | Saat ingin mulai review |
+| **Cleared** | Hanya attempt yang sudah dinilai aman oleh trainer | Melihat yang sudah selesai direview |
+| **Suspicious** | Hanya attempt yang dicurigai kecurangan oleh trainer | Fokus pada yang bermasalah |
 
-**Filter:**
-- **All**: Semua attempt
-- **Pending**: Belum direview
-- **Cleared**: Sudah dinilai aman
-- **Suspicious**: Dicurigai kecurangan
+**Cara pakai:** Pilih filter dari dropdown → klik tombol "Filter" → tabel akan menampilkan hanya attempt sesuai filter.
+
+### Bagian 2: Summary Cards (Kartu Ringkasan)
+
+Di bawah filter, ada **4 kartu ringkasan** yang menampilkan statistik keseluruhan quiz:
+
+| Kartu | Isi | Penjelasan |
+-------|-----|-----------|
+| **Total Events** | Angka total | Jumlah seluruh event monitoring yang tercatat dari semua peserta. Termasuk event normal (monitoring started, interval snapshot) dan event pelanggaran. |
+| **Total Violations** | Angka total | Jumlah seluruh pelanggaran yang terdeteksi. Ini adalah subset dari Total Events — hanya event dengan severity "violation". |
+| **Attempts with Violations** | Angka total | Jumlah attempt (percobaan) yang memiliki minimal 1 pelanggaran. Jika 10 peserta mengerjakan dan 3 punya pelanggaran, angkanya 3. |
+| **Top Violations** | Daftar jenis | Jenis pelanggaran yang paling sering terjadi, diurutkan dari yang terbanyak. Contoh: "No face detected: 12, Multiple faces: 5" |
+
+**Cara membaca:**
+- Jika **Total Violations = 0**: Semua peserta mengerjakan tanpa pelanggaran. Bagus!
+- Jika **Attempts with Violations** tinggi dibanding total attempt: Banyak peserta bermasalah, perlu investigasi
+- Jika **Top Violations** didominasi satu jenis: Ada pola — misal semua "No face" bisa berarti pencahayaan buruk
+
+### Bagian 3: Tabel Review
+
+Di bawah summary cards, ada **tabel** yang menampilkan setiap attempt beserta data monitoringnya:
+
+| Kolom | Isi | Penjelasan |
+-------|-----|-----------|
+| **Student** | Nama lengkap | Nama peserta yang mengerjakan quiz |
+| **Attempt** | Angka | Nomor attempt (1 = percobaan pertama, 2 = percobaan kedua, dst) |
+| **Status** | Teks berwarna | Status review: **Pending** (abu-abu, belum direview), **Cleared** (hijau, sudah dinilai aman), **Suspicious** (merah, dicurigai kecurangan) |
+| **Events** | Angka | Jumlah event monitoring untuk attempt ini. Semakin banyak event, semakin lama peserta mengerjakan. |
+| **Violation** | Angka | Jumlah pelanggaran untuk attempt ini. 0 = tidak ada pelanggaran. |
+| **Risk Score** | Angka + badge warna | Skor risiko kecurangan. Badge berwarna sesuai level: hijau (aman), biru (rendah), kuning (sedang), merah (tinggi). |
+| **Top Violation Type** | Teks | Jenis pelanggaran yang paling sering terjadi di attempt ini. Contoh: "No face detected" |
+| **Actions** | Link | Klik **"View detail"** untuk membuka halaman detail attempt |
+
+**Cara membaca tabel:**
+1. **Scan kolom Risk Score** — fokus pada yang berwarna kuning atau merah
+2. **Cek kolom Violation** — yang angkanya tinggi perlu diperhatikan
+3. **Cek kolom Status** — yang masih "Pending" perlu direview
+4. **Klik "View detail"** pada attempt yang ingin direview lebih lanjut
+
+### Bagian 4: Tombol Live Monitor
+
+Jika LiveKit dikonfigurasi dan quiz settings mengaktifkan live monitoring, ada tombol **"Live Monitor"** di bagian atas halaman report. Klik tombol ini untuk membuka dashboard live monitoring (lihat bagian 1.8).
 
 ---
 
@@ -500,74 +530,168 @@ Risk score adalah **skor numerik** yang menunjukkan tingkat risiko kecurangan.
 
 ## 1.7 Review Attempt
 
-### Langkah-Langkah
+### Langkah-Langkah Review
 
-1. Di halaman report, klik **"View detail"** pada attempt
-2. Lihat **summary cards**: total events, violations, risk score
-3. Lihat **event timeline**: grid foto-foto yang diambil
-4. **Klik kartu event** untuk detail lengkap (metadata, waktu, durasi)
-5. Isi **form review**: pilih status, tulis komentar
-6. Klik **"Save review"**
+1. Di halaman report, klik **"View detail"** pada attempt yang ingin direview
 
 ![Attempt Detail](pix/guide/11.png)
+
+2. Anda akan melihat halaman detail attempt dengan:
+   - **Summary cards**: total events, violations, risk score
+   - **Risk summary**: teks ringkasan tentang pola pelanggaran
+   - **Event timeline**: grid kartu foto-foto yang diambil
+   - **Form review**: ubah status dan beri komentar
+
+3. **Klik kartu event** untuk melihat detail lengkap:
+   - Jenis event (No face, Multiple faces, dll)
+   - Status (Normal, Warning, Violation)
+   - Foto snapshot (jika ada)
+   - Waktu kejadian
+   - Metadata lengkap (jumlah wajah, durasi, dll)
+
+4. Isi **form review** di bagian bawah:
+   - Pilih **status**: Pending (belum diputuskan), Cleared (aman), Suspicious (dicurigai)
+   - Tulis **komentar** (opsional)
+   - Klik **"Save review"**
+
 ![Review Form](pix/guide/13.png)
 
-### Status Review
+### Tips Review
 
-| Status | Keterangan |
-|--------|-----------|
-| **Pending** | Belum diputuskan (default) |
-| **Cleared** | Dianggap aman, tidak ada masalah |
-| **Suspicious** | Dicurigai kecurangan, perlu tindak lanjut |
+- **Mulai dari risk score tertinggi** — filter "Suspicious" atau sort by risk
+- **Lihat foto dulu** sebelum menentukan status — foto bisa menjelaskan konteks
+- **Cek pola** — satu pelanggaran mungkin tidak sengaja, tapi berulang perlu dicurigai
+- **Beri komentar** — catatan membantu jika ada sengketa nanti
+- **Jangan asal Suspicious** — pastikan ada bukti cukup sebelum menandai mencurigakan
 
----
 
 ## 1.8 Live Monitoring
 
 ### Apa itu Live Monitoring?
 
-Live monitoring memungkinkan Anda **melihat webcam peserta secara langsung** selama mereka mengerjakan quiz.
+Live monitoring memungkinkan Anda **melihat webcam peserta secara langsung** (real-time) selama mereka mengerjakan quiz. Ini berbeda dari snapshot — snapshot adalah foto yang diambil saat pelanggaran, sedangkan live monitoring adalah **video streaming langsung** dari webcam peserta.
 
 ### Prasyarat
 
-1. LiveKit dikonfigurasi di Site administration (lihat 1.10)
-2. Quiz settings → "Enable optional live monitoring" centang
-3. Peserta sedang aktif mengerjakan quiz (badge Online)
+1. **LiveKit dikonfigurasi** di Site administration (lihat bagian 1.10)
+2. **Quiz settings** → "Enable optional live monitoring" harus **dicentang**
+3. Peserta harus sedang **aktif mengerjakan quiz** (membuka halaman quiz)
 
-### Langkah-Langkah
+### Langkah-Langkah Memulai Live Monitoring
 
-1. Buka **report** → klik **"Live Monitor"**
-2. Pilih **mode filter** dari dropdown
-3. Klik **"Start pilihan"** atau **"Start"** per tile
-4. Tunggu status **"Tersambung"** → video muncul
-5. Klik **"Stop"** atau tutup modal untuk berhenti
+**Langkah 1:** Buka halaman **Webcam Guard report** (lihat bagian 1.5)
+
+**Langkah 2:** Klik tombol **"Live Monitor"** di bagian atas halaman report
+
+**Langkah 3:** Modal Live Monitor akan terbuka. Di dalam modal, Anda akan melihat:
+- **Dropdown filter** di bagian atas
+- **Bar "Kirim Info ke Semua"** di bawah filter
+- **Grid tile** peserta di bagian tengah
+- **Tombol navigasi** (Prev/Next) jika peserta lebih dari 20
 
 ![Live Dashboard](pix/guide/14.png)
 
+**Langkah 4:** Pilih **mode filter** dari dropdown (lihat tabel mode filter di bawah)
+
+**Langkah 5:** Klik **"Start pilihan"** untuk mulai monitoring semua peserta yang tampil, atau klik **"Start"** di tile peserta individual
+
+**Langkah 6:** Tunggu hingga status berubah dari "Menyiapkan..." ke **"Tersambung"**. Video webcam peserta akan muncul di tile.
+
+**Langkah 7:** Pantau peserta. Anda bisa:
+- **Melihat video** webcam peserta secara langsung
+- **Membaca info** di setiap tile (nama, risk score, violation count, status)
+- **Mengirim info** ke peserta (lihat bagian 1.9)
+- **Berhenti monitoring** peserta individual dengan klik "Stop"
+
+**Langkah 8:** Klik **"Stop semua"** atau **tutup modal** untuk berhenti semua monitoring
+
+### Apa yang Ditampilkan di Setiap Tile?
+
+Setiap tile peserta menampilkan informasi berikut:
+
+| Elemen | Lokasi | Penjelasan |
+--------|--------|-----------|
+| **Video webcam** | Bagian atas tile | Video langsung dari webcam peserta. Ini adalah gambar real-time dari kamera peserta. |
+| **Nama peserta** | Di bawah video | Nama lengkap peserta |
+| **Badge Online/Offline** | Di sebelah nama | 🟢 **Online** = peserta aktif (ada event dalam 60 detik). ⚪ **Offline** = tidak aktif. |
+| **Risk Score badge** | Di bawah nama | Badge berwarna menunjukkan risk score (hijau/biru/kuning/merah) |
+| **Violation count badge** | Di sebelah risk badge | Badge abu-abu menunjukkan jumlah pelanggaran |
+| **Top violation type badge** | Di sebelah violation badge | Badge abu-abu menunjukkan jenis pelanggaran terbanyak |
+| **Status terakhir** | Di bawah badge | Event terakhir yang tercatat, contoh: "No face detected - 14:32:05" |
+| **Input kirim info** | Di bawah status | Text input untuk mengirim info ke peserta ini |
+| **Tombol Send** | Di sebelah input | Klik untuk mengirim info ke peserta ini |
+
 ### Indikator Online/Offline
 
-| Badge | Arti |
-|-------|------|
-| 🟢 **Online** | Peserta aktif — ada monitoring event dalam 60 detik terakhir |
-| ⚪ **Offline** | Peserta tidak aktif — tidak ada event baru |
+| Badge | Warna | Arti | Kapan Berubah |
+-------|-------|------|---------------|
+| **Online** | 🟢 Hijau | Peserta sedang aktif mengerjakan quiz | Ada monitoring event dalam 60 detik terakhir |
+| **Offline** | ⚪ Abu-abu | Peserta tidak aktif | Tidak ada event baru selama >60 detik |
 
-### Auto-Reorder
+**Kapan peserta berubah ke Offline?**
+- Peserta **menutup browser** atau tab quiz
+- Peserta **pindah tab terlalu lama** (>60 detik tanpa event)
+- Peserta **menyelesaikan quiz** dan keluar
+- **Koneksi internet** peserta terputus
 
-Tile otomatis diurutkan berdasarkan risk score (tertinggi di kiri atas). Urutan berubah setiap 4 detik. Video stream tetap jalan saat tile bergeser.
+**Catatan:** Badge Online/Offline **bukan** indikator kecurangan. Peserta bisa Offline karena alasan teknis (internet putus, browser crash). Badge hanya menunjukkan apakah monitoring sedang aktif.
 
-### Mode Filter
+### Auto-Reorder (Pengurutan Otomatis)
 
-| Mode | Keterangan |
-|------|-----------|
-| Prioritas risiko | Risk score tertinggi |
-| Hanya yang ada violation | Filter pelanggaran |
-| Kamera bermasalah | Camera stopped/error |
-| Belum pernah dicek | Belum dimonitor live |
-| Risk tinggi/sedang/rendah | Filter level |
-| Semua attempt aktif | Tampilkan semua |
-| Acak 20 peserta | Pilih acak |
+Tile peserta **otomatis diurutkan** berdasarkan risk score:
 
----
+- **Risk tertinggi** → pojok kiri atas grid
+- **Risk terendah** → pojok kanan bawah grid
+- Urutan **berubah otomatis** setiap 4 detik saat polling
+- **Video stream tetap jalan** saat tile bergeser posisi (tidak reconnect)
+
+**Mengapa penting?** Peserta yang baru saja melakukan pelanggaran akan otomatis naik ke posisi atas, sehingga Anda bisa langsung memperhatikannya tanpa perlu scroll mencari.
+
+### Mode Filter (Dropdown)
+
+| Mode | Keterangan | Kapan Digunakan |
+------|-----------|-----------------|
+| **Prioritas risiko** | Urutkan dari risk score tertinggi (default) | Monitoring umum — fokus yang paling berisiko |
+| **Hanya yang ada violation** | Hanya tampilkan peserta yang punya pelanggaran | Fokus pada yang bermasalah |
+| **No face** | Hanya peserta yang terdeteksi wajah tidak terlihat | Investigasi kasus no-face |
+| **Multiple faces** | Hanya peserta yang terdeteksi banyak wajah | Investigasi kasus contekan |
+| **Window blur** | Hanya peserta yang terdeteksi pindah tab | Investigasi kasus buka materi |
+| **Kamera bermasalah** | Hanya peserta dengan camera_stopped/error | Troubleshooting teknis |
+| **Belum pernah dicek** | Hanya peserta yang belum pernah dimonitor live | Memastikan semua kebagian |
+| **Risk tinggi** | Hanya peserta dengan risk score 13+ | Fokus pada yang paling berisiko |
+| **Risk sedang** | Hanya peserta dengan risk score 5-12 | Monitoring level menengah |
+| **Risk rendah** | Hanya peserta dengan risk score 1-4 | Monitoring level rendah |
+| **Semua attempt aktif** | Tampilkan semua peserta yang sedang mengerjakan | Overview lengkap |
+| **Acak 20 peserta** | Pilih 20 peserta secara acak dari semua yang aktif | Monitoring acak untuk keadilan |
+
+### Navigasi Halaman
+
+Jika peserta lebih dari 20, dashboard menampilkan **navigasi halaman**:
+- **Prev / Next** untuk berpindah halaman
+- **"X / Y active attempts"** menunjukkan range yang ditampilkan (contoh: "1-20 dari 45 active attempts")
+- Maksimal **20 tile per halaman**
+
+### Tombol Kontrol
+
+| Tombol | Fungsi |
+--------|--------|
+| **Start pilihan** | Mulai live monitoring untuk semua peserta yang tampil di grid |
+| **Stop semua** | Hentikan semua live monitoring yang sedang aktif |
+| **Refresh pilihan** | Muat ulang daftar peserta berdasarkan filter yang aktif |
+| **Start** (per tile) | Mulai live monitoring untuk peserta individual |
+| **Stop** (per tile) | Hentikan live monitoring untuk peserta individual |
+| **Send** (per tile) | Kirim info ke peserta individual |
+| **Kirim ke Semua** (bar atas) | Kirim info ke semua peserta yang tampil |
+
+### Tips Live Monitoring
+
+1. **Gunakan filter** sebelum Start — jangan langsung "Semua attempt aktif" jika banyak peserta
+2. **Perhatikan badge Online** — jangan Start untuk peserta Offline (tidak akan nyambung)
+3. **Gunakan Auto-Reorder** — biarkan sistem mengurutkan, fokus pada yang di kiri atas
+4. **Kombinasikan dengan Kirim Info** — kirim info ke peserta yang mencurigakan
+5. **Jangan terlalu lama** — live monitoring menghabiskan bandwidth server
+6. **Tutup modal** saat selesai — semua koneksi akan terputus otomatis
+
 
 ## 1.9 Kirim Info ke Peserta
 
