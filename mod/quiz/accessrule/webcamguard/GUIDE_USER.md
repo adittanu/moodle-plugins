@@ -8,416 +8,94 @@ Versi 0.8.0
 
 ## Daftar Isi
 
-- [Bagian 1: Untuk Peserta](#bagian-1-untuk-peserta)
+- [Bagian 1: Untuk Admin/Trainer](#bagian-1-untuk-admintrainer)
   - [1.1 Apa itu Webcam Guard?](#11-apa-itu-webcam-guard)
-  - [1.2 Persiapan Sebelum Quiz](#12-persiapan-sebelum-quiz)
-  - [1.3 Langkah-Langkah Memulai Quiz](#13-langkah-langkah-memulai-quiz)
-  - [1.4 Verifikasi Identitas](#14-verifikasi-identitas)
-  - [1.5 Selama Mengerjakan Quiz](#15-selama-mengerjakan-quiz)
-  - [1.6 Menerima Info dari Trainer](#16-menerima-info-dari-trainer)
-  - [1.7 Menyelesaikan Quiz](#17-menyelesaikan-quiz)
-  - [1.8 Yang Boleh dan Tidak Boleh](#18-yang-boleh-dan-tidak-boleh)
-  - [1.9 Troubleshooting Peserta](#19-troubleshooting-peserta)
-- [Bagian 2: Untuk Admin/Trainer](#bagian-2-untuk-admintrainer)
-  - [2.1 Dashboard Webcam Guard](#21-dashboard-webcam-guard)
-  - [2.2 Mengaktifkan Webcam Guard di Quiz](#22-mengaktifkan-webcam-guard-di-quiz)
-  - [2.3 Penjelasan Setiap Setting](#23-penjelasan-setiap-setting)
-  - [2.4 Melihat Report](#24-melihat-report)
-  - [2.5 Memahami Risk Score](#25-memahami-risk-score)
-  - [2.6 Review Attempt](#26-review-attempt)
-  - [2.7 Live Monitoring](#27-live-monitoring)
-  - [2.8 Kirim Info ke Peserta](#28-kirim-info-ke-peserta)
-  - [2.9 Konfigurasi LiveKit](#29-konfigurasi-livekit)
-  - [2.10 Konfigurasi Data Retention](#210-konfigurasi-data-retention)
-  - [2.11 Troubleshooting Admin/Trainer](#211-troubleshooting-admintrainer)
+  - [1.2 Dashboard Webcam Guard](#12-dashboard-webcam-guard)
+  - [1.3 Mengaktifkan Webcam Guard di Quiz](#13-mengaktifkan-webcam-guard-di-quiz)
+  - [1.4 Penjelasan Lengkap Setiap Setting](#14-penjelasan-lengkap-setiap-setting)
+  - [1.5 Melihat Report](#15-melihat-report)
+  - [1.6 Memahami Risk Score](#16-memahami-risk-score)
+  - [1.7 Review Attempt](#17-review-attempt)
+  - [1.8 Live Monitoring](#18-live-monitoring)
+  - [1.9 Kirim Info ke Peserta](#19-kirim-info-ke-peserta)
+  - [1.10 Konfigurasi LiveKit (Global)](#110-konfigurasi-livekit-global)
+  - [1.11 Konfigurasi Data Retention (Global)](#111-konfigurasi-data-retention-global)
+  - [1.12 Troubleshooting Admin/Trainer](#112-troubleshooting-admintrainer)
+- [Bagian 2: Untuk Peserta](#bagian-2-untuk-peserta)
+  - [2.1 Apa itu Webcam Guard?](#21-apa-itu-webcam-guard)
+  - [2.2 Persiapan Sebelum Quiz](#22-persiapan-sebelum-quiz)
+  - [2.3 Langkah-Langkah Memulai Quiz](#23-langkah-langkah-memulai-quiz)
+  - [2.4 Verifikasi Identitas](#24-verifikasi-identitas)
+  - [2.5 Selama Mengerjakan Quiz](#25-selama-mengerjakan-quiz)
+  - [2.6 Menerima Info dari Trainer](#26-menerima-info-dari-trainer)
+  - [2.7 Menyelesaikan Quiz](#27-menyelesaikan-quiz)
+  - [2.8 Yang Boleh dan Tidak Boleh](#28-yang-boleh-dan-tidak-boleh)
+  - [2.9 Troubleshooting Peserta](#29-troubleshooting-peserta)
 - [FAQ](#faq)
 
 ---
 
-# Bagian 1: Untuk Peserta
+# Bagian 1: Untuk Admin/Trainer
 
 ## 1.1 Apa itu Webcam Guard?
 
-Webcam Guard adalah sistem pengawasan otomatis yang digunakan saat Anda mengerjakan quiz online. Sistem ini bekerja dengan cara:
+Webcam Guard adalah plugin Moodle yang menambahkan **pengawasan webcam otomatis** ke Quiz. Plugin ini memungkinkan Anda:
 
-1. **Mengaktifkan webcam** Anda selama mengerjakan quiz
-2. **Mendeteksi wajah** Anda di kamera secara otomatis setiap 1 detik
-3. **Mengambil foto (snapshot)** jika terdeteksi pelanggaran
-4. **Mencatat semua aktivitas** sebagai bukti untuk review trainer
-5. **Mengizinkan trainer mengirim info** langsung ke layar Anda
+- **Memantau peserta** selama mengerjakan quiz melalui webcam
+- **Mendeteksi pelanggaran** secara otomatis (wajah tidak terlihat, banyak wajah, pindah tab, kamera mati)
+- **Mengambil foto (snapshot)** sebagai bukti pelanggaran
+- **Melihat risk score** per attempt untuk mengetahui tingkat risiko kecurangan
+- **Review attempt** dengan timeline event dan foto
+- **Live monitoring** — melihat webcam peserta secara langsung (opsional, perlu LiveKit)
+- **Mengirim info** langsung ke layar peserta selama quiz berlangsung
 
-**Yang TIDAK dilakukan Webcam Guard:**
-- ❌ Tidak merekam video secara terus-menerus
-- ❌ Tidak mengakses file di komputer/HP Anda
-- ❌ Tidak mengambil alih layar komputer Anda
-- ❌ Tidak memblokir Anda dari quiz (kecuali mode Block untuk identitas)
-- ❌ Tidak mengintip aktivitas di luar browser
-
----
-
-## 1.2 Persiapan Sebelum Quiz
-
-Sebelum membuka quiz yang menggunakan Webcam Guard, pastikan semua hal berikut sudah siap:
-
-### Di Komputer/Laptop:
-
-| No | Persiapan | Cara Mengecek |
-|----|-----------|---------------|
-| 1 | **Webcam terpasang** | Buka aplikasi Camera di komputer, pastikan gambar muncul |
-| 2 | **Browser terbaru** | Chrome 90+, Edge 90+, Firefox 90+, atau Safari 15+ |
-| 3 | **Koneksi internet stabil** | Pastikan WiFi/kabel tidak putus-putus |
-| 4 | **Pencahayaan cukup** | Wajah harus terlihat jelas, hindari backlight |
-| 5 | **Tutup aplikasi webcam lain** | Tutup Zoom, Teams, Google Meet, dll |
-| 6 | **Foto profil Moodle** | Jika diminta verifikasi identitas, upload foto profil terlebih dahulu |
-
-### Di HP/Smartphone:
-
-| No | Persiapan | Cara Mengecek |
-|----|-----------|---------------|
-| 1 | **Kamera depan aktif** | Pastikan menggunakan kamera depan (bukan belakang) |
-| 2 | **Browser terbaru** | Chrome atau Safari versi terbaru |
-| 3 | **Layar cukup besar** | Disarankan minimal 5 inci |
-| 4 | **Posisi tegak** | Pegang HP secara vertikal |
-| 5 | **Pencahayaan dari depan** | Jangan backlight (cahaya dari belakang) |
-
-### Tips Pencahayaan:
+### Arsitektur Singkat
 
 ```
-❌ SALAH                          ✅ BENAR
-
-  [Lampu] → [Anda] → [Kamera]     [Kamera] ← [Anda] ← [Lampu]
-  (backlight, wajah gelap)         (frontlight, wajah terang)
+┌─────────────────────────────────────────────────┐
+│  Quiz Settings (per quiz)                       │
+│  ─ Enable/Disable Webcam Guard                  │
+│  ─ Atur threshold, interval, identitas          │
+└──────────────────┬──────────────────────────────┘
+                   │
+       ┌───────────▼───────────┐
+       │  Preflight Check      │
+       │  (saat buka quiz)     │
+       │  ─ Consent checkbox   │
+       │  ─ Webcam preview     │
+       │  ─ Identity verify    │
+       └───────────┬───────────┘
+                   │
+       ┌───────────▼───────────┐
+       │  Monitor (saat quiz)  │
+       │  ─ Face detection 1s  │
+       │  ─ Blur detection     │
+       │  ─ Snapshot capture   │
+       └───────────┬───────────┘
+                   │
+       ┌───────────▼───────────┐
+       │  Report & Review      │
+       │  ─ Event timeline     │
+       │  ─ Risk score         │
+       │  ─ Teacher review     │
+       └───────────────────────┘
 ```
 
 ---
 
-## 1.3 Langkah-Langkah Memulai Quiz
-
-### Langkah 1: Buka Quiz
-
-1. Login ke Moodle
-2. Buka mata kuliah yang memiliki quiz
-3. Klik nama quiz yang akan dikerjakan
-4. Anda akan melihat halaman informasi quiz
-
-### Langkah 2: Jendela Pemeriksaan Webcam Muncul
-
-Setelah mengklik **"Attempt quiz"** atau **"Mulai attempt"**, jendela pemeriksaan webcam akan muncul:
-
-![Preflight Modal](pix/guide/06.png)
-
-Jendela ini menampilkan:
-- **Peringatan** tentang aturan Webcam Guard
-- **Checkbox persetujuan** yang harus dicentang
-- **Preview kamera** (kosong pada awalnya)
-- **Tombol "Periksa webcam"**
-
-### Langkah 3: Centang Persetujuan
-
-1. Baca semua aturan yang tertera
-2. **Centang checkbox** "Saya memahami aturan Webcam Guard"
-3. Checkbox ini wajib dicentang sebelum bisa melanjutkan
-
-### Langkah 4: Izinkan Akses Kamera
-
-1. Klik tombol **"Periksa webcam"**
-2. Browser akan meminta izin akses kamera
-3. Klik **"Izinkan"** (Allow) di dialog browser
-
-**Di Chrome:**
-```
-┌─────────────────────────────────────┐
-│ 📷 localhost:8080 wants to          │
-│    use your camera                  │
-│                                     │
-│    [Block]        [Allow]           │
-└─────────────────────────────────────┘
-```
-
-**Di Firefox:**
-```
-┌─────────────────────────────────────┐
-│ 📷 Will you allow localhost:8080    │
-│    to use your camera?              │
-│                                     │
-│    [Don't Allow]    [Allow]         │
-└─────────────────────────────────────┘
-```
-
-### Langkah 5: Webcam Aktif
-
-Setelah izin diberikan:
-1. **Preview kamera** akan muncul di jendela pemeriksaan
-2. Pastikan **wajah Anda terlihat jelas** di preview
-3. Jika verifikasi identitas aktif, **lingkaran similarity** akan muncul
-
-### Langkah 6: Verifikasi Identitas (Jika Diaktifkan)
-
-Jika trainer mengaktifkan verifikasi identitas:
-
-![Identity Gauge](pix/guide/07.png)
-
-1. Sistem akan **membandingkan wajah** Anda di webcam dengan foto profil Moodle
-2. **Lingkaran similarity** menunjukkan persentase kecocokan
-3. **Border kamera** akan berubah warna:
-   - 🟣 **Ungu berkedip**: Sedang mencari wajah
-   - 🟢 **Hijau**: Wajah cocok
-   - 🔴 **Merah**: Wajah tidak cocok
-4. Tunggu hingga **status berubah** menjadi "cocok" atau "tidak cocok"
-
-### Langkah 7: Mulai Quiz
-
-1. Jika semua pemeriksaan sudah selesai, klik **"Start attempt"** atau **"Mulai attempt"**
-2. Quiz akan terbuka dan Anda bisa mulai mengerjakan
-
-**Catatan Penting:**
-- Jika mode **"Flag"**: Anda tetap bisa mulai quiz meskipun identitas tidak cocok, tapi akan ditandai di report
-- Jika mode **"Block"**: Anda harus cocok dulu sebelum bisa mulai
-
----
-
-## 1.4 Verifikasi Identitas
-
-### Cara Kerja Verifikasi Identitas
-
-1. Sistem mengambil **foto dari webcam** Anda
-2. Sistem memuat **foto profil Moodle** Anda
-3. Sistem **membandingkan kedua wajah** menggunakan teknologi face recognition
-4. Sistem menghitung **persentase kecocokan** (0-100%)
-5. Jika kecocokan di atas threshold (default 60%), dianggap cocok
-
-### Status Verifikasi
-
-| Status | Border Kamera | Arti |
-|--------|---------------|------|
-| 🟣 Mencari | Ungu berkedip | Sedang mencari wajah di kamera |
-| 🟢 Cocok | Hijau | Wajah cocok dengan foto profil |
-| 🔴 Tidak cocok | Merah | Wajah tidak cocok dengan foto profil |
-
-### Jika Foto Profil Belum Diupload
-
-Jika Anda belum upload foto profil Moodle:
-1. Sistem akan menampilkan **peringatan** bahwa foto profil diperlukan
-2. Klik link **"Upload foto profil"** untuk membuka halaman edit profil
-3. Upload foto wajah yang jelas
-4. Kembali ke quiz dan klik **"Periksa webcam"** lagi
-
----
-
-## 1.5 Selama Mengerjakan Quiz
-
-### Apa yang Dipantau?
-
-Selama Anda mengerjakan quiz, sistem akan memantau:
-
-| No | Apa yang Dipantau | Kapan Dianggap Pelanggaran | Contoh Situasi |
-|----|-------------------|---------------------------|----------------|
-| 1 | **Wajah tidak terlihat** | Lebih dari 10 detik | Melihat ke bawah terlalu lama, wajah keluar frame |
-| 2 | **Lebih dari satu wajah** | Lebih dari 3 detik | Ada orang lain di belakang Anda |
-| 3 | **Pindah tab/window** | Lebih dari 5 detik | Buka Google, buka aplikasi lain |
-| 4 | **Kamera mati/blokir** | Langsung dicatat | Menutup kamera, memblokir akses kamera |
-
-**Catatan:** Threshold waktu bisa diatur oleh trainer, jadi bisa berbeda di setiap quiz.
-
-### Preview Kamera
-
-Selama quiz, Anda akan melihat **preview kecil** di pojok kanan bawah layar:
-
-![Camera Preview](pix/guide/08.png)
-
-- Preview berukuran **kecil** (sekitar 160px)
-- Preview **transparan** (opacity 75%)
-- Preview **tidak mengganggu** pengerjaan quiz
-- Preview hanya untuk **memastikan webcam aktif**
-
-### Apa yang Terjadi Saat Pelanggaran?
-
-1. Sistem **mengambil foto** dari webcam Anda
-2. Event **dicatat** di server dengan timestamp
-3. Trainer bisa melihat di **report** (tidak real-time, tapi setelah quiz selesai)
-4. **Tidak ada notifikasi** yang muncul di layar Anda saat pelanggaran biasa
-5. **Info dari trainer** bisa muncul jika trainer mengirimnya (lihat bagian 1.6)
-
----
-
-## 1.6 Menerima Info dari Trainer
-
-### Kapan Info Muncul?
-
-Selama mengerjakan quiz, trainer dapat mengirim **info langsung** ke layar Anda. Info ini biasanya dikirim ketika:
-- Trainer melihat pelanggaran berulang
-- Trainer ingin mengingatkan Anda tentang aturan
-- Trainer ingin memberikan instruksi khusus
-
-### Seperti Apa Info-nya?
-
-![Info Overlay](pix/guide/16.png)
-
-Info muncul sebagai:
-- **Overlay full-screen** dengan latar belakang gelap
-- **Border merah** di sekeliling pesan
-- **Teks pesan** dari trainer
-- **Keterangan** "Klik di mana saja untuk menutup"
-
-### Cara Menutup Info
-
-1. **Klik di mana saja** pada overlay untuk menutup
-2. Atau **tunggu 30 detik** — info akan hilang otomatis
-3. Setelah ditutup, info **tidak akan muncul lagi** (bersifat satu kali)
-
-### Apa yang Harus Dilakukan Saat Menerima Info?
-
-1. **Jangan panik** — info bukan hukuman
-2. **Baca pesan** dengan teliti
-3. **Perbaiki perilaku** yang diminta oleh trainer
-4. **Klik untuk menutup** info
-5. **Lanjutkan quiz** seperti biasa
-
-**Contoh Pesan Info:**
-- "Tolong fokus ke layar, terdeteksi wajah tidak terlihat beberapa kali"
-- "Pastikan tidak ada orang lain di belakang Anda"
-- "Jangan pindah tab selama mengerjakan quiz"
-
----
-
-## 1.7 Menyelesaikan Quiz
-
-Setelah selesai mengerjakan quiz:
-
-1. Klik **"Finish attempt"** atau **"Selesai"**
-2. Konfirmasi penyelesaian quiz
-3. Webcam akan **otomatis berhenti** setelah quiz selesai
-4. Semua data monitoring **tersimpan otomatis** di server
-5. Anda bisa **menutup browser** setelah quiz selesai
-
-**Catatan:**
-- Data monitoring **disimpan selama 30 hari** (default, bisa diatur trainer)
-- Setelah 30 hari, data akan **dihapus otomatis**
-- Trainer bisa **mereview** data Anda kapan saja selama periode tersebut
-
----
-
-## 1.8 Yang Boleh dan Tidak Boleh
-
-### ✅ Yang Boleh Dilakukan
-
-- Mengerjakan quiz seperti biasa
-- Sesekali melihat ke bawah (membaca soal di layar)
-- Minum air
-- Posisi normal di depan komputer/HP
-- Menggerakkan kepala sedikit (wajah tetap terlihat)
-- Menggunakan kacamata (selama wajah tetap terlihat)
-
-### ❌ Yang Harus Dihindari
-
-- **Pindah ke tab/aplikasi lain** — akan dicatat sebagai pelanggaran
-- **Menutup atau memblokir kamera** — akan dicatat sebagai pelanggaran
-- **Ada orang lain di kamera** — akan dicatat sebagai pelanggaran
-- **Menutup browser** — quiz mungkin tidak tersimpan
-- **Mematikan komputer/HP** — quiz mungkin tidak tersimpan
-- **Menggunakan virtual background** — bisa mengganggu deteksi wajah
-- **Menggunakan kacamata hitam** — bisa mengganggu deteksi wajah
-
-### 💡 Tips untuk Hasil Terbaik
-
-1. **Gunakan Chrome atau Edge** untuk performa terbaik
-2. **Di HP, gunakan kamera depan** dan pastikan wajah terlihat
-3. **Pastikan pencahayaan dari depan** (bukan dari belakang)
-4. **Jangan gunakan virtual background** — bisa mengganggu deteksi wajah
-5. **Posisikan kamera sejajar mata** — jangan terlalu atas atau bawah
-6. **Jaga jarak 30-50cm** dari kamera — tidak terlalu dekat atau jauh
-7. **Jika webcam error, refresh halaman** dan coba lagi
-
----
-
-## 1.9 Troubleshooting Peserta
-
-### Masalah: "Webcam tidak ditemukan"
-
-**Penyebab:** Browser tidak bisa mengakses webcam.
-
-**Solusi:**
-1. Pastikan webcam **terpasang dengan benar** (di laptop, cek apakah kamera tertutup)
-2. **Tutup aplikasi lain** yang menggunakan webcam (Zoom, Teams, Google Meet, dll)
-3. Buka **pengaturan browser** → izin kamera → pastikan situs Moodle diizinkan
-4. **Refresh halaman** quiz
-5. Jika masih gagal, **restart browser**
-6. Jika masih gagal, **coba browser lain** (Chrome direkomendasikan)
-
-### Masalah: "Izin kamera ditolak"
-
-**Penyebab:** Anda menolak izin akses kamera.
-
-**Solusi:**
-1. Klik **icon 🔒 atau 📷** di address bar browser (sebelah kiri URL)
-2. Ubah izin kamera dari "Block" ke **"Allow"**
-3. **Refresh halaman** quiz
-4. Klik **"Periksa webcam"** lagi
-
-### Masalah: "Identity does not match"
-
-**Penyebab:** Wajah di webcam tidak cocok dengan foto profil.
-
-**Solusi:**
-1. Pastikan **foto profil Moodle** sudah diupload (bukan foto default)
-2. Pastikan **pencahayaan cukup terang** — wajah harus terlihat jelas
-3. **Posisikan wajah di tengah** kamera
-4. **Jangan gunakan kacamata hitam** atau aksesoris yang menutupi wajah
-5. Jika mode **"Flag"**: Anda tetap bisa mulai quiz
-6. Jika mode **"Block"**: hubungi trainer Anda untuk bantuan
-
-### Masalah: Preview kamera tidak muncul
-
-**Penyebab:** Webcam aktif tapi tidak ada gambar.
-
-**Solusi:**
-1. Cek **koneksi internet** — pastikan stabil
-2. Coba **browser lain** (Chrome direkomendasikan)
-3. **Restart browser** dan coba lagi
-4. **Restart komputer/HP** jika masih gagal
-5. Hubungi **helpdesk IT** jika masalah berlanjut
-
-### Masalah: Info dari trainer muncul terus
-
-**Penyebab:** Trainer mengirim info karena melihat pelanggaran.
-
-**Solusi:**
-1. **Baca pesan info** dengan teliti
-2. **Perbaiki perilaku** yang diminta oleh trainer
-3. Info hanya muncul **satu kali per pengiriman**
-4. Jika merasa info tidak tepat, **hubungi trainer** setelah quiz selesai
-5. **Jangan mengabaikan info** — ini adalah komunikasi dari trainer
-
-### Masalah: Quiz terasa lambat
-
-**Penyebab:** Webcam monitoring menggunakan resource komputer/HP.
-
-**Solusi:**
-1. **Tutup tab/aplikasi lain** yang tidak diperlukan
-2. **Tutup program berat** (video editing, game, dll)
-3. Gunakan **komputer/HP yang lebih bertenaga** jika memungkinkan
-4. **Restart browser** sebelum mulai quiz
-
----
-
-# Bagian 2: Untuk Admin/Trainer
-
-## 2.1 Dashboard Webcam Guard
+## 1.2 Dashboard Webcam Guard
 
 ### Apa itu Dashboard?
 
-Dashboard adalah halaman ringkasan yang menampilkan **semua quiz** di mata kuliah Anda yang menggunakan Webcam Guard. Dari dashboard, Anda bisa:
-- Melihat ringkasan semua quiz
-- Mengakses report per quiz
-- Memantau aktivitas monitoring
+Dashboard adalah halaman ringkasan yang menampilkan **semua quiz** di mata kuliah Anda yang menggunakan Webcam Guard.
 
-### Cara Mengakses Dashboard
+### Cara Mengakses
 
 1. Buka **mata kuliah** yang memiliki quiz dengan Webcam Guard
 2. Di menu navigasi course, klik **"Webcam Guard Dashboard"**
 3. Atau: buka salah satu quiz → klik **"View Webcam Guard report"**
 
-### Apa yang Ditampilkan Dashboard?
+### Apa yang Ditampilkan?
 
 | Kolom | Keterangan |
 |-------|-----------|
@@ -429,7 +107,7 @@ Dashboard adalah halaman ringkasan yang menampilkan **semua quiz** di mata kulia
 
 ---
 
-## 2.2 Mengaktifkan Webcam Guard di Quiz
+## 1.3 Mengaktifkan Webcam Guard di Quiz
 
 ### Langkah-Langkah
 
@@ -439,71 +117,322 @@ Dashboard adalah halaman ringkasan yang menampilkan **semua quiz** di mata kulia
 4. Klik **"Settings"** di menu quiz
 5. Scroll ke bawah ke bagian **"Webcam Guard"**
 6. **Centang "Enable Webcam Guard"**
-7. Atur setting sesuai kebutuhan (lihat bagian 2.3)
+7. Atur setting sesuai kebutuhan (lihat bagian 1.4)
 8. Klik **"Save and return to course"** atau **"Save changes"**
 
 ![Quiz Settings](pix/guide/09.png)
 
 ---
 
-## 2.3 Penjelasan Setiap Setting
+## 1.4 Penjelasan Lengkap Setiap Setting
 
-### Setting Utama
-
-| Setting | Default | Keterangan |
-|---------|---------|-----------|
-| **Enable Webcam Guard** | ❌ Nonaktif | Aktifkan/nonaktifkan monitoring untuk quiz ini |
-| **Capture snapshot on violation** | ✅ Aktif | Ambil foto saat pelanggaran terdeteksi |
-
-### Setting Interval
-
-| Setting | Default | Keterangan |
-|---------|---------|-----------|
-| **Interval snapshots** | Off | Ambil foto berkala selama quiz (bukan hanya saat pelanggaran) |
-| | Off | Tidak ada foto berkala |
-| | Every 60 seconds | Ambil foto setiap 60 detik |
-| | Every 120 seconds | Ambil foto setiap 120 detik |
-| | Every 300 seconds | Ambil foto setiap 300 detik |
-
-### Setting Threshold
-
-| Setting | Default | Keterangan |
-|---------|---------|-----------|
-| **No-face threshold** | 10 detik | Berapa lama wajah tidak terdeteksi sebelum dianggap pelanggaran |
-| **Multiple-face threshold** | 3 detik | Berapa lama lebih dari satu wajah sebelum dianggap pelanggaran |
-| **Tab/window blur threshold** | 5 detik | Berapa lama pindah tab/window sebelum dianggap pelanggaran |
-
-**Tips Threshold:**
-- **Threshold rendah** (3-5 detik): Lebih ketat, lebih banyak pelanggaran terdeteksi
-- **Threshold tinggi** (15-30 detik): Lebih longgar, hanya pelanggaran serius yang terdeteksi
-- **Disarankan**: Gunakan default untuk quiz biasa, sesuaikan untuk quiz penting
-
-### Setting Live Monitoring
-
-| Setting | Default | Keterangan |
-|---------|---------|-----------|
-| **Enable optional live monitoring** | ❌ Nonaktif | Izinkan trainer meminta streaming webcam live dari peserta |
-
-**Catatan:** Live monitoring memerlukan konfigurasi LiveKit (lihat bagian 2.9).
-
-### Setting Identitas
-
-| Setting | Default | Keterangan |
-|---------|---------|-----------|
-| **Verify identity with profile picture** | ❌ Nonaktif | Aktifkan verifikasi wajah dengan foto profil |
-| **Identity match threshold** | 60 | Nilai 30-90. Semakin kecil, semakin ketat |
-| **If identity does not match** | Flag | Flag: tandai di report. Block: halangi mulai quiz |
-
-**Tips Threshold Identitas:**
-- **30-40**: Sangat ketat — hanya wajah yang sangat mirip yang cocok
-- **50-60**: Sedang — cocok untuk kebanyakan kasus
-- **70-90**: Longgar — wajah yang agak mirip pun dianggap cocok
+Berikut penjelasan detail setiap setting di bagian **Webcam Guard** pada quiz settings:
 
 ---
 
-## 2.4 Melihat Report
+### ✅ Enable Webcam Guard
 
-### Langkah-Langkah Membuka Report
+| | |
+|---|---|
+| **Tipe** | Checkbox |
+| **Default** | Nonaktif (tidak dicentang) |
+| **Fungsi** | Mengaktifkan atau menonaktifkan seluruh fitur Webcam Guard untuk quiz ini |
+
+**Penjelasan:**
+- Jika **tidak dicentang**: Webcam Guard tidak berlaku untuk quiz ini. Peserta bisa mengerjakan quiz tanpa webcam.
+- Jika **dicentang**: Semua fitur Webcam Guard aktif. Peserta harus mengizinkan webcam sebelum mulai quiz, dan sistem akan memantau selama quiz berlangsung.
+
+**Kapan digunakan:** Centang untuk semua quiz yang ingin diawasi. Jangan centang untuk quiz latihan atau quiz yang tidak memerlukan pengawasan.
+
+---
+
+### 📸 Capture Snapshot on Violation
+
+| | |
+|---|---|
+| **Tipe** | Checkbox |
+| **Default** | Aktif (dicentang) |
+| **Fungsi** | Mengambil foto dari webcam peserta saat terdeteksi pelanggaran |
+
+**Penjelasan:**
+- Jika **dicentang**: Setiap kali sistem mendeteksi pelanggaran (wajah tidak terlihat, banyak wajah, pindah tab, kamera mati), sistem akan otomatis mengambil foto dari webcam peserta dan menyimpannya sebagai bukti.
+- Jika **tidak dicentang**: Pelanggaran tetap dicatat sebagai event, tapi tanpa foto. Anda hanya tahu ada pelanggaran, tapi tidak bisa melihat bukti visual.
+
+**Kapan digunakan:** Disarankan **selalu dicentang** agar Anda punya bukti visual saat review. Foto sangat membantu untuk menentukan apakah pelanggaran disengaja atau tidak.
+
+**Catatan teknis:** Foto dikompres ke JPEG dengan kualitas 72%, lebar maksimal 640px. Ukuran rata-rata 50-100KB per foto. Disimpan di Moodle File API.
+
+---
+
+### ⏱️ Interval Snapshots
+
+| | |
+|---|---|
+| **Tipe** | Dropdown select |
+| **Default** | Off (tidak aktif) |
+| **Pilihan** | Off, Every 60 seconds, Every 120 seconds, Every 300 seconds |
+| **Fungsi** | Mengambil foto secara berkala selama quiz berlangsung, terlepas dari ada pelanggaran atau tidak |
+
+**Penjelasan:**
+- **Off**: Foto hanya diambil saat ada pelanggaran (jika "Capture snapshot on violation" aktif).
+- **Every 60 seconds**: Sistem mengambil foto dari webcam peserta setiap 60 detik. Ini memberikan "timeline visual" lengkap tentang apa yang dilakukan peserta selama quiz.
+- **Every 120 seconds**: Foto setiap 2 menit. Kompromi antara detail dan penyimpanan.
+- **Every 300 seconds**: Foto setiap 5 meni. Cukup untuk monitoring ringan.
+
+**Kapan digunakan:**
+- **Off**: Untuk quiz biasa, cukup andalkan snapshot saat pelanggaran.
+- **60 detik**: Untuk ujian penting (UAS, ujian akhir) di mana Anda ingin bukti lengkap.
+- **120-300 detik**: Untuk monitoring ringan tanpa terlalu banyak foto.
+
+**Dampak penyimpanan:**
+| Interval | Foto per jam per peserta | Ukuran per jam |
+|----------|------------------------|----------------|
+| Off | 0 (hanya saat pelanggaran) | ~0 KB |
+| 60s | ~60 foto | ~3-6 MB |
+| 120s | ~30 foto | ~1.5-3 MB |
+| 300s | ~12 foto | ~0.6-1.2 MB |
+
+---
+
+### 👤 No-face Threshold (detik)
+
+| | |
+|---|---|
+| **Tipe** | Angka (text input) |
+| **Default** | 10 detik |
+| **Range** | 1-300 detik |
+| **Fungsi** | Berapa lama wajah peserta boleh tidak terlihat di kamera sebelum dianggap pelanggaran |
+
+**Penjelasan:**
+Sistem mendeteksi wajah di kamera setiap 1 detik. Jika wajah tidak terdeteksi secara terus-menerus selama waktu yang ditentukan, sistem akan mencatat event `no_face` sebagai pelanggaran dan mengambil foto (jika snapshot aktif).
+
+**Contoh:**
+- Threshold **10 detik**: Peserta melihat ke bawah selama 11 detik → pelanggaran tercatat
+- Threshold **30 detik**: Peserta melihat ke bawah selama 25 detik → tidak dianggap pelanggaran
+- Threshold **3 detik**: Sangat ketat — peserta kedip terlalu lama pun bisa tercatat
+
+**Rekomendasi:**
+| Jenis Quiz | Threshold | Alasan |
+|------------|-----------|--------|
+| Quiz latihan | 30 detik | Tidak perlu ketat |
+| Ujian biasa | 10 detik (default) | Cukup untuk kebanyakan kasus |
+| Ujian penting | 5-7 detik | Lebih ketat |
+| Ujian sangat ketat | 3 detik | Sangat ketat, banyak false positive |
+
+**Tips:** Jangan terlalu rendah (< 5 detik) karena peserta normal sesekali melihat ke bawah untuk membaca soal. Ini bisa menghasilkan banyak pelanggaran yang sebenarnya tidak disengaja.
+
+---
+
+### 👥 Multiple-face Threshold (detik)
+
+| | |
+|---|---|
+| **Tipe** | Angka (text input) |
+| **Default** | 3 detik |
+| **Range** | 1-300 detik |
+| **Fungsi** | Berapa lama lebih dari satu wajah boleh terlihat di kamera sebelum dianggap pelanggaran |
+
+**Penjelasan:**
+Sistem mendeteksi jumlah wajah di kamera setiap 1 detik. Jika terdeteksi lebih dari satu wajah secara terus-menerus selama waktu yang ditentukan, sistem akan mencatat event `multiple_faces` sebagai pelanggaran.
+
+**Contoh:**
+- Threshold **3 detik**: Ada orang lewat di belakang peserta selama 4 detik → pelanggaran tercatat
+- Threshold **10 detik**: Orang duduk di sebelah peserta selama 8 detik → tidak dianggap pelanggaran
+
+**Rekomendasi:**
+| Jenis Quiz | Threshold | Alasan |
+|------------|-----------|--------|
+| Quiz biasa | 3 detik (default) | Cukup untuk kebanyakan kasus |
+| Ujian penting | 2 detik | Lebih ketat |
+| Lingkungan ramai | 5-10 detik | Hindari false positive dari orang lewat |
+
+**Tips:** Jika peserta mengerjakan di tempat umum (perpustakaan, kafe), threshold rendah bisa menghasilkan banyak false positive. Pertimbangkan untuk menaikkan threshold.
+
+---
+
+### 🖥️ Tab/Window Blur Threshold (detik)
+
+| | |
+|---|---|
+| **Tipe** | Angka (text input) |
+| **Default** | 5 detik |
+| **Range** | 1-300 detik |
+| **Fungsi** | Berapa lama peserta boleh pindah tab atau window sebelum dianggap pelanggaran |
+
+**Penjelasan:**
+Sistem mendeteksi ketika peserta **pindah ke tab lain** atau **minimize browser**. Jika durasi pindah tab melebihi threshold, sistem mencatat event `window_blur` sebagai pelanggaran.
+
+**Apa yang terdeteksi:**
+- ✅ Pindah ke tab lain di browser
+- ✅ Minimize browser
+- ✅ Buka aplikasi lain (focus berpindah dari browser)
+- ✅ Klik di luar browser
+- ❌ **Tidak terdeteksi:** Membuka tab lain di device berbeda (HP, tablet lain)
+
+**Contoh:**
+- Threshold **5 detik**: Peserta pindah tab selama 6 detik → pelanggaran tercatat
+- Threshold **15 detik**: Peserta pindah tab selama 10 detik → tidak dianggap pelanggaran
+
+**Rekomendasi:**
+| Jenis Quiz | Threshold | Alasan |
+|------------|-----------|--------|
+| Quiz biasa | 5 detik (default) | Memberi toleransi untuk notifikasi |
+| Ujian penting | 3 detik | Lebih ketat |
+| Open-book quiz | Off (angka sangat tinggi) | Peserta boleh buka materi |
+
+**Tips:** Threshold 5 detik memberi toleransi untuk notifikasi popup (WhatsApp, email) yang muncul di atas browser. Jika terlalu rendah (1-2 detik), peserta bisa tercatat pelanggaran hanya karena notifikasi muncul.
+
+---
+
+### 📹 Enable Optional Live Monitoring
+
+| | |
+|---|---|
+| **Tipe** | Checkbox |
+| **Default** | Nonaktif |
+| **Fungsi** | Mengizinkan trainer meminta streaming webcam live dari peserta selama quiz berlangsung |
+
+**Penjelasan:**
+- Jika **dicentang**: Trainer bisa membuka dashboard live monitoring dan melihat webcam peserta secara langsung (real-time) selama mereka mengerjakan quiz. Ini menggunakan teknologi LiveKit (WebRTC).
+- Jika **tidak dicentang**: Fitur live monitoring tidak tersedia. Trainer hanya bisa melihat snapshot dan event log.
+
+**Prasyarat:** LiveKit harus dikonfigurasi di Site administration (lihat bagian 1.10). Jika LiveKit belum dikonfigurasi, checkbox ini tidak akan berpengaruh.
+
+**Kapan digunakan:**
+- **Aktifkan** untuk ujian sangat penting di mana Anda ingin pengawasan real-time
+- **Nonaktifkan** untuk quiz biasa (cukup dengan snapshot dan event log)
+
+**Catatan:** Live monitoring membutuhkan bandwidth server yang lebih besar karena streaming video WebRTC. Pastikan server Anda cukup kuat.
+
+---
+
+### 🔍 Verify Identity with Profile Picture
+
+| | |
+|---|---|
+| **Tipe** | Checkbox |
+| **Default** | Nonaktif |
+| **Fungsi** | Memverifikasi identitas peserta dengan membandingkan wajah di webcam dengan foto profil Moodle |
+
+**Penjelasan:**
+- Jika **dicentang**: Saat peserta membuka quiz, sistem akan mengambil foto dari webcam dan membandingkannya dengan foto profil Moodle peserta menggunakan teknologi face recognition (face-api.js). Sistem menghitung persentase kecocokan dan menampilkannya di lingkaran similarity.
+- Jika **tidak dicentang**: Tidak ada verifikasi identitas. Peserta hanya perlu menunjukkan wajah di kamera.
+
+**Prasyarat:** Peserta harus sudah mengupload foto profil Moodle yang menunjukkan wajah dengan jelas. Jika foto profil belum diupload, sistem akan menampilkan peringatan.
+
+**Kapan digunakan:**
+- **Aktifkan** untuk ujian penting di mana identitas peserta harus diverifikasi
+- **Nonaktifkan** untuk quiz biasa atau jika peserta belum upload foto profil
+
+**Catatan teknis:** Verifikasi menggunakan face-api.js dengan model TinyFaceDetector + FaceRecognition. Dilakukan di browser peserta (client-side), bukan di server. Wajah tidak dikirim ke server selama verifikasi.
+
+---
+
+### 📊 Identity Match Threshold
+
+| | |
+|---|---|
+| **Tipe** | Angka (text input) |
+| **Default** | 60 |
+| **Range** | 30-90 |
+| **Fungsi** | Menentukan seberapa ketat verifikasi identitas. Semakin kecil, semakin ketat. |
+
+**Penjelasan:**
+Threshold ini menentukan **jarak Euclidean** maksimum antara face descriptor webcam dan face descriptor foto profil. Face descriptor adalah vektor 128 dimensi yang merepresentasikan fitur wajah.
+
+- **Nilai kecil (30-40)**: Sangat ketat — hanya wajah yang sangat mirip yang dianggap cocok. Cocok untuk identik kembar atau foto profil sangat bagus.
+- **Nilai sedang (50-60)**: Standar — cocok untuk kebanyakan kasus. Wajah yang cukup mirip akan dianggap cocok.
+- **Nilai besar (70-90)**: Longgar — wajah yang agak mirip pun dianggap cocok. Bisa kurang aman.
+
+**Rekomendasi:**
+| Threshold | Tingkat | Kapan digunakan |
+|-----------|---------|-----------------|
+| 30-40 | Sangat ketat | Ujian sangat penting, foto profil sangat bagus |
+| 50-60 | Sedang (default) | Kebanyakan ujian |
+| 70-90 | Longgar | Jika banyak peserta punya foto profil kurang bagus |
+
+**Tips:** Jika banyak peserta gagal verifikasi padahal mereka orang yang sama, coba naikkan threshold. Jika banyak peserta yang bukan orang yang sama lolos verifikasi, turunkan threshold.
+
+---
+
+### 🚫 If Identity Does Not Match
+
+| | |
+|---|---|
+| **Tipe** | Dropdown select |
+| **Default** | Flag |
+| **Pilihan** | Flag, Block |
+| **Fungsi** | Menentukan apa yang terjadi ketika verifikasi identitas gagal |
+
+**Penjelasan:**
+
+**Flag (Tandai di Report):**
+- Peserta **tetap bisa mulai quiz** meskipun identitas tidak cocok
+- Pelanggaran identitas **dicatat di report** sebagai event `identity_check` dengan status "mismatch"
+- Trainer bisa **mereview** attempt ini dan mengambil keputusan nanti
+- Cocok untuk: kebanyakan kasus, menghindari masalah teknis (pencahayaan buruk, foto profil kurang bagus)
+
+**Block (Halangi Mulai):**
+- Peserta **tidak bisa mulai quiz** jika identitas tidak cocok
+- Peserta harus **cocok dulu** sebelum tombol "Start attempt" aktif
+- Jika peserta tidak bisa cocok setelah beberapa percobaan, mereka perlu **menghubungi trainer**
+- Cocok untuk: ujian sangat penting di mana identitas harus dipastikan sebelum mulai
+
+**Rekomendasi:**
+| Mode | Kapan digunakan |
+|------|-----------------|
+| **Flag** | Kebanyakan kasus. Lebih aman secara teknis, trainer bisa review nanti |
+| **Block** | Ujian sangat penting, akademik integritas tinggi |
+
+**Tips:** Gunakan **Flag** terlebih dahulu. Jika banyak peserta melaporkan masalah teknis (tidak bisa mulai karena verifikasi gagal), beralih ke Flag. Block hanya untuk kasus di mana identitas harus 100% dipastikan.
+
+---
+
+### Ringkasan Setting Rekomendasi
+
+**Untuk Quiz Biasa (Latihan, Kuis Harian):**
+| Setting | Nilai |
+|---------|-------|
+| Enable Webcam Guard | ✅ |
+| Snapshot on violation | ✅ |
+| Interval snapshots | Off |
+| No-face threshold | 10 detik |
+| Multiple-face threshold | 3 detik |
+| Blur threshold | 5 detik |
+| Live monitoring | ❌ |
+| Identity verification | ❌ |
+
+**Untuk Ujian Penting (UAS, UTS):**
+| Setting | Nilai |
+|---------|-------|
+| Enable Webcam Guard | ✅ |
+| Snapshot on violation | ✅ |
+| Interval snapshots | Every 120 seconds |
+| No-face threshold | 7 detik |
+| Multiple-face threshold | 3 detik |
+| Blur threshold | 5 detik |
+| Live monitoring | ✅ (jika ada LiveKit) |
+| Identity verification | ✅ (Flag mode) |
+| Identity threshold | 60 |
+
+**Untuk Ujian Sangat Penting (Ujian Akhir, Sertifikasi):**
+| Setting | Nilai |
+|---------|-------|
+| Enable Webcam Guard | ✅ |
+| Snapshot on violation | ✅ |
+| Interval snapshots | Every 60 seconds |
+| No-face threshold | 5 detik |
+| Multiple-face threshold | 2 detik |
+| Blur threshold | 3 detik |
+| Live monitoring | ✅ |
+| Identity verification | ✅ (Block mode) |
+| Identity threshold | 50 |
+
+---
+
+## 1.5 Melihat Report
+
+### Langkah-Langkah
 
 1. Buka **quiz** yang menggunakan Webcam Guard
 2. Di halaman quiz, klik **"View Webcam Guard report"**
@@ -511,65 +440,46 @@ Dashboard adalah halaman ringkasan yang menampilkan **semua quiz** di mata kulia
 
 ![Report Page](pix/guide/10.png)
 
-### Apa yang Ditampilkan Report?
+### Apa yang Ditampilkan?
 
-#### Summary Cards (Kartu Ringkasan)
+**Summary Cards (Kartu Ringkasan):**
+- **Total Events**: Jumlah total event monitoring
+- **Total Violations**: Jumlah total pelanggaran
+- **Attempts with Violations**: Jumlah attempt yang punya pelanggaran
+- **Top Violations**: Jenis pelanggaran yang paling sering terjadi
 
-| Kartu | Keterangan |
-|-------|-----------|
-| **Total Events** | Jumlah total event monitoring |
-| **Total Violations** | Jumlah total pelanggaran |
-| **Attempts with Violations** | Jumlah attempt yang punya pelanggaran |
-| **Top Violations** | Jenis pelanggaran yang paling sering terjadi |
+**Tabel Review:**
+- **Student**: Nama peserta
+- **Attempt**: Nomor attempt
+- **Status**: Pending/Cleared/Suspicious
+- **Events**: Jumlah event monitoring
+- **Violation**: Jumlah pelanggaran
+- **Risk Score**: Skor risiko
+- **Top Violation Type**: Jenis pelanggaran terbanyak
+- **Actions**: Link ke detail attempt
 
-#### Tabel Review
-
-| Kolom | Keterangan |
-|-------|-----------|
-| **Student** | Nama peserta |
-| **Attempt** | Nomor attempt |
-| **Status** | Status review (Pending/Cleared/Suspicious) |
-| **Events** | Jumlah event monitoring |
-| **Violation** | Jumlah pelanggaran |
-| **Risk Score** | Skor risiko (semakin tinggi semakin berisiko) |
-| **Top Violation Type** | Jenis pelanggaran terbanyak |
-| **Actions** | Link ke detail attempt |
-
-### Filter Status
-
-Gunakan dropdown filter di atas tabel untuk memfilter berdasarkan status:
-
-| Filter | Keterangan |
-|--------|-----------|
-| **All** | Semua attempt (default) |
-| **Pending** | Belum direview oleh trainer |
-| **Cleared** | Sudah dinilai aman oleh trainer |
-| **Suspicious** | Dicurigai kecurangan oleh trainer |
+**Filter:**
+- **All**: Semua attempt
+- **Pending**: Belum direview
+- **Cleared**: Sudah dinilai aman
+- **Suspicious**: Dicurigai kecurangan
 
 ---
 
-## 2.5 Memahami Risk Score
+## 1.6 Memahami Risk Score
 
-### Apa itu Risk Score?
+Risk score adalah **skor numerik** yang menunjukkan tingkat risiko kecurangan.
 
-Risk score adalah **skor numerik** yang menunjukkan tingkat risiko kecurangan berdasarkan pelanggaran yang tercatat. Semakin tinggi skor, semakin berisiko.
+### Bobot per Jenis Pelanggaran
 
-### Cara Perhitungan Risk Score
-
-Setiap jenis pelanggaran memiliki bobot:
-
-| Jenis Pelanggaran | Bobot | Keterangan |
+| Jenis Pelanggaran | Bobot | Penjelasan |
 |-------------------|-------|-----------|
-| **No face** | 2 poin | Wajah tidak terlihat |
-| **Multiple faces** | 4 poin | Lebih dari satu wajah |
-| **Window blur** | 3 poin | Pindah tab/window |
+| **No face** | 2 poin | Wajah tidak terlihat di kamera |
+| **Multiple faces** | 4 poin | Lebih dari satu wajah terdeteksi |
+| **Window blur** | 3 poin | Peserta pindah tab/window |
 | **Camera stopped** | 5 poin | Kamera berhenti/mati |
-| **Camera error** | 3 poin | Error kamera |
-| **Identity check** | 4 poin | Identitas tidak cocok |
-
-**Contoh Perhitungan:**
-- Peserta A: 3× no_face (3×2=6) + 1× window_blur (1×3=3) = **Risk Score 9**
-- Peserta B: 1× camera_stopped (1×5=5) + 2× multiple_faces (2×4=8) = **Risk Score 13**
+| **Camera error** | 3 poin | Error teknis kamera |
+| **Identity check** | 4 poin | Identitas tidak cocok foto profil |
 
 ### Level Risiko
 
@@ -580,336 +490,307 @@ Setiap jenis pelanggaran memiliki bobot:
 | 5-12 | **Sedang** | 🟡 Kuning | Perlu diperhatikan, mungkin ada masalah |
 | 13+ | **Tinggi** | 🔴 Merah | Perlu review serius, kemungkinan kecurangan |
 
-**Catatan Penting:** Risk score adalah **indikator**, bukan bukti. Selalu review foto dan timeline sebelum mengambil keputusan.
+**Contoh:**
+- Peserta A: 3× no_face (3×2=6) + 1× window_blur (1×3=3) = **Risk Score 9** (Sedang)
+- Peserta B: 1× camera_stopped (1×5=5) + 2× multiple_faces (2×4=8) = **Risk Score 13** (Tinggi)
+
+**Catatan:** Risk score adalah **indikator**, bukan bukti. Selalu review foto dan timeline sebelum mengambil keputusan.
 
 ---
 
-## 2.6 Review Attempt
+## 1.7 Review Attempt
 
-### Langkah-Langkah Review
+### Langkah-Langkah
 
-1. Di halaman report, klik **"View detail"** pada attempt yang ingin direview
-2. Anda akan melihat halaman detail attempt
+1. Di halaman report, klik **"View detail"** pada attempt
+2. Lihat **summary cards**: total events, violations, risk score
+3. Lihat **event timeline**: grid foto-foto yang diambil
+4. **Klik kartu event** untuk detail lengkap (metadata, waktu, durasi)
+5. Isi **form review**: pilih status, tulis komentar
+6. Klik **"Save review"**
 
 ![Attempt Detail](pix/guide/11.png)
-
-### Apa yang Ditampilkan di Halaman Detail?
-
-#### Summary Cards
-
-| Kartu | Keterangan |
-|-------|-----------|
-| **Total Events** | Jumlah event untuk attempt ini |
-| **Total Violations** | Jumlah pelanggaran untuk attempt ini |
-| **Risk Score** | Skor risiko untuk attempt ini |
-
-#### Risk Summary
-
-Teks ringkasan yang menjelaskan:
-- Jumlah total pelanggaran
-- Jenis pelanggaran terbanyak
-- Rentang waktu pelanggaran terjadi
-
-#### Event Timeline
-
-Grid kartu yang menampilkan setiap event:
-- **Badge**: jenis event (No face, Multiple faces, dll)
-- **Status**: Normal (hijau), Warning (kuning), Violation (merah)
-- **Foto**: snapshot yang diambil (jika ada)
-- **Waktu**: kapan event terjadi
-
-**Klik kartu** untuk melihat detail lengkap termasuk metadata.
-
-### Memberikan Review
-
 ![Review Form](pix/guide/13.png)
 
-1. Di bagian bawah halaman detail, Anda akan melihat **form review**
-2. Pilih **status review**:
-   - **Pending**: belum diputuskan (default)
-   - **Cleared**: dianggap aman, tidak ada masalah
-   - **Suspicious**: dicurigai kecurangan, perlu tindak lanjut
-3. Tulis **komentar** (opsional): catatan untuk referensi Anda
-4. Klik **"Save review"**
-5. Status akan tersimpan dan bisa diubah kapan saja
+### Status Review
+
+| Status | Keterangan |
+|--------|-----------|
+| **Pending** | Belum diputuskan (default) |
+| **Cleared** | Dianggap aman, tidak ada masalah |
+| **Suspicious** | Dicurigai kecurangan, perlu tindak lanjut |
 
 ---
 
-## 2.7 Live Monitoring
+## 1.8 Live Monitoring
 
 ### Apa itu Live Monitoring?
 
-Live monitoring memungkinkan Anda **melihat webcam peserta secara langsung** selama mereka mengerjakan quiz. Fitur ini menggunakan teknologi **LiveKit** (WebRTC) untuk streaming video real-time.
+Live monitoring memungkinkan Anda **melihat webcam peserta secara langsung** selama mereka mengerjakan quiz.
 
 ### Prasyarat
 
-1. **LiveKit harus dikonfigurasi** oleh admin site (lihat bagian 2.9)
-2. **Quiz settings** → "Enable optional live monitoring" harus dicentang
-3. Peserta harus sedang **aktif mengerjakan quiz** (di halaman attempt)
+1. LiveKit dikonfigurasi di Site administration (lihat 1.10)
+2. Quiz settings → "Enable optional live monitoring" centang
+3. Peserta sedang aktif mengerjakan quiz (badge Online)
 
-### Langkah-Langkah Live Monitoring
+### Langkah-Langkah
 
-#### Langkah 1: Buka Live Monitor
-
-1. Buka **Webcam Guard report**
-2. Klik tombol **"Live Monitor"** di bagian atas
-3. Modal Live Monitor akan terbuka
+1. Buka **report** → klik **"Live Monitor"**
+2. Pilih **mode filter** dari dropdown
+3. Klik **"Start pilihan"** atau **"Start"** per tile
+4. Tunggu status **"Tersambung"** → video muncul
+5. Klik **"Stop"** atau tutup modal untuk berhenti
 
 ![Live Dashboard](pix/guide/14.png)
 
-#### Langkah 2: Pilih Mode Filter
+### Indikator Online/Offline
 
-Gunakan dropdown filter untuk memilih peserta yang ingin dimonitor:
+| Badge | Arti |
+|-------|------|
+| 🟢 **Online** | Peserta aktif — ada monitoring event dalam 60 detik terakhir |
+| ⚪ **Offline** | Peserta tidak aktif — tidak ada event baru |
+
+### Auto-Reorder
+
+Tile otomatis diurutkan berdasarkan risk score (tertinggi di kiri atas). Urutan berubah setiap 4 detik. Video stream tetap jalan saat tile bergeser.
+
+### Mode Filter
 
 | Mode | Keterangan |
 |------|-----------|
-| **Prioritas risiko** | Urutkan dari risk score tertinggi (default) |
-| **Hanya yang ada violation** | Filter yang punya pelanggaran |
-| **Kamera bermasalah** | Filter camera_stopped/error |
-| **Belum pernah dicek** | Yang belum pernah dimonitor live |
-| **Risk tinggi** | Filter risk score 13+ |
-| **Risk sedang** | Filter risk score 5-12 |
-| **Risk rendah** | Filter risk score 1-4 |
-| **Semua attempt aktif** | Tampilkan semua |
-| **Acak 20 peserta** | Pilih 20 secara acak |
-
-#### Langkah 3: Mulai Monitoring
-
-1. Klik **"Start pilihan"** untuk mulai monitoring semua peserta yang tampil
-2. Atau klik tombol **"Start"** di tile peserta individual
-3. Tunggu hingga **status berubah** dari "Menyiapkan..." ke "Tersambung"
-4. Video webcam peserta akan muncul di tile
-
-#### Langkah 4: Memantau Peserta
-
-Setiap tile menampilkan:
-- **Video webcam** peserta secara langsung
-- **Nama peserta** dengan badge Online/Offline
-- **Risk score** dan jumlah violation
-- **Jenis violation terbanyak**
-- **Status terakhir** (event terakhir yang tercatat)
-- **Input untuk mengirim info**
-
-#### Langkah 5: Berhenti Monitoring
-
-1. Klik **"Stop"** di tile peserta individual untuk berhenti
-2. Atau klik **"Stop semua"** untuk berhenti semua
-3. Atau **tutup modal** Live Monitor — semua koneksi akan terputus otomatis
-
-### Indikator Online/Offline
-
-Setiap tile menampilkan badge status:
-
-| Badge | Warna | Arti |
-|-------|-------|------|
-| **Online** | 🟢 Hijau | Peserta sedang aktif — ada monitoring event dalam 60 detik terakhir |
-| **Offline** | ⚪ Abu-abu | Peserta tidak aktif — tidak ada event baru |
-
-**Catatan:** Peserta harus sedang **membuka halaman quiz** agar statusnya Online. Jika peserta menutup browser atau pindah tab terlalu lama, statusnya akan berubah ke Offline.
-
-### Auto-Reorder (Pengurutan Otomatis)
-
-Tile peserta **otomatis diurutkan** berdasarkan risk score:
-- **Risk tertinggi** → pojok kiri atas
-- **Risk terendah** → pojok kanan bawah
-- Urutan **berubah otomatis** setiap 4 detik saat polling
-- **Video stream tetap jalan** saat tile bergeser posisi
-
-### Navigasi Halaman
-
-Jika peserta lebih dari 20, dashboard menampilkan **navigasi halaman**:
-- **Prev / Next** untuk berpindah halaman
-- **"X / Y active attempts"** menunjukkan range yang ditampilkan
+| Prioritas risiko | Risk score tertinggi |
+| Hanya yang ada violation | Filter pelanggaran |
+| Kamera bermasalah | Camera stopped/error |
+| Belum pernah dicek | Belum dimonitor live |
+| Risk tinggi/sedang/rendah | Filter level |
+| Semua attempt aktif | Tampilkan semua |
+| Acak 20 peserta | Pilih acak |
 
 ---
 
-## 2.8 Kirim Info ke Peserta
+## 1.9 Kirim Info ke Peserta
 
-### Kirim Info ke Satu Peserta
+### Per Peserta
 
-1. Buka **Live Monitor** (lihat bagian 2.7)
-2. Di setiap tile peserta, ada **input teks** di bagian bawah
-3. **Ketik pesan info** yang ingin dikirim
-4. Klik **"Send"**
-5. Pesan akan muncul sebagai **overlay di layar peserta**
+1. Buka Live Monitor
+2. Di setiap tile, ada **input teks** di bagian bawah
+3. **Ketik pesan** → klik **"Send"**
+4. Pesan muncul sebagai **overlay di layar peserta**
 
-### Kirim Info ke Semua Peserta
+### Ke Semua
 
-1. Buka **Live Monitor**
-2. Di bagian **atas dashboard**, ada bar **"Kirim Info ke Semua"**
-3. **Ketik pesan info** yang ingin dikirim
-4. Klik **"Kirim ke Semua"**
-5. Pesan akan dikirim ke **semua peserta yang tampil di grid** (sesuai filter aktif)
+1. Di bagian **atas dashboard**, ada bar **"Kirim Info ke Semua"**
+2. **Ketik pesan** → klik **"Kirim ke Semua"**
+3. Terkirim ke **semua peserta yang tampil** (sesuai filter aktif)
 
-### Tips Kirim Info
-
-- **Gunakan filter** sebelum kirim ke semua — misal filter "Hanya yang ada violation" untuk mengingatkan hanya yang melanggar
-- **Pesan yang jelas** — contoh: "Tolong fokus ke layar, terdeteksi wajah tidak terlihat"
-- **Info bersifat satu kali** — peserta bisa dismiss dengan klik atau tunggu 30 detik
-- **Gunakan dengan bijak** — terlalu banyak info bisa mengganggu konsentrasi peserta
+**Tips:**
+- Gunakan filter sebelum kirim ke semua
+- Pesan yang jelas dan spesifik
+- Info bersifat satu kali (peserta bisa dismiss)
 
 ---
 
-## 2.9 Konfigurasi LiveKit
+## 1.10 Konfigurasi LiveKit (Global)
 
-### Apa itu LiveKit?
+LiveKit diperlukan untuk fitur **live monitoring**.
 
-LiveKit adalah platform WebRTC open-source yang digunakan Webcam Guard untuk streaming video real-time antara peserta dan trainer.
+### Langkah-Langkah
 
-### Langkah-Langkah Konfigurasi
-
-#### Langkah 1: Buat Akun LiveKit
-
-1. Buka https://cloud.livekit.io/
-2. Buat akun atau login
-3. Buat project baru
-4. Catat **WebSocket URL**, **API Key**, dan **API Secret**
-
-#### Langkah 2: Masukkan Konfigurasi di Moodle
-
-1. Buka **Site administration** → **Module settings** → **Webcam Guard**
-2. Masukkan **LiveKit WebSocket URL** (contoh: wss://livekit.example.com)
-3. Masukkan **LiveKit API Key**
-4. Masukkan **LiveKit API Secret**
+1. Buka https://cloud.livekit.io/ → buat akun → buat project
+2. Catat **WebSocket URL**, **API Key**, **API Secret**
+3. Di Moodle: **Site administration → Module settings → Webcam Guard**
+4. Masukkan URL, Key, Secret
 5. Atur **Token TTL** (default: 300 detik)
 6. Klik **"Save changes"**
 
-#### Langkah 3: Aktifkan di Quiz
+### Verifikasi
 
-1. Buka quiz settings
-2. Centang **"Enable optional live monitoring"**
-3. Simpan quiz
+Setelah konfigurasi, buka quiz settings → pastikan "Enable optional live monitoring" bisa dicentang.
 
 ---
 
-## 2.10 Konfigurasi Data Retention
+## 1.11 Konfigurasi Data Retention (Global)
 
 ### Apa itu Data Retention?
 
-Data retention adalah **pengaturan berapa lama data monitoring disimpan** sebelum dihapus otomatis. Ini termasuk:
-- Event monitoring
-- Snapshot/foto
-- Data review
-- Data live monitoring
+Data retention mengatur **berapa lama data monitoring disimpan** sebelum dihapus otomatis. Termasuk: event, snapshot, review, data live monitoring.
 
 ### Cara Mengatur
 
-1. Buka **Site administration** → **Module settings** → **Webcam Guard**
+1. **Site administration → Module settings → Webcam Guard**
 2. Cari bagian **"Data retention"**
-3. Pilih **periode retensi**:
-   - 7 hari
-   - 14 hari
-   - 30 hari (default)
-   - 60 hari
-   - 90 hari
-   - 180 hari
-   - 365 hari (1 tahun)
+3. Pilih periode: **7 / 14 / 30 / 60 / 90 / 180 / 365 hari**
 4. Klik **"Save changes"**
 
-**Catatan:** Data yang sudah dihapus tidak bisa dikembalikan. Pilih periode yang sesuai dengan kebutuhan.
+**Default: 30 hari.** Data yang sudah dihapus tidak bisa dikembalikan.
 
 ---
 
-## 2.11 Troubleshooting Admin/Trainer
+## 1.12 Troubleshooting Admin/Trainer
 
-### Masalah: Report kosong / tidak ada data
+| Masalah | Solusi |
+|---------|--------|
+| Report kosong | Cek Webcam Guard enabled, ada peserta mulai attempt, cek filter |
+| Snapshot tidak muncul | Cek "Capture snapshot on violation", peserta pakai HTTPS |
+| Live monitoring tidak bisa | Cek LiveKit config, quiz settings live monitoring, capability |
+| Start live tidak nyambung | Pastikan peserta Online (badge hijau), cek LiveKit config |
+| Risk score 0 tapi ada pelanggaran | Cek threshold, cek event timeline |
+| Banyak false positive | Naikkan threshold (terutama no-face dan blur) |
+| Peserta gagal verifikasi identitas | Naikkan identity threshold, atau ganti ke Flag mode |
 
-**Solusi:**
-1. Pastikan **Webcam Guard enabled** di quiz settings
-2. Pastikan ada peserta yang **sudah mulai attempt**
-3. Cek **filter status** → coba "All"
-4. Tunggu beberapa menit setelah peserta mulai quiz
-5. Cek apakah quiz menggunakan **HTTPS** (bukan HTTP)
+---
 
-### Masalah: Snapshot tidak muncul
+# Bagian 2: Untuk Peserta
 
-**Solusi:**
-1. Cek quiz settings → **"Capture snapshot on violation"** centang
-2. Cek apakah peserta menggunakan **HTTPS**
-3. Cek apakah browser peserta mendukung **getUserMedia**
-4. Cek **disk space** server Moodle
+## 2.1 Apa itu Webcam Guard?
 
-### Masalah: Live monitoring tidak bisa
+Webcam Guard adalah sistem pengawasan otomatis untuk quiz online:
 
-**Solusi:**
-1. Cek **LiveKit config** di Site administration (URL, API key, secret)
-2. Cek quiz settings → **"Enable optional live monitoring"** centang
-3. Cek capability Anda → harus punya `quizaccess/webcamguard:viewreport`
-4. Cek apakah ada peserta yang sedang **aktif mengerjakan** (badge Online)
+- **Webcam aktif** selama mengerjakan quiz
+- **Wajah dipantau** setiap 1 detik
+- **Foto diambil** saat terdeteksi pelanggaran
+- **Aktivitas dicatat** sebagai bukti untuk review trainer
+- **Trainer bisa mengirim info** langsung ke layar Anda
 
-### Masalah: Start live monitoring tidak nyambung
+**TIDAK dilakukan:** Tidak merekam video, tidak mengakses file, tidak mengambil alih layar, tidak memblokir quiz.
 
-**Solusi:**
-1. Pastikan peserta sedang **membuka halaman quiz** (badge harus Online)
-2. Jika peserta Offline, minta mereka **refresh halaman quiz**
-3. Cek **LiveKit config** (URL, API key, secret)
-4. Cek **browser console** untuk error WebRTC
-5. Pastikan **firewall** tidak memblokir koneksi WebRTC
+---
 
-### Masalah: Risk score 0 tapi ada pelanggaran
+## 2.2 Persiapan Sebelum Quiz
 
-**Penjelasan:** Risk score 0 berarti tidak ada event dengan severity "violation". Event "info" atau "warning" tidak menambah score.
+| No | Persiapan | Cara Mengecek |
+|----|-----------|---------------|
+| 1 | **Webcam terpasang** | Buka aplikasi Camera |
+| 2 | **Browser terbaru** | Chrome/Edge 90+, Firefox 90+, Safari 15+ |
+| 3 | **Koneksi stabil** | WiFi/kabel tidak putus-putus |
+| 4 | **Pencahayaan cukup** | Wajah terlihat jelas, hindari backlight |
+| 5 | **Tutup aplikasi webcam lain** | Tutup Zoom, Teams, Google Meet |
+| 6 | **Foto profil Moodle** | Upload jika diminta verifikasi identitas |
 
-**Solusi:**
-1. Cek apakah **threshold** terlalu tinggi
-2. Cek apakah **"Capture snapshot on violation"** aktif
-3. Cek **event timeline** untuk melihat detail event
+**Di HP:** Gunakan kamera depan, browser terbaru, posisi tegak, pencahayaan dari depan.
+
+---
+
+## 2.3 Langkah-Langkah Memulai Quiz
+
+**Langkah 1:** Buka quiz, klik **"Attempt quiz"**.
+
+**Langkah 2:** Jendela pemeriksaan webcam muncul.
+
+![Preflight](pix/guide/06.png)
+
+**Langkah 3:** Centang **checkbox persetujuan**.
+
+**Langkah 4:** Klik **"Periksa webcam"** → browser minta izin → klik **"Izinkan"**.
+
+**Langkah 5:** Preview kamera muncul. Pastikan wajah terlihat jelas.
+
+**Langkah 6:** Jika verifikasi identitas aktif, tunggu hasil:
+- 🟢 **Hijau** = cocok
+- 🔴 **Merah** = tidak cocok
+
+![Identity](pix/guide/07.png)
+
+**Langkah 7:** Klik **"Start attempt"** untuk mulai quiz.
+
+---
+
+## 2.4 Verifikasi Identitas
+
+Jika trainer mengaktifkan verifikasi identitas:
+
+| Status | Border | Arti |
+|--------|--------|------|
+| Mencari | 🟣 Ungu berkedip | Sedang mencari wajah |
+| Cocok | 🟢 Hijau | Wajah cocok foto profil |
+| Tidak cocok | 🔴 Merah | Wajah tidak cocok |
+
+- **Mode Flag**: Tetap bisa mulai, ditandai di report
+- **Mode Block**: Harus cocok dulu sebelum bisa mulai
+
+---
+
+## 2.5 Selama Mengerjakan Quiz
+
+### Yang Dipantau
+
+| Apa | Pelanggaran | Contoh |
+|-----|-------------|--------|
+| Wajah tidak terlihat | > 10 detik* | Melihat ke bawah lama |
+| Banyak wajah | > 3 detik* | Ada orang lain |
+| Pindah tab | > 5 detik* | Buka aplikasi lain |
+| Kamera mati | Langsung | Tutup kamera |
+
+*Threshold bisa diatur trainer, jadi bisa berbeda per quiz.
+
+![Camera Preview](pix/guide/08.png)
+
+Preview kamera kecil di pojok kanan bawah. Tidak mengganggu pengerjaan quiz.
+
+---
+
+## 2.6 Menerima Info dari Trainer
+
+![Info Overlay](pix/guide/16.png)
+
+- Info muncul sebagai **overlay full-screen**
+- **Klik di mana saja** atau **tunggu 30 detik** untuk menutup
+- Info bersifat **satu kali**
+- Baca pesan → perbaiki perilaku → lanjutkan quiz
+
+---
+
+## 2.7 Menyelesaikan Quiz
+
+1. Klik **"Finish attempt"**
+2. Konfirmasi
+3. Webcam **otomatis berhenti**
+4. Data **tersimpan otomatis**
+
+---
+
+## 2.8 Yang Boleh dan Tidak Boleh
+
+**✅ Boleh:** Quiz biasa, lihat ke bawah, minum air, posisi normal, kacamata.
+
+**❌ Tidak boleh:** Pindah tab, tutup kamera, ada orang lain, tutup browser, virtual background.
+
+**💡 Tips:** Chrome/Edge terbaik. Di HP: kamera depan. Pencahayaan dari depan. Jarak 30-50cm.
+
+---
+
+## 2.9 Troubleshooting Peserta
+
+| Masalah | Solusi |
+|---------|--------|
+| Webcam tidak ditemukan | Cek webcam, tutup Zoom/Teams, cek izin browser, refresh |
+| Izin kamera ditolak | Klik icon address bar, ubah ke Izinkan, refresh |
+| Identity tidak cocok | Upload foto profil, pencahayaan cukup, wajah di tengah |
+| Preview tidak muncul | Cek koneksi, coba Chrome, restart browser |
+| Info muncul terus | Baca pesan, perbaiki perilaku |
 
 ---
 
 # FAQ
 
-## Untuk Peserta
-
-**Q: Apakah webcam saya direkam?**
-A: Tidak. Hanya foto (snapshot) yang diambil saat pelanggaran terdeteksi. Tidak ada video yang direkam.
+**Q: Apakah webcam direkam?**
+A: Tidak, hanya foto saat pelanggaran.
 
 **Q: Berapa lama data disimpan?**
-A: Tergantung setting admin, default 30 hari. Bisa diatur dari 7 hari hingga 365 hari.
+A: Default 30 hari, bisa diatur 7-365 hari.
 
-**Q: Apakah saya bisa menolak webcam?**
-A: Jika quiz menggunakan Webcam Guard, Anda harus mengizinkan webcam untuk bisa mengerjakan quiz.
+**Q: Bisa mengerjakan di HP?**
+A: Ya, Android/iOS. Gunakan kamera depan.
 
-**Q: Apakah foto saya dilihat oleh semua orang?**
-A: Tidak. Hanya admin/trainer yang mengampu mata kuliah tersebut yang bisa melihat.
+**Q: Apakah setting bisa diubah setelah quiz?**
+A: Bisa, tapi hanya berlaku untuk attempt baru.
 
-**Q: Apa yang terjadi jika saya menerima info dari trainer?**
-A: Info muncul sebagai overlay di layar Anda. Baca pesan, perbaiki perilaku yang diminta, lalu klik untuk menutup. Info tidak mempengaruhi nilai atau status quiz Anda.
+**Q: Berapa max peserta live monitoring?**
+A: 20 per halaman, ada navigasi.
 
-**Q: Apakah bisa mengerjakan quiz di HP?**
-A: Ya, Webcam Guard mendukung HP (Android dan iOS). Pastikan kamera depan aktif dan pencahayaan cukup.
+**Q: Perlu LiveKit?**
+A: Hanya untuk live monitoring. Fitur lain tanpa LiveKit.
 
-**Q: Apa yang terjadi jika saya pindah tab sebentar?**
-A: Pindah tab kurang dari threshold (default 5 detik) tidak dianggap pelanggaran. Lebih dari threshold akan dicatat.
-
-**Q: Apakah saya bisa melihat data monitoring saya?**
-A: Tidak secara langsung. Data hanya bisa dilihat oleh admin/trainer melalui Moodle Privacy API.
-
-## Untuk Admin/Trainer
-
-**Q: Apakah saya bisa mengubah setting setelah quiz dimulai?**
-A: Setting bisa diubah, tapi hanya berlaku untuk attempt baru. Attempt yang sudah berjalan tetap menggunakan setting lama.
-
-**Q: Apakah Webcam Guard bisa mendeteksi kecurangan?**
-A: Webcam Guard adalah alat bantu, bukan pengganti penilaian manusia. Selalu review foto dan konteks sebelum mengambil keputusan.
-
-**Q: Berapa banyak attempt yang bisa dimonitor live?**
-A: Maksimal 20 attempt per halaman. Gunakan navigasi halaman untuk melihat lebih banyak.
-
-**Q: Apakah data bisa di-export?**
-A: Ya, melalui Moodle Privacy API (Site administration → Privacy).
-
-**Q: Apakah info yang saya kirim akan hilang setelah refresh?**
-A: Ya, info bersifat sekali kirim. Setelah peserta dismiss atau 30 detik berlalu, info hilang.
-
-**Q: Bagaimana cara tahu peserta sedang aktif?**
-A: Lihat badge **Online** (hijau) di tile peserta di Live Monitor. Online = ada monitoring event dalam 60 detik terakhir.
-
-**Q: Apakah saya perlu mengkonfigurasi LiveKit?**
-A: Hanya jika ingin menggunakan fitur live monitoring. Semua fitur lain (monitoring, snapshot, review) tidak memerlukan LiveKit.
-
-**Q: Berapa ukuran maksimal snapshot?**
-A: 2MB per snapshot. Snapshot dikompres ke JPEG dengan kualitas 72%.
-
-**Q: Apakah monitoring berjalan di background?**
-A: Tidak. Monitoring hanya berjalan selama peserta **membuka halaman quiz**. Jika peserta menutup browser, monitoring berhenti.
+**Q: Risk score tinggi = kecurangan?**
+A: Tidak. Risk score indikator, bukan bukti. Selalu review foto.
