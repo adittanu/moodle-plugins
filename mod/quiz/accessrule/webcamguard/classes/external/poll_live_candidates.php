@@ -24,6 +24,8 @@ class poll_live_candidates extends external_api {
     }
 
     public static function execute($courseid, $cmid, $quizid) {
+        global $DB;
+
         $params = self::validate_parameters(self::execute_parameters(), [
             'courseid' => $courseid,
             'cmid' => $cmid,
@@ -43,23 +45,23 @@ class poll_live_candidates extends external_api {
         $out = [];
         foreach ($candidates as $candidate) {
             $out[] = [
-                'attemptid' => (int)$candidate->attemptid,
-                'userid' => (int)$candidate->userid,
-                'fullname' => fullname($candidate),
-                'attempt' => (int)$candidate->attempt,
-                'riskScore' => 0,
-                'violationCount' => 0,
-                'riskLevel' => 'none',
-                'topViolationType' => '',
-                'topViolationName' => '-',
-                'topViolationCount' => 0,
-                'lastEventType' => '',
-                'lastEventName' => '-',
-                'lastEventTime' => 0,
-                'lastEventDisplay' => '-',
-                'lastEventId' => 0,
-                'lastViolationEventId' => 0,
-                'lastViolationTime' => 0,
+                'attemptid' => (int)$candidate['attemptid'],
+                'userid' => (int)$candidate['userid'],
+                'fullname' => $candidate['fullname'],
+                'attempt' => (int)$candidate['attempt'],
+                'riskScore' => (int)($candidate['riskScore'] ?? 0),
+                'violationCount' => (int)($candidate['violationCount'] ?? 0),
+                'riskLevel' => $candidate['riskLevel'] ?? 'none',
+                'topViolationType' => $candidate['topViolationType'] ?? '',
+                'topViolationName' => $candidate['topViolationName'] ?? '-',
+                'topViolationCount' => (int)($candidate['topViolationCount'] ?? 0),
+                'lastEventType' => $candidate['lastEventType'] ?? '',
+                'lastEventName' => $candidate['lastEventName'] ?? '-',
+                'lastEventTime' => (int)($candidate['lastEventTime'] ?? 0),
+                'lastEventDisplay' => $candidate['lastEventDisplay'] ?? '-',
+                'lastEventId' => (int)($candidate['lastEventId'] ?? 0),
+                'lastViolationEventId' => (int)($candidate['lastViolationEventId'] ?? 0),
+                'lastViolationTime' => (int)($candidate['lastViolationTime'] ?? 0),
             ];
         }
 

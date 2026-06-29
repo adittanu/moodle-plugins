@@ -147,6 +147,16 @@ define(["core/ajax", "require"], function (ajax, require) {
 					"</span>",
 			].join("");
 		}
+		// Update Online/Offline badge in the name area.
+		var nameEl = tile.querySelector(".quizaccess-webcamguard-livename");
+		if (nameEl) {
+			var onlineBadge = nameEl.querySelector(".badge");
+			if (onlineBadge) {
+				var isOnline = candidate.lastEventTime && (Date.now() / 1000 - candidate.lastEventTime) < 60;
+				onlineBadge.className = "badge badge-" + (isOnline ? "success" : "secondary");
+				onlineBadge.textContent = isOnline ? "Online" : "Offline";
+			}
+		}
 		var status = tile.querySelector(
 			'[data-status-for="' + candidate.attemptid + '"]',
 		);
@@ -528,19 +538,24 @@ define(["core/ajax", "require"], function (ajax, require) {
 						escapeHtml(candidate.fullname) +
 						'">',
 					escapeHtml(candidate.fullname),
+					' <span class="badge badge-' +
+						(candidate.lastEventTime && (Date.now() / 1000 - candidate.lastEventTime) < 60 ? 'success' : 'secondary') +
+						'" style="font-size:10px;margin-left:4px;">' +
+						(candidate.lastEventTime && (Date.now() / 1000 - candidate.lastEventTime) < 60 ? 'Online' : 'Offline') +
+					'</span>',
 					"</div>",
 					'<div class="quizaccess-webcamguard-livemeta">',
 					'<span class="badge ' +
 						badgeClass(candidate) +
 						'">Risk ' +
 						candidate.riskScore +
-						"</span>",
+					"</span>",
 					'<span class="badge badge-secondary">' +
 						candidate.violationCount +
 						" violation</span>",
 					'<span class="badge badge-light">' +
 						escapeHtml(candidate.topViolationName) +
-						"</span>",
+					"</span>",
 					"</div>",
 					'<div class="quizaccess-webcamguard-livestatus" data-status-for="' +
 						candidate.attemptid +
