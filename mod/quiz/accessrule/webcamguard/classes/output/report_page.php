@@ -20,12 +20,19 @@ class report_page {
     /**
      * Render live monitor modal launcher.
      *
+     * @param int $candidatecount Initial live candidate count.
      * @return string
      */
-    public static function render_live_monitor() {
+    public static function render_live_monitor($candidatecount = 0) {
         $output = self::render_live_monitor_styles();
         $output .= \html_writer::start_div('quizaccess-webcamguard-livebar');
-        $output .= \html_writer::tag('button', get_string('livemonitor', 'quizaccess_webcamguard'), [
+        $label = get_string('livemonitor', 'quizaccess_webcamguard');
+        if ($candidatecount > 0) {
+            $label .= ' <span class="badge badge-light" data-region="webcamguard-live-badge">' . $candidatecount . '</span>';
+        } else {
+            $label .= ' <span class="badge badge-light" data-region="webcamguard-live-badge" style="display:none;">0</span>';
+        }
+        $output .= \html_writer::tag('button', $label, [
             'type' => 'button',
             'class' => 'btn btn-primary',
             'data-toggle' => 'modal',
@@ -119,6 +126,23 @@ class report_page {
         $output .= \html_writer::div('', 'quizaccess-webcamguard-livegrid', [
             'data-region' => 'webcamguard-live-grid',
         ]);
+        $output .= \html_writer::start_div('quizaccess-webcamguard-livepagination', [
+            'data-region' => 'webcamguard-live-pagination',
+        ]);
+        $output .= \html_writer::tag('button', '←', [
+            'type' => 'button',
+            'class' => 'btn btn-sm btn-outline-secondary',
+            'data-action' => 'webcamguard-live-prev',
+            'style' => 'padding:0 6px;',
+        ]);
+        $output .= ' <span data-region="webcamguard-live-range">0</span>/<span data-region="webcamguard-live-total">0</span> ';
+        $output .= \html_writer::tag('button', '→', [
+            'type' => 'button',
+            'class' => 'btn btn-sm btn-outline-secondary',
+            'data-action' => 'webcamguard-live-next',
+            'style' => 'padding:0 6px;',
+        ]);
+        $output .= \html_writer::end_div();
         $output .= \html_writer::end_div();
 
         $output .= \html_writer::start_div('modal-footer');
@@ -195,7 +219,28 @@ class report_page {
      * @return string
      */
     protected static function render_live_monitor_styles() {
-        return '';
+        return \html_writer::tag('style', '
+.quizaccess-webcamguard-livevideo {
+    position: relative;
+}
+.quizaccess-webcamguard-livevideo.quizaccess-webcamguard-loading::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 28px;
+    height: 28px;
+    margin: -14px 0 0 -14px;
+    border: 3px solid rgba(255,255,255,0.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: quizaccess-webcamguard-spin .7s linear infinite;
+    z-index: 2;
+}
+@keyframes quizaccess-webcamguard-spin {
+    to { transform: rotate(360deg); }
+}
+');
     }
 
     /**

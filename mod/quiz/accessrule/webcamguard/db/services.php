@@ -70,4 +70,13 @@ $functions = [
         'ajax' => true,
         'capabilities' => 'quizaccess/webcamguard:viewreport',
     ],
+    'quizaccess_webcamguard_poll_live_candidates' => [
+        'classname' => 'quizaccess_webcamguard\\external\\poll_live_candidates',
+        'methodname' => 'execute',
+        'classpath' => '',
+        'description' => 'Poll current live candidates for the teacher live monitor dashboard.',
+        'type' => 'read',
+        'ajax' => true,
+        'capabilities' => 'quizaccess/webcamguard:viewreport',
+    ],
 ];

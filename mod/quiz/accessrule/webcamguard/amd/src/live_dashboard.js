@@ -14,10 +14,13 @@ define(["core/ajax", "require"], function (ajax, require) {
 		rooms: {},
 		livekit: null,
 		pollTimer: null,
+		candidateTimer: null,
 		pollInflight: false,
 		pollVisible: false,
 		lastSeenViolationId: {},
 		consecutiveFailures: 0,
+		livePage: 0,
+		livePerPage: 20,
 	};
 
 	var POLL_INTERVAL_MS = 4000;
@@ -169,6 +172,28 @@ define(["core/ajax", "require"], function (ajax, require) {
 				tile.classList.remove("quizaccess-webcamguard-livetile-flash");
 			}
 		}, 1800);
+		playAlertSound();
+	};
+
+	var audioCtx = null;
+	var playAlertSound = function () {
+		try {
+			if (!audioCtx) {
+				audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+			}
+			var osc = audioCtx.createOscillator();
+			var gain = audioCtx.createGain();
+			osc.connect(gain);
+			gain.connect(audioCtx.destination);
+			osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+			osc.frequency.setValueAtTime(660, audioCtx.currentTime + 0.15);
+			gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+			gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+			osc.start(audioCtx.currentTime);
+			osc.stop(audioCtx.currentTime + 0.35);
+		} catch (e) {
+			// Audio not supported — silent.
+		}
 	};
 
 	var pollStats = function (config, root) {
@@ -251,15 +276,84 @@ define(["core/ajax", "require"], function (ajax, require) {
 			});
 	};
 
+	var pollCandidates = function (config, root) {
+		call("quizaccess_webcamguard_poll_live_candidates", {
+			courseid: config.courseid,
+			cmid: config.cmid,
+			quizid: config.quizid,
+		})
+			.then(function (response) {
+				if (!response || !response.candidates) {
+					return;
+				}
+				var serverIds = {};
+				response.candidates.forEach(function (c) {
+					serverIds[Number(c.attemptid)] = true;
+				});
+
+				var changed = false;
+
+				// Remove candidates no longer on server.
+				state.candidates = state.candidates.filter(function (c) {
+					var keep = serverIds[Number(c.attemptid)];
+					if (!keep) {
+						changed = true;
+						stopCandidate(config, root, Number(c.attemptid));
+					}
+					return keep;
+				});
+
+				// Add new candidates from server.
+				var knownIds = {};
+				state.candidates.forEach(function (c) {
+					knownIds[Number(c.attemptid)] = true;
+				});
+				response.candidates.forEach(function (fresh) {
+					var id = Number(fresh.attemptid);
+					if (knownIds[id]) {
+						return;
+					}
+					fresh.liveChecked = false;
+					state.candidates.push(fresh);
+					state.lastSeenViolationId[id] = 0;
+					changed = true;
+				});
+
+				if (changed) {
+					render(config, root);
+					// Auto-start any newly appeared candidates.
+					state.selected.forEach(function (candidate) {
+						if (!candidate.liveChecked) {
+							startCandidate(config, root, candidate);
+						}
+					});
+				}
+				// Update badge on the Live Monitor button.
+				var badge = document.querySelector('[data-region="webcamguard-live-badge"]');
+				if (badge) {
+					var n = state.candidates.length;
+					badge.textContent = n;
+					badge.style.display = n > 0 ? "" : "none";
+				}
+			})
+			.catch(function () {
+				// Swallow.
+			});
+	};
+
 	var startPolling = function (config, root) {
 		stopPolling();
 		state.pollVisible = true;
 		state.pollTimer = window.setInterval(function () {
 			pollStats(config, root);
 		}, POLL_INTERVAL_MS);
+		state.candidateTimer = window.setInterval(function () {
+			pollCandidates(config, root);
+		}, 5000);
 		// Kick off an immediate refresh so the first frame is fresh.
 		window.setTimeout(function () {
 			pollStats(config, root);
+			pollCandidates(config, root);
 		}, 250);
 	};
 
@@ -268,6 +362,10 @@ define(["core/ajax", "require"], function (ajax, require) {
 		if (state.pollTimer) {
 			window.clearInterval(state.pollTimer);
 			state.pollTimer = null;
+		}
+		if (state.candidateTimer) {
+			window.clearInterval(state.candidateTimer);
+			state.candidateTimer = null;
 		}
 	};
 
@@ -339,6 +437,13 @@ define(["core/ajax", "require"], function (ajax, require) {
 		}
 	};
 
+	var setLoading = function (root, attemptid, loading) {
+		var video = root.querySelector('[data-video-for="' + attemptid + '"]');
+		if (video) {
+			video.classList.toggle("quizaccess-webcamguard-loading", loading);
+		}
+	};
+
 	var getVideoRegion = function (root, attemptid) {
 		return root.querySelector('[data-video-for="' + attemptid + '"]');
 	};
@@ -350,7 +455,14 @@ define(["core/ajax", "require"], function (ajax, require) {
 			'[data-region="webcamguard-live-filter"]',
 		).value;
 		var limit = Math.max(1, config.limit || 20);
-		state.selected = pickCandidates(mode, limit);
+		var allPicked = pickCandidates(mode, 9999);
+		var total = allPicked.length;
+		var pages = Math.max(1, Math.ceil(total / limit));
+		if (state.livePage >= pages) {
+			state.livePage = pages - 1;
+		}
+		var offset = state.livePage * limit;
+		state.selected = allPicked.slice(offset, offset + limit);
 
 		if (count) {
 		count.textContent =
@@ -360,11 +472,28 @@ define(["core/ajax", "require"], function (ajax, require) {
 			" " + (config.strings.activeAttempts || "active attempts");
 		}
 
+		// Update pagination info.
+		var pagination = root.querySelector('[data-region="webcamguard-live-pagination"]');
+		if (pagination) {
+			var rangeEl = pagination.querySelector('[data-region="webcamguard-live-range"]');
+			var totalEl = pagination.querySelector('[data-region="webcamguard-live-total"]');
+			var prev = pagination.querySelector('[data-action="webcamguard-live-prev"]');
+			var next = pagination.querySelector('[data-action="webcamguard-live-next"]');
+			if (rangeEl) rangeEl.textContent = state.selected.length;
+			if (totalEl) totalEl.textContent = total;
+			if (prev) {
+				prev.style.display = state.livePage > 0 ? "" : "none";
+			}
+			if (next) {
+				next.style.display = state.livePage < pages - 1 ? "" : "none";
+			}
+		}
+
 		if (!grid) {
 			return;
 		}
 
-		if (!state.selected.length) {
+		if (!total) {
 			grid.innerHTML = [
 				'<div class="quizaccess-webcamguard-liveempty">',
 				config.emptyImageUrl
@@ -451,11 +580,13 @@ define(["core/ajax", "require"], function (ajax, require) {
 
 	var startCandidate = function (config, root, candidate) {
 		setTileStatus(root, candidate.attemptid, config.strings.starting);
+		setLoading(root, candidate.attemptid, true);
 
 		return requestLive(config, candidate, "start")
 			.then(function (live) {
 				if (!live || !live.active) {
 					setTileStatus(root, candidate.attemptid, config.strings.failed);
+					setLoading(root, candidate.attemptid, false);
 					return null;
 				}
 
@@ -472,10 +603,12 @@ define(["core/ajax", "require"], function (ajax, require) {
 					room.on(LK.RoomEvent.TrackSubscribed, function (track) {
 						attachTrack(root, candidate, track);
 						setTileStatus(root, candidate.attemptid, config.strings.connected);
+						setLoading(root, candidate.attemptid, false);
 					});
 					room.on(LK.RoomEvent.Disconnected, function () {
 						delete state.rooms[candidate.attemptid];
 						setTileStatus(root, candidate.attemptid, config.strings.stopped);
+						setLoading(root, candidate.attemptid, false);
 					});
 
 					return room
@@ -485,6 +618,7 @@ define(["core/ajax", "require"], function (ajax, require) {
 						.then(function () {
 							candidate.liveChecked = true;
 							setTileStatus(root, candidate.attemptid, config.strings.waiting);
+							setLoading(root, candidate.attemptid, true);
 						});
 				});
 			})
@@ -494,6 +628,7 @@ define(["core/ajax", "require"], function (ajax, require) {
 					message += " " + error.message;
 				}
 				setTileStatus(root, candidate.attemptid, message);
+				setLoading(root, candidate.attemptid, false);
 			});
 	};
 
@@ -573,6 +708,16 @@ define(["core/ajax", "require"], function (ajax, require) {
 
 			render(config, root);
 
+			// Auto-start live monitoring for all candidates.
+			if (state.candidates.length) {
+				window.setTimeout(function () {
+					startSelection(config, root);
+				}, 500);
+			}
+
+			// Re-auto-start when modal is shown again (closed & re-opened).
+			// Handled in the jQuery shown.bs.modal block below.
+
 			var filter = root.querySelector(
 				'[data-region="webcamguard-live-filter"]',
 			);
@@ -590,6 +735,9 @@ define(["core/ajax", "require"], function (ajax, require) {
 				filter.addEventListener("change", function () {
 					stopAll(config, root).then(function () {
 						render(config, root);
+						window.setTimeout(function () {
+							startSelection(config, root);
+						}, 500);
 					});
 				});
 			}
@@ -597,6 +745,9 @@ define(["core/ajax", "require"], function (ajax, require) {
 				refresh.addEventListener("click", function () {
 					stopAll(config, root).then(function () {
 						render(config, root);
+						window.setTimeout(function () {
+							startSelection(config, root);
+						}, 500);
 					});
 				});
 			}
@@ -611,12 +762,53 @@ define(["core/ajax", "require"], function (ajax, require) {
 				});
 			}
 
-			// Delegated handler for warning send buttons.
-			root.addEventListener("click", function (e) {
-				var btn = e.target;
-				if (!btn || !btn.dataset || !btn.dataset.sendWarning) {
+			// Pagination: prev / next.
+			var prevBtn = root.querySelector('[data-action="webcamguard-live-prev"]');
+			var nextBtn = root.querySelector('[data-action="webcamguard-live-next"]');
+			var prevSelectedIds = [];
+			var paginate = function (direction) {
+				var newPage = state.livePage + direction;
+				var limit = Math.max(1, config.limit || 20);
+				var allPicked = pickCandidates(
+					root.querySelector('[data-region="webcamguard-live-filter"]').value,
+					9999
+				);
+				var pages = Math.max(1, Math.ceil(allPicked.length / limit));
+				if (newPage < 0 || newPage >= pages) {
 					return;
 				}
+				prevSelectedIds = state.selected.map(function (c) { return c.attemptid; });
+				state.livePage = newPage;
+				render(config, root);
+
+				var prevSet = new Set(prevSelectedIds);
+				var newIds = new Set(state.selected.map(function (c) { return c.attemptid; }));
+				// Stop candidates no longer visible.
+				Object.keys(state.rooms).forEach(function (attemptid) {
+					var numId = Number(attemptid);
+					if (prevSet.has(numId) && !newIds.has(numId)) {
+						stopCandidate(config, root, numId);
+					}
+				});
+				// Start candidates new to this page.
+				state.selected.forEach(function (candidate) {
+					if (!candidate.liveChecked || !state.rooms[candidate.attemptid]) {
+						startCandidate(config, root, candidate);
+					}
+				});
+			};
+			if (prevBtn) {
+				prevBtn.addEventListener("click", function () {
+					paginate(-1);
+				});
+			}
+			if (nextBtn) {
+				nextBtn.addEventListener("click", function () {
+					paginate(1);
+				});
+			}
+
+			var sendFromButton = function (root, btn, config) {
 				var attemptid = Number(btn.dataset.sendWarning);
 				var input = root.querySelector('[data-warning-for="' + attemptid + '"]');
 				if (!input || !input.value.trim()) {
@@ -626,14 +818,40 @@ define(["core/ajax", "require"], function (ajax, require) {
 				input.value = "";
 				sendWarning(config, attemptid, message).then(function (res) {
 					if (res && res.success) {
-						btn.textContent = config.strings.warningSent || "Sent!";
+						btn.textContent = config.strings.warningSent;
 						setTimeout(function () {
-							btn.textContent = config.strings.sendWarning || "Send";
+							btn.textContent = config.strings.sendWarning;
 						}, 2000);
 					}
 				}).catch(function () {
 					// Swallow.
 				});
+			};
+
+			// Delegated handler for send buttons.
+			root.addEventListener("click", function (e) {
+				var btn = e.target;
+				if (!btn || !btn.dataset || !btn.dataset.sendWarning) {
+					return;
+				}
+				sendFromButton(root, btn, config);
+			});
+
+			// Enter key on individual message inputs.
+			root.addEventListener("keydown", function (e) {
+				if (e.key !== "Enter") {
+					return;
+				}
+				var input = e.target;
+				if (!input || !input.dataset || !input.dataset.warningFor) {
+					return;
+				}
+				e.preventDefault();
+				var attemptid = Number(input.dataset.warningFor);
+				var btn = root.querySelector('[data-send-warning="' + attemptid + '"]');
+				if (btn) {
+					sendFromButton(root, btn, config);
+				}
 			});
 
 			// Send warning to all selected participants.
@@ -670,6 +888,11 @@ define(["core/ajax", "require"], function (ajax, require) {
 				if (isModal) {
 					$root.on("shown.bs.modal", function () {
 						startPolling(config, root);
+						if (state.candidates.length) {
+							window.setTimeout(function () {
+								startSelection(config, root);
+							}, 500);
+						}
 					});
 					$root.on("hidden.bs.modal", function () {
 						stopPolling();

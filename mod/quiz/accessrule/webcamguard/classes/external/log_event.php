@@ -37,6 +37,7 @@ class log_event extends external_api {
         'monitoring_started',
         'monitoring_resumed',
         'identity_check',
+        'heartbeat',
         'live_requested',
         'live_started',
         'live_stopped',
@@ -349,6 +350,9 @@ class log_event extends external_api {
         }
         if ($eventtype === 'live_failed' || $eventtype === 'live_disconnected') {
             return 'warning';
+        }
+        if ($eventtype === 'heartbeat') {
+            return 'info';
         }
         if ($eventtype === 'identity_check') {
             $metadata = trim((string)$metadata);

@@ -171,9 +171,9 @@ define(['core/ajax', 'require'], function(ajax, require) {
         var overlay = document.createElement('div');
         overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);';
         var box = document.createElement('div');
-        box.style.cssText = 'background:#fff;border:4px solid #dc3545;border-radius:12px;padding:32px 24px;max-width:min(600px,90vw);text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.3);';
-        box.innerHTML = '<div style="font-size:24px;font-weight:800;color:#dc3545;margin-bottom:12px;">' +
-            (config.strings.warningFromTeacher || 'Warning from trainer') + '</div>' +
+        box.style.cssText = 'background:#fff;border:4px solid #0d6efd;border-radius:12px;padding:32px 24px;max-width:min(600px,90vw);text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.3);';
+        box.innerHTML = '<div style="font-size:24px;font-weight:800;color:#0d6efd;margin-bottom:12px;">' +
+            (config.strings.warningFromTeacher || 'Info from trainer') + '</div>' +
             '<div style="font-size:18px;color:#1f2937;line-height:1.5;">' +
             message.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>' +
             '<div style="margin-top:20px;font-size:13px;color:#6b7280;">Click anywhere to dismiss</div>';

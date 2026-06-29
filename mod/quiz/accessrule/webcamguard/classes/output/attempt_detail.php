@@ -139,9 +139,9 @@ class attempt_detail {
     }
 
     /**
-     * Render event timeline.
+     * Render event timeline cards.
      *
-     * @param array $events Events.
+     * @param array $events Events (already filtered and paginated).
      * @param int $contextid Context id.
      * @return string
      */
@@ -152,29 +152,9 @@ class attempt_detail {
 
         $output = self::render_grid_styles();
         $output .= \html_writer::start_div('quizaccess-webcamguard-eventcards');
-        $monitoringstartedshown = false;
         $modals = '';
 
-        // Hide noisy live monitoring lifecycle events from the timeline UI.
-        $hiddentypes = ['live_started', 'live_disconnected', 'live_requested', 'live_stopped'];
-
         foreach ($events as $event) {
-            if (in_array($event->eventtype, $hiddentypes, true)) {
-                continue;
-            }
-            // Hide ambient "monitoring resumed" rows (green/info). Keep any rare
-            // violation rows that were stored under this type (effective_eventtype
-            // will re-derive them to no_face / multiple_faces).
-            if ($event->eventtype === 'monitoring_resumed' && $event->severity !== 'violation') {
-                continue;
-            }
-            if ($event->eventtype === 'monitoring_started') {
-                if ($monitoringstartedshown) {
-                    continue;
-                }
-                $monitoringstartedshown = true;
-            }
-
             $state = self::event_state($event);
             $displaytype = self::effective_eventtype($event);
             $duration = $event->durationms ? format_time((int)ceil($event->durationms / 1000)) : '-';

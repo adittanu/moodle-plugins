@@ -32,7 +32,7 @@ class poll_live_stats extends external_api {
     /**
      * Event types that are excluded from the dashboard tiles.
      */
-    const HIDDEN_TYPES = ['live_started', 'live_disconnected'];
+    const HIDDEN_TYPES = ['heartbeat', 'live_started', 'live_disconnected'];
 
     /**
      * Parameters.

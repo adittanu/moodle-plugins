@@ -15,6 +15,8 @@ require_once(__DIR__ . '/locallib.php');
 
 $cmid = required_param('cmid', PARAM_INT);
 $status = optional_param('status', '', PARAM_ALPHANUMEXT);
+$page = optional_param('page', 0, PARAM_INT);
+$perpage = 20;
 
 $cm = get_coursemodule_from_id('quiz', $cmid, 0, false, MUST_EXIST);
 $course = $DB->get_record('course', ['id' => $cm->course], '*', MUST_EXIST);
@@ -24,16 +26,20 @@ $context = context_module::instance($cm->id);
 require_login($course, true, $cm);
 require_capability('quizaccess/webcamguard:viewreport', $context);
 
-$url = new moodle_url('/mod/quiz/accessrule/webcamguard/report.php', ['cmid' => $cmid]);
-$PAGE->set_url($url);
-$PAGE->set_context($context);
-$PAGE->set_title(get_string('reporttitle', 'quizaccess_webcamguard'));
-$PAGE->set_heading(format_string($quiz->name));
-
 $allowedstatuses = ['', 'pending', 'cleared', 'suspicious'];
 if (!in_array($status, $allowedstatuses, true)) {
     $status = '';
 }
+
+$urlparams = ['cmid' => $cmid];
+if ($status !== '') {
+    $urlparams['status'] = $status;
+}
+$url = new moodle_url('/mod/quiz/accessrule/webcamguard/report.php', $urlparams);
+$PAGE->set_url($url);
+$PAGE->set_context($context);
+$PAGE->set_title(get_string('reporttitle', 'quizaccess_webcamguard'));
+$PAGE->set_heading(format_string($quiz->name));
 
 $params = ['quizid' => $quiz->id, 'evquizid' => $quiz->id];
 $statussql = '';
@@ -44,12 +50,7 @@ if ($status !== '') {
 
 // Risk score SQL below uses weights matching quizaccess_webcamguard::EVENT_WEIGHTS.
 $namefields = get_all_user_name_fields(true, 'u');
-$sql = "SELECT r.id, r.attemptid, r.quizid, r.userid, r.status, qa.attempt,
-               $namefields,
-               COALESCE(ev.eventcount, 0) AS eventcount,
-               COALESCE(ev.violationcount, 0) AS violationcount,
-               COALESCE(ev.riskscore, 0) AS riskscore
-          FROM {quizaccess_wg_reviews} r
+$fromwhere = "FROM {quizaccess_wg_reviews} r
           JOIN {quiz_attempts} qa ON qa.id = r.attemptid
           JOIN {user} u ON u.id = r.userid
      LEFT JOIN (
@@ -67,13 +68,24 @@ $sql = "SELECT r.id, r.attemptid, r.quizid, r.userid, r.status, qa.attempt,
                               ELSE 1
                           END
                       ELSE 0 END) AS riskscore
-                 FROM {quizaccess_wg_events}
-                WHERE quizid = :evquizid
-             GROUP BY attemptid
+                  FROM {quizaccess_wg_events}
+                 WHERE quizid = :evquizid
+                   AND eventtype <> 'heartbeat'
+              GROUP BY attemptid
                ) ev ON ev.attemptid = r.attemptid
-         WHERE r.quizid = :quizid $statussql
+         WHERE r.quizid = :quizid $statussql";
+
+$countsql = "SELECT COUNT(1) $fromwhere";
+$totalcount = $DB->count_records_sql($countsql, $params);
+
+$sql = "SELECT r.id, r.attemptid, r.quizid, r.userid, r.status, qa.attempt,
+               $namefields,
+               COALESCE(ev.eventcount, 0) AS eventcount,
+               COALESCE(ev.violationcount, 0) AS violationcount,
+               COALESCE(ev.riskscore, 0) AS riskscore
+          $fromwhere
       ORDER BY r.timemodified DESC";
-$rows = $DB->get_records_sql($sql, $params);
+$rows = $DB->get_records_sql($sql, $params, $page * $perpage, $perpage);
 
 $attemptviolationparams = ['quizid' => $quiz->id];
 $attemptviolationstatussql = '';
@@ -125,7 +137,9 @@ $summary = $DB->get_record_sql(
             COUNT(DISTINCT CASE WHEN e.severity = 'violation' THEN e.attemptid ELSE NULL END) AS violatedattempts
        FROM {quizaccess_wg_reviews} r
   LEFT JOIN {quizaccess_wg_events} e ON e.attemptid = r.attemptid AND e.quizid = r.quizid
-      WHERE r.quizid = :quizid $summarystatussql",
+      WHERE r.quizid = :quizid
+        AND (e.eventtype IS NULL OR e.eventtype <> 'heartbeat')
+            $summarystatussql",
     $summaryparams
 );
 
@@ -172,7 +186,7 @@ echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('reporttitle', 'quizaccess_webcamguard'));
 echo $form;
 if ($liveenabled) {
-    echo \quizaccess_webcamguard\output\report_page::render_live_monitor();
+    echo \quizaccess_webcamguard\output\report_page::render_live_monitor(count($livecandidates));
     $PAGE->requires->js_call_amd('quizaccess_webcamguard/live_dashboard', 'init', [[
         'courseid' => (int)$course->id,
         'cmid' => (int)$cm->id,
@@ -202,5 +216,6 @@ if ($liveenabled) {
     ]]);
 }
 echo \quizaccess_webcamguard\output\report_page::render_summary($summary, array_values($violationtypes));
+echo $OUTPUT->paging_bar($totalcount, $page, $perpage, $url);
 echo \quizaccess_webcamguard\output\report_page::render(array_values($rows), $cmid);
 echo $OUTPUT->footer();

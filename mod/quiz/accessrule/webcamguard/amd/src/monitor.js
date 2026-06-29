@@ -420,6 +420,13 @@ define(['core/ajax'], function(ajax) {
         }, delay);
     };
 
+    var sendHeartbeat = function(config) {
+        if (state.stopped) {
+            return;
+        }
+        send(config, 'heartbeat', 0, false, {});
+    };
+
     var startLoops = function(config) {
         state.faceLoopId = setInterval(function() {
             if (state.stopped || state.paused) {
@@ -433,6 +440,10 @@ define(['core/ajax'], function(ajax) {
         state.flushLoopId = setInterval(function() {
             flushQueue();
         }, 10000);
+
+        state.heartbeatId = setInterval(function() {
+            sendHeartbeat(config);
+        }, 30000);
 
 
         scheduleIntervalSnapshots(config);
@@ -489,6 +500,7 @@ define(['core/ajax'], function(ajax) {
         state.stopped = true;
         if (state.faceLoopId) { clearInterval(state.faceLoopId); state.faceLoopId = null; }
         if (state.flushLoopId) { clearInterval(state.flushLoopId); state.flushLoopId = null; }
+        if (state.heartbeatId) { clearInterval(state.heartbeatId); state.heartbeatId = null; }
         if (state.activeKey && window.quizaccessWebcamguardActiveAttempts) {
             delete window.quizaccessWebcamguardActiveAttempts[state.activeKey];
             state.activeKey = null;

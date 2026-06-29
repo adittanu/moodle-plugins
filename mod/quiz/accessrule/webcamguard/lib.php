@@ -56,3 +56,24 @@ function quizaccess_webcamguard_pluginfile($course, $cm, $context, $filearea, $a
 
     send_stored_file($file, 0, 0, $forcedownload, $options);
 }
+
+/**
+ * Add Webcam Guard dashboard link to course navigation.
+ *
+ * @param navigation_node $navigation The navigation node to extend.
+ * @param stdClass $course The course.
+ * @param context $context Course context.
+ */
+function quizaccess_webcamguard_extend_navigation_course($navigation, $course, $context) {
+    if (has_capability('quizaccess/webcamguard:viewreport', $context)) {
+        $url = new moodle_url('/mod/quiz/accessrule/webcamguard/dashboard.php', ['courseid' => $course->id]);
+        $navigation->add(
+            get_string('dashboardtitle', 'quizaccess_webcamguard'),
+            $url,
+            navigation_node::TYPE_SETTING,
+            null,
+            'webcamguard_dashboard',
+            new pix_icon('i/report', '')
+        );
+    }
+}

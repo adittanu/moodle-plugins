@@ -147,6 +147,7 @@ class poll_live extends external_api {
      *
      * @param string $status Status.
      * @return array
+     */
     protected static function empty_response($status) {
         return [
             'status' => $status,

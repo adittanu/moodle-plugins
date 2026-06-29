@@ -51,6 +51,12 @@ if (!$review) {
     }
 }
 
+$clearevents = optional_param('clearevents', 0, PARAM_BOOL);
+if ($clearevents && confirm_sesskey()) {
+    require_capability('quizaccess/webcamguard:reviewattempts', $context);
+    $DB->delete_records('quizaccess_wg_events', ['attemptid' => $attemptid]);
+    redirect($url, get_string('eventscleared', 'quizaccess_webcamguard'));
+}
 if (data_submitted() && confirm_sesskey()) {
     require_capability('quizaccess/webcamguard:reviewattempts', $context);
     $newstatus = required_param('reviewstatus', PARAM_ALPHANUMEXT);
@@ -145,6 +151,120 @@ if ($liveenabled) {
         ],
     ]]);
 }
+$page = optional_param('page', 0, PARAM_INT);
+$filtertype = optional_param('filtertype', '', PARAM_ALPHANUMEXT);
+$filterseverity = optional_param('filterseverity', '', PARAM_ALPHA);
+
+$eventtypes = [
+    '' => get_string('alltypes', 'quizaccess_webcamguard'),
+    'no_face' => get_string('event_no_face', 'quizaccess_webcamguard'),
+    'multiple_faces' => get_string('event_multiple_faces', 'quizaccess_webcamguard'),
+    'window_blur' => get_string('event_window_blur', 'quizaccess_webcamguard'),
+    'camera_error' => get_string('event_camera_error', 'quizaccess_webcamguard'),
+    'camera_stopped' => get_string('event_camera_stopped', 'quizaccess_webcamguard'),
+    'monitoring_error' => get_string('event_monitoring_error', 'quizaccess_webcamguard'),
+    'identity_check' => get_string('event_identity_check', 'quizaccess_webcamguard'),
+    'warning_sent' => get_string('event_warning_sent', 'quizaccess_webcamguard'),
+];
+$severities = [
+    '' => get_string('allseverities', 'quizaccess_webcamguard'),
+    'violation' => get_string('severity_violation', 'quizaccess_webcamguard'),
+    'warning' => get_string('severity_warning', 'quizaccess_webcamguard'),
+    'info' => get_string('severity_info', 'quizaccess_webcamguard'),
+];
+
+// Filter events.
+$filtered = [];
+$hiddentypes = ['heartbeat', 'live_started', 'live_disconnected', 'live_requested', 'live_stopped'];
+$monitoringstartedshown = false;
+foreach ($events as $event) {
+    if (in_array($event->eventtype, $hiddentypes, true)) {
+        continue;
+    }
+    if ($event->eventtype === 'monitoring_resumed' && $event->severity !== 'violation') {
+        continue;
+    }
+    if ($event->eventtype === 'monitoring_started') {
+        if ($monitoringstartedshown) {
+            continue;
+        }
+        $monitoringstartedshown = true;
+    }
+    if ($filtertype !== '' && $event->eventtype !== $filtertype) {
+        continue;
+    }
+    if ($filterseverity !== '' && $event->severity !== $filterseverity) {
+        continue;
+    }
+    $filtered[] = $event;
+}
+$filtered = array_values($filtered);
+
 echo $OUTPUT->heading(get_string('timeline', 'quizaccess_webcamguard'), 3);
-echo \quizaccess_webcamguard\output\attempt_detail::render_events(array_values($events), $context->id);
+echo html_writer::start_div('mb-2');
+$clearurl = new moodle_url('/mod/quiz/accessrule/webcamguard/attempt.php', [
+    'cmid' => $cmid,
+    'attemptid' => $attempt->id,
+    'clearevents' => 1,
+    'sesskey' => sesskey(),
+]);
+echo html_writer::tag('button', get_string('clearevents', 'quizaccess_webcamguard'), [
+    'type' => 'button',
+    'class' => 'btn btn-sm btn-outline-danger',
+    'onclick' => 'if(confirm(\'' . addslashes(get_string('cleareventsconfirm', 'quizaccess_webcamguard')) . '\')){window.location.href=\'' . $clearurl->out(false) . '\';}',
+]);
+echo html_writer::end_div();
+
+// Filter form.
+$filterurl = new moodle_url('/mod/quiz/accessrule/webcamguard/attempt.php', [
+    'cmid' => $cmid,
+    'attemptid' => $attempt->id,
+]);
+echo html_writer::start_div('d-flex align-items-center gap-2 mb-3', ['style' => 'column-gap:8px;']);
+echo html_writer::label(get_string('eventtype', 'quizaccess_webcamguard'), 'filtertype', false, ['class' => 'mr-1 mb-0']);
+echo html_writer::select($eventtypes, 'filtertype', $filtertype, false, [
+    'id' => 'filtertype',
+    'class' => 'custom-select custom-select-sm',
+    'onchange' => 'window.location.href=\'' . $filterurl->out(false) . '&page=0&filtertype=\'+this.value+\'&filterseverity=' . $filterseverity . '\'',
+]);
+echo '&nbsp;';
+echo html_writer::label(get_string('severity', 'quizaccess_webcamguard'), 'filterseverity', false, ['class' => 'mr-1 mb-0']);
+echo html_writer::select($severities, 'filterseverity', $filterseverity, false, [
+    'id' => 'filterseverity',
+    'class' => 'custom-select custom-select-sm',
+    'onchange' => 'window.location.href=\'' . $filterurl->out(false) . '&page=0&filtertype=' . $filtertype . '&filterseverity=\'+this.value',
+]);
+echo html_writer::end_div();
+
+$perpage = 12;
+$total = count($filtered);
+$pages = max(1, (int)ceil($total / $perpage));
+$page = max(0, min($page, $pages - 1));
+$offset = $page * $perpage;
+$slice = array_slice($filtered, $offset, $perpage);
+
+echo \quizaccess_webcamguard\output\attempt_detail::render_events($slice, $context->id);
+
+// Pagination.
+if ($pages > 1) {
+    echo html_writer::start_div('d-flex justify-content-center mt-3');
+    echo html_writer::start_tag('nav', ['aria-label' => get_string('pagination', 'core')]);
+    echo html_writer::start_tag('ul', ['class' => 'pagination pagination-sm mb-0']);
+    for ($i = 0; $i < $pages; $i++) {
+        $purl = new moodle_url('/mod/quiz/accessrule/webcamguard/attempt.php', [
+            'cmid' => $cmid,
+            'attemptid' => $attempt->id,
+            'page' => $i,
+            'filtertype' => $filtertype,
+            'filterseverity' => $filterseverity,
+        ]);
+        $link = html_writer::link($purl, $i + 1, [
+            'class' => 'page-link' . ($i === $page ? ' active' : ''),
+        ]);
+        echo html_writer::tag('li', $link, ['class' => 'page-item' . ($i === $page ? ' active' : '')]);
+    }
+    echo html_writer::end_tag('ul');
+    echo html_writer::end_tag('nav');
+    echo html_writer::end_div();
+}
 echo $OUTPUT->footer();
