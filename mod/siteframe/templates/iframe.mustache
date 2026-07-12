@@ -1,0 +1,18 @@
+{{!
+    SiteFrame activity iframe template.
+
+    @template mod_siteframe/iframe
+    @copyright   2026 Dali AI
+    @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+}}
+<div class="siteframe-container">
+    <iframe src="{{url}}"
+            width="{{width}}"
+            height="{{height}}"
+            frameborder="0"
+            allowfullscreen="true"
+            sandbox="{{sandbox}}"
+            scrolling="{{scrolling}}"
+            class="siteframe-iframe siteframe-display-{{displaymode}}"
+            loading="lazy"></iframe>
+</div>

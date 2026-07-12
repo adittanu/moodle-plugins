@@ -1,0 +1,21 @@
+{{!
+    SiteFrame floating widget template.
+
+    @template local_siteframe/widget
+    @copyright   2026 Dali AI
+    @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+}}
+<div class="siteframe-widget-container siteframe-position-{{position}}">
+    <div class="siteframe-widget-button">
+        <span class="siteframe-widget-icon">{{icon}}</span>
+        <span class="siteframe-widget-title">{{title}}</span>
+    </div>
+    <div class="siteframe-widget-panel">
+        <div class="siteframe-widget-panel-header">{{title}}</div>
+        <iframe src="about:blank"
+                sandbox="{{sandbox}}"
+                frameborder="0"
+                class="siteframe-widget-iframe"
+                loading="lazy"></iframe>
+    </div>
+</div>

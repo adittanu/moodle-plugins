@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<XMLDB PATH="local/siteframe/db" VERSION="2026071200" COMMENT="SiteFrame plugin tables">
+    <TABLES>
+        <TABLE NAME="local_siteframe_items" COMMENT="SiteFrame iframe items configuration">
+            <FIELDS>
+                <FIELD NAME="id" TYPE="int" LENGTH="10" NOTNULL="true" SEQUENCE="true"/>
+                <FIELD NAME="name" TYPE="char" LENGTH="255" NOTNULL="true" DEFAULT=""/>
+                <FIELD NAME="url" TYPE="text" NOTNULL="true" COMMENT="iframe source URL"/>
+                <FIELD NAME="displaymode" TYPE="char" LENGTH="20" NOTNULL="true" DEFAULT="fullpage" COMMENT="fullpage, coursepage, widget, modal"/>
+                <FIELD NAME="courseid" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" COMMENT="0=global, >0=specific course"/>
+                <FIELD NAME="height" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0" COMMENT="iframe height px, 0=auto"/>
+                <FIELD NAME="width" TYPE="varchar" LENGTH="10" NOTNULL="true" DEFAULT="100%"/>
+                <FIELD NAME="scrolling" TYPE="char" LENGTH="10" NOTNULL="true" DEFAULT="auto"/>
+                <FIELD NAME="extra_params" TYPE="text" NOTNULL="false" COMMENT="JSON extra config"/>
+                <FIELD NAME="visible" TYPE="int" LENGTH="2" NOTNULL="true" DEFAULT="1"/>
+                <FIELD NAME="sortorder" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="timemodified" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+                <FIELD NAME="timecreated" TYPE="int" LENGTH="10" NOTNULL="true" DEFAULT="0"/>
+            </FIELDS>
+            <KEYS>
+                <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
+            </KEYS>
+            <INDEXES>
+                <INDEX NAME="courseid" UNIQUE="false" FIELDS="courseid"/>
+                <INDEX NAME="displaymode" UNIQUE="false" FIELDS="displaymode"/>
+            </INDEXES>
+        </TABLE>
+    </TABLES>
+</XMLDB>

@@ -1,0 +1,10 @@
+/* block_siteframe styles */
+
+.block .siteframe-iframe {
+    border: none;
+    border-radius: 4px;
+}
+
+.siteframe-display-block {
+    width: 100%;
+}
