@@ -33,7 +33,7 @@ $action = optional_param('action', 'list', PARAM_ALPHA);
 $id     = optional_param('id', 0, PARAM_INT);
 $confirm = optional_param('confirm', 0, PARAM_BOOL);
 
-$PAGE->set_url('/local/siteframe/manage.php');
+$PAGE->set_url('/local/siteframe/manage.php', ['action' => $action, 'id' => $id]);
 $PAGE->set_context($context);
 $PAGE->set_pagelayout('admin');
 $PAGE->set_title(get_string('manage_siteframes', 'local_siteframe'));
@@ -73,7 +73,7 @@ if ($action === 'edit' || $action === 'add') {
         }
     }
 
-    $mform = new \local_siteframe\form\item_form(null, ['item' => $item]);
+    $mform = new \local_siteframe\form\item_form($PAGE->url, ['item' => $item]);
 
     if ($mform->is_cancelled()) {
         redirect($PAGE->url);
