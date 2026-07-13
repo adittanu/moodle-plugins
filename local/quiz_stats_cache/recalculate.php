@@ -39,7 +39,7 @@ if ($isweb) {
     require_capability('mod/quiz:viewreports', $context);
     $PAGE->set_context($context);
     $PAGE->set_url('/local/quiz_stats_cache/recalculate.php', ['quizid' => $quizid]);
-    $result = local_quiz_stats_cache\fast_calculator::calculate($quizid, (int)$quiz->grademethod, true);
+    $result = local_quiz_stats_cache\fast_calculator::calculate($quiz->id, (int)$quiz->grademethod, true);
     $elapsed = round(microtime(true) - $start, 2);
 
     if ($result === false) {
@@ -53,7 +53,7 @@ if ($isweb) {
     }
 
     // Save to Moodle's native cache tables.
-    local_quiz_stats_cache\fast_calculator::save_to_moodle_cache($quizid, $result, (int)$quiz->grademethod);
+    local_quiz_stats_cache\fast_calculator::save_to_moodle_cache($quiz->id, $result, (int)$quiz->grademethod);
 
     // Redirect back to statistics page.
     redirect(
