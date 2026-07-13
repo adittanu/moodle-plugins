@@ -57,15 +57,32 @@ $width = !empty($item->width) ? $item->width : '100%';
 $sandbox = domain_helper::get_sandbox_attr();
 
 echo $OUTPUT->header();
-echo html_writer::tag('iframe', '', [
-    'src'       => $url,
-    'width'     => $width,
-    'height'    => $height,
-    'frameborder' => '0',
-    'allowfullscreen' => 'true',
-    'sandbox'   => $sandbox,
-    'scrolling' => $item->scrolling,
-    'class'     => 'siteframe-iframe siteframe-display-fullpage',
-    'style'     => 'border: none; width: ' . $width . '; height: ' . $height . ';',
-]);
+
+if ($item->displaymode === 'modal') {
+    // Modal mode: render trigger button, AMD module opens the modal.
+    $PAGE->requires->js_call_amd('local_siteframe/modal_launcher', 'init');
+    echo html_writer::tag('button',
+        get_string('widget_open', 'local_siteframe'),
+        [
+            'class'        => 'siteframe-modal-trigger btn btn-primary',
+            'data-url'     => $url,
+            'data-title'   => format_string($item->name),
+            'data-sandbox' => $sandbox,
+        ]
+    );
+} else {
+    // Fullpage / inline mode: render iframe directly.
+    echo html_writer::tag('iframe', '', [
+        'src'       => $url,
+        'width'     => $width,
+        'height'    => $height,
+        'frameborder' => '0',
+        'allowfullscreen' => 'true',
+        'sandbox'   => $sandbox,
+        'scrolling' => $item->scrolling,
+        'class'     => 'siteframe-iframe siteframe-display-fullpage',
+        'style'     => 'border: none; width: ' . $width . '; height: ' . $height . ';',
+    ]);
+}
+
 echo $OUTPUT->footer();

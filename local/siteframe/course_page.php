@@ -65,6 +65,7 @@ if ($itemid > 0) {
 if (empty($items)) {
     echo html_writer::div(get_string('no_items', 'local_siteframe'), 'alert alert-info');
 } else {
+    $hasmodal = false;
     foreach ($items as $item) {
         $url = domain_helper::sanitize_url($item->url);
         if ($url === false || !domain_helper::is_domain_allowed($url)) {
@@ -80,17 +81,37 @@ if (empty($items)) {
         $sandbox = domain_helper::get_sandbox_attr();
 
         echo $OUTPUT->heading(format_string($item->name), 3);
-        echo html_writer::tag('iframe', '', [
-            'src'       => $url,
-            'width'     => $width,
-            'height'    => $height,
-            'frameborder' => '0',
-            'allowfullscreen' => 'true',
-            'sandbox'   => $sandbox,
-            'scrolling' => $item->scrolling,
-            'class'     => 'siteframe-iframe siteframe-display-coursepage',
-        ]);
+
+        if ($item->displaymode === 'modal') {
+            // Render a trigger button; the AMD module opens the modal on click.
+            $hasmodal = true;
+            echo html_writer::tag('button',
+                get_string('widget_open', 'local_siteframe'),
+                [
+                    'class'       => 'siteframe-modal-trigger btn btn-primary mb-2',
+                    'data-url'    => $url,
+                    'data-title'  => format_string($item->name),
+                    'data-sandbox' => $sandbox,
+                ]
+            );
+        } else {
+            // Inline / fullpage / coursepage — render iframe directly.
+            echo html_writer::tag('iframe', '', [
+                'src'         => $url,
+                'width'       => $width,
+                'height'      => $height,
+                'frameborder' => '0',
+                'allowfullscreen' => 'true',
+                'sandbox'     => $sandbox,
+                'scrolling'   => $item->scrolling,
+                'class'       => 'siteframe-iframe siteframe-display-coursepage',
+            ]);
+        }
         echo html_writer::tag('hr', '');
+    }
+    // Load modal AMD module only when at least one modal item exists.
+    if ($hasmodal) {
+        $PAGE->requires->js_call_amd('local_siteframe/modal_launcher', 'init');
     }
 }
 
