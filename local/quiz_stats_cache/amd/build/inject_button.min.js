@@ -12,8 +12,8 @@ define(['jquery', 'core/ajax', 'core/notification'], function($, Ajax, Notificat
             var cmid = match[1];
 
             // Get sesskey from the page.
-            var sesskeyEl = document.querySelector('input[name="sesskey"]');
-            var sesskey = sesskeyEl ? sesskeyEl.value : '';
+            // Get sesskey from Moodle global config.
+            var sesskey = (typeof M !== 'undefined' && M.cfg && M.cfg.sesskey) ? M.cfg.sesskey : '';
             // Build URLs - use id (cmid) since that's what we have from the page URL.
             var baseUrl = M.cfg.wwwroot + '/local/quiz_stats_cache/recalculate.php';
             var fastUrl = baseUrl + '?id=' + cmid + '&sesskey=' + sesskey;

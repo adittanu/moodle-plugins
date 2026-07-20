@@ -27,6 +27,7 @@ require_once($CFG->dirroot . '/mod/quiz/report/statistics/report.php');
 list($options, $unrecognised) = cli_get_params([
     'quizid'  => false,
     'force'   => false,
+    'stale'   => 0,
     'fast'    => false,
     'dry-run' => false,
     'help'    => false,
@@ -106,9 +107,18 @@ foreach ($quizzes as $quiz) {
         'state' => 'finished',
     ]);
 
-    // Check if there are changes (unless --force).
+    // Check if there are changes (unless --force or --stale).
     if (!$options['force'] && $options['fast']) {
-        if (!\local_quiz_stats_cache\fast_calculator::has_changes($quiz->id)) {
+        if ($options['stale'] > 0) {
+            // --stale=SECS: skip if last calculation is newer than SECS.
+            $lastcalc = (int) get_config('local_quiz_stats_cache', "lastcalc_{$quiz->id}");
+            if ($lastcalc && (time() - $lastcalc) < (int)$options['stale']) {
+                $age = time() - $lastcalc;
+                $mtrace("  [SKIP] {$quiz->name} (ID: {$quiz->id}) - cache is recent ({$age}s ago)");
+                $skipped++;
+                continue;
+            }
+        } else if (!\local_quiz_stats_cache\fast_calculator::has_changes($quiz->id)) {
             $mtrace("  [SKIP] {$quiz->name} (ID: {$quiz->id}) - no changes");
             $skipped++;
             continue;

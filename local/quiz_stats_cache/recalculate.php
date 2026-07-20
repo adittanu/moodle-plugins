@@ -39,7 +39,9 @@ if ($isweb) {
     require_capability('mod/quiz:viewreports', $context);
     $PAGE->set_context($context);
     $PAGE->set_url('/local/quiz_stats_cache/recalculate.php', ['quizid' => $quizid]);
-    $result = local_quiz_stats_cache\fast_calculator::calculate($quiz->id, (int)$quiz->grademethod, true);
+
+    $force = optional_param('force', 0, PARAM_BOOL);
+    $result = local_quiz_stats_cache\fast_calculator::calculate($quiz->id, (int)$quiz->grademethod, $force);
     $elapsed = round(microtime(true) - $start, 2);
 
     if ($result === false) {

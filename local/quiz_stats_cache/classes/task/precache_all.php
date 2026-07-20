@@ -33,40 +33,52 @@ class precache_all extends \core\task\scheduled_task {
     public function precache_all_quizzes(): void {
         global $DB;
 
-        // Find quizzes with finished attempts that have stale or missing cache.
-        $sql = "SELECT DISTINCT q.id, q.name, q.course
+        // Find quizzes with finished attempts.
+        $sql = "SELECT DISTINCT q.id, q.name, q.course, q.grademethod
                 FROM {quiz} q
                 JOIN {quiz_attempts} qa ON qa.quiz = q.id AND qa.state = 'finished'
-                WHERE NOT EXISTS (
-                    SELECT 1 FROM {quiz_statistics} qs
-                    WHERE qs.hashcode = CONCAT('quiz_statistics_', q.id)
-                    AND qs.timemodified > :recent
-                )
                 ORDER BY q.id";
 
-        $params = ['recent' => time() - 3600]; // older than 1 hour
-
-        $quizzes = $DB->get_records_sql($sql, $params);
+        $quizzes = $DB->get_records_sql($sql);
 
         if (empty($quizzes)) {
-            mtrace('  No quizzes need statistics recalculation.');
+            mtrace('  No quizzes with finished attempts found.');
             return;
         }
 
-        mtrace('  Found ' . count($quizzes) . ' quizzes needing statistics cache.');
+        mtrace('  Found ' . count($quizzes) . ' quizzes to check.');
+        $processed = 0;
+        $skipped = 0;
 
         foreach ($quizzes as $quiz) {
-            // Use fast SQL calculator to avoid cron timeout.
+            // Skip if no changes since last calculation.
+            if (!\local_quiz_stats_cache\fast_calculator::has_changes($quiz->id)) {
+                $skipped++;
+                continue;
+            }
+
             $start = microtime(true);
             $result = \local_quiz_stats_cache\fast_calculator::calculate(
                 $quiz->id,
-                (int)$quiz->grademethod ?? QUIZ_GRADEHIGHEST
+                (int)$quiz->grademethod
             );
+
             if ($result) {
+                // Save to Moodle's native cache tables so built-in report reads from cache.
+                \local_quiz_stats_cache\fast_calculator::save_to_moodle_cache(
+                    $quiz->id,
+                    $result,
+                    (int)$quiz->grademethod
+                );
                 $elapsed = round(microtime(true) - $start, 1);
-                mtrace("    ✓ {$quiz->name} ({$quiz->id}) - {$elapsed}s");
+                mtrace("    ✓ {$quiz->name} ({$quiz->id}) - {$elapsed}s ({$result['attempt_count']} attempts)");
+                $processed++;
+            } else {
+                mtrace("    ✗ {$quiz->name} ({$quiz->id}) - no data");
             }
         }
+
+        mtrace("  Processed: {$processed}, Skipped: {$skipped}");
     }
 
     /**
