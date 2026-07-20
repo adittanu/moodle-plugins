@@ -62,9 +62,25 @@ class fast_calculator {
         // Step 3: Per-question stats via SQL.
         $questionstats = self::calculate_question_stats_sql($quizid, $attemptids);
 
-        // Step 4: Cronbach's alpha (CIC) - needs total marks per attempt.
-        $totalmarks = self::get_total_marks_per_attempt($attemptids);
-        $quizstats['cic'] = self::calculate_cronbach_alpha($questionstats, $totalmarks);
+        // Step 4: CIC, error_ratio, standard_error (needs question variances & k2).
+        $k2 = $quizstats['k2'] ?? 0;
+        $p = count($questionstats);
+        $sumofmarkvariance = 0;
+        foreach ($questionstats as $q) {
+            $sd = $q['standard_deviation'];
+            if ($sd !== null) {
+                $sumofmarkvariance += $sd * $sd;
+            }
+        }
+        if ($n > 1 && $p > 1 && $k2 > 0) {
+            $cic = (100 * $p / ($p - 1)) * (1 - ($sumofmarkvariance / $k2));
+            $errorratio = 100 * sqrt(max(0, 1 - ($cic / 100)));
+            $standarderror = $errorratio * $quizstats['standard_deviation'] / 100;
+            $quizstats['cic'] = round($cic, 5);
+            $quizstats['error_ratio'] = round($errorratio, 5);
+            $quizstats['standard_error'] = round($standarderror, 5);
+        }
+        unset($quizstats['k2']); // Internal field, don't expose.
 
         $result = [
             'quiz' => [
@@ -180,7 +196,7 @@ class fast_calculator {
             $qrec->subquestion = 0;
             $qrec->s = $q['attempts'];
             $qrec->effectiveweight = $q['effective_weight'] ?? null;
-            $qrec->negcovar = 0;
+            $qrec->negcovar = $q['negcovar'] ?? 0;
             $qrec->discriminationindex = $q['discrimination_index'] ?? null;
             $qrec->discriminativeefficiency = $q['discriminative_efficiency'] ?? null;
             $qrec->sd = $q['standard_deviation'] ?? null;
@@ -363,7 +379,8 @@ class fast_calculator {
         sort($grades, SORT_NUMERIC);
         $median = self::median_sorted($grades);
 
-        // Variance, skewness, kurtosis via single pass.
+        // Variance, skewness, kurtosis via single pass (Moodle formulas).
+        // Moodle uses: m2=Σ(diff²)/n, k2 = n*m2/(n-1) — sample variance.
         $m2 = $m3 = $m4 = 0;
         foreach ($grades as $g) {
             $d = $g - $mean;
@@ -372,16 +389,25 @@ class fast_calculator {
             $m3 += $d2 * $d;
             $m4 += $d2 * $d2;
         }
+        $m2 = $n > 0 ? $m2 / $n : 0;
+        $m3 = $n > 0 ? $m3 / $n : 0;
+        $m4 = $n > 0 ? $m4 / $n : 0;
+        $k2 = $n > 1 ? $n * $m2 / ($n - 1) : 0; // sample variance
+        $sd = sqrt($k2);
 
-        $variance = $n > 1 ? $m2 / ($n - 1) : 0;
-        $sd = sqrt($variance);
-        $skewness = ($n > 2 && $variance > 0)
-            ? ($n / (($n - 1) * ($n - 2))) * $m3 / pow($sd, 3)
-            : 0;
-        $kurtosis = ($n > 3 && $variance > 0)
-            ? (($n * ($n + 1)) / (($n - 1) * ($n - 2) * ($n - 3))) * $m4 / pow($variance, 2)
-              - (3 * ($n - 1) * ($n - 1)) / (($n - 2) * ($n - 3))
-            : 0;
+        // Skewness (Moodle formula).
+        $skewness = 0;
+        if ($n > 2 && $k2 != 0) {
+            $k3 = $n * $n * $m3 / (($n - 1) * ($n - 2));
+            $skewness = $k3 / pow($k2, 1.5);
+        }
+
+        // Kurtosis (Moodle formula).
+        $kurtosis = 0;
+        if ($n > 3 && $k2 != 0) {
+            $k4 = $n * $n * ((($n + 1) * $m4) - (3 * ($n - 1) * $m2 * $m2)) / (($n - 1) * ($n - 2) * ($n - 3));
+            $kurtosis = $k4 / ($k2 * $k2);
+        }
 
         // Get quiz max grade.
         $quiz = $DB->get_record('quiz', ['id' => $quizid]);
@@ -397,27 +423,16 @@ class fast_calculator {
                 'count' => $counts['first_count'],
                 'average' => $counts['first_avg'],
             ],
-            'highest_attempts' => [
-                'count' => $counts['highest_count'],
-                'average' => $counts['highest_avg'],
-            ],
-            'last_attempts' => [
-                'count' => $counts['last_count'],
-                'average' => $counts['last_avg'],
-            ],
-            'all_attempts' => [
-                'count' => $counts['all_count'],
-                'average' => $counts['all_avg'],
-            ],
-            'median' => round($median, 5),
             'standard_deviation' => round($sd, 5),
             'skewness' => round($skewness, 5),
             'kurtosis' => round($kurtosis, 5),
             'max_grade' => $maxgrade,
             'min_grade' => $n > 0 ? round(min($grades), 5) : 0,
             'range' => $n > 0 ? round(max($grades) - min($grades), 5) : 0,
-            'error_ratio' => null,
-            'standard_error' => round($sd / sqrt(max($n, 1)), 5),
+            'k2' => $k2, // Sample variance of total scores (needed for CIC).
+            'cic' => null, // Computed in calculate() after question stats.
+            'error_ratio' => null, // Computed in calculate() after CIC.
+            'standard_error' => null, // Computed in calculate() after error_ratio.
         ];
     }
     /**
@@ -457,60 +472,148 @@ class fast_calculator {
                 WHERE quiza.id $insql
                 GROUP BY qa.slot, qa.questionid, qa.maxmark
                 ORDER BY qa.slot";
-
         $records = $DB->get_records_sql($sql, $params);
 
-        // Now calculate covariance (needs second pass) for discrimination index.
-        // Get per-attempt marks for each slot.
+        // Get per-attempt marks for each slot, and total marks per attempt.
         $slotmarks = self::get_slot_marks_per_attempt($attemptids);
         $totalmarks = self::get_total_marks_per_attempt($attemptids);
 
+        // Calculate quiz-level averages needed for covariance.
+        $totalvalues = array_map(fn($tm) => (float)$tm->total, $totalmarks);
+        $n = count($totalvalues);
+        $summarksaverage = $n > 0 ? array_sum($totalvalues) / $n : 0;
+
         $questions = [];
+        $slotstats = []; // Per-slot accumulators.
+        $sumofcovariancewithoverallmark = 0;
+
         foreach ($records as $rec) {
             $slot = (int)$rec->slot;
+            $qmarks = $slotmarks[$slot] ?? [];
 
-            // Calculate discrimination index.
-            $discrimination = self::calculate_discrimination(
-                $slotmarks[$slot] ?? [],
-                $totalmarks,
-                (float)$rec->markaverage,
-                (float)$rec->sd
-            );
+            // Compute per-slot statistics matching Moodle exactly.
+            $s = (int)$rec->s;
+            $markaverage = (float)$rec->markaverage;
 
-            $questions[] = [
-                'slot' => $slot,
-                'question_id' => (int)$rec->questionid,
-                'max_mark' => round((float)$rec->maxmark, 2),
-                'attempts' => (int)$rec->s,
-                'facility' => round((float)$rec->facility, 4),
-                'average' => round((float)$rec->markaverage, 4),
-                'standard_deviation' => round((float)$rec->sd, 4),
-                'min' => round((float)$rec->minmark, 4),
-                'max' => round((float)$rec->maxmark_seen, 4),
-                'discrimination_index' => $discrimination['index'],
-                'discriminative_efficiency' => $discrimination['efficiency'],
-                'effective_weight' => null, // Needs overall covariance
-            ];
-        }
+            // othermark = total mark - this question's mark.
+            $othermarks = [];
+            $totalothermarks = 0.0;
+            foreach ($qmarks as $attid => $qmark) {
+                if (isset($totalmarks[$attid])) {
+                    $other = (float)$totalmarks[$attid]->total - (float)$qmark;
+                    $othermarks[$attid] = $other;
+                    $totalothermarks += $other;
+                }
+            }
+            $othermarkaverage = $s > 0 ? $totalothermarks / $s : 0;
 
-        // Calculate effective weights.
-        $covsum = 0;
-        foreach ($questions as &$q) {
-            $q['_covariance'] = self::calculate_slot_covariance(
-                $slotmarks[$q['slot']] ?? [],
-                $totalmarks
-            );
-            if ($q['_covariance'] > 0) {
-                $covsum += sqrt($q['_covariance']);
+            // Compute variances, covariance, covariancewithoverallmark (Moodle formulas).
+            $markvariancesum = 0.0;
+            $othermarkvariancesum = 0.0;
+            $covariancesum = 0.0;
+            $covariancemaxsum = 0.0;
+            $covariancewithoverallmarksum = 0.0;
+            $sortedmarks = [];
+            $sortedothers = [];
+
+            foreach ($qmarks as $attid => $qmark) {
+                if (!isset($totalmarks[$attid])) continue;
+                $qmark = (float)$qmark;
+                $total = (float)$totalmarks[$attid]->total;
+                $other = $total - $qmark;
+
+                $markdiff = $qmark - $markaverage;
+                $otherdiff = $other - $othermarkaverage;
+                $overalldiff = $total - $summarksaverage;
+
+                $markvariancesum += $markdiff * $markdiff;
+                $othermarkvariancesum += $otherdiff * $otherdiff;
+                $covariancesum += $markdiff * $otherdiff;
+                $covariancewithoverallmarksum += $markdiff * $overalldiff;
+
+                $sortedmarks[] = $qmark;
+                $sortedothers[] = $other;
+            }
+
+            // covariancemax uses sorted arrays (Moodle sorts markarray & othermarksarray).
+            sort($sortedmarks, SORT_NUMERIC);
+            sort($sortedothers, SORT_NUMERIC);
+            for ($i = 0; $i < count($sortedmarks); $i++) {
+                $covariancemaxsum += ($sortedmarks[$i] - $markaverage) * ($sortedothers[$i] - $othermarkaverage);
+            }
+
+            // Finalize per-slot stats.
+            if ($s > 1) {
+                $markvariance = $markvariancesum / ($s - 1);
+                $othermarkvariance = $othermarkvariancesum / ($s - 1);
+                $covariance = $covariancesum / ($s - 1);
+                $covariancemax = $covariancemaxsum / ($s - 1);
+                $covariancewithoverallmark = $covariancewithoverallmarksum / ($s - 1);
+                $sd = sqrt($markvariancesum / ($s - 1));
+                $negcovar = ($covariancewithoverallmark >= 0) ? 0 : 1;
+
+                // discrimination_index: Moodle formula.
+                $discriminationindex = ($markvariance * $othermarkvariance > 0)
+                    ? 100 * $covariance / sqrt($markvariance * $othermarkvariance)
+                    : null;
+
+                // discriminative_efficiency: Moodle formula.
+                $discriminativeefficiency = ($covariancemax != 0)
+                    ? 100 * $covariance / $covariancemax
+                    : null;
+
+                $slotstats[$slot] = [
+                    'covariancewithoverallmark' => $covariancewithoverallmark,
+                    'negcovar' => $negcovar,
+                ];
+
+                if ($covariancewithoverallmark >= 0) {
+                    $sumofcovariancewithoverallmark += sqrt($covariancewithoverallmark);
+                }
+
+                $questions[] = [
+                    'slot' => $slot,
+                    'question_id' => (int)$rec->questionid,
+                    'max_mark' => round((float)$rec->maxmark, 2),
+                    'attempts' => $s,
+                    'facility' => round((float)$rec->facility, 4),
+                    'average' => round((float)$rec->markaverage, 4),
+                    'standard_deviation' => $sd !== null ? round($sd, 4) : null,
+                    'min' => round((float)$rec->minmark, 4),
+                    'max' => round((float)$rec->maxmark_seen, 4),
+                    'discrimination_index' => $discriminationindex !== null ? round($discriminationindex, 4) : null,
+                    'discriminative_efficiency' => $discriminativeefficiency !== null ? round($discriminativeefficiency, 4) : null,
+                    'negcovar' => $negcovar,
+                    'effective_weight' => null, // Computed in second loop below.
+                ];
+            } else {
+                $questions[] = [
+                    'slot' => $slot,
+                    'question_id' => (int)$rec->questionid,
+                    'max_mark' => round((float)$rec->maxmark, 2),
+                    'attempts' => $s,
+                    'facility' => round((float)$rec->facility, 4),
+                    'average' => round((float)$rec->markaverage, 4),
+                    'standard_deviation' => null,
+                    'min' => round((float)$rec->minmark, 4),
+                    'max' => round((float)$rec->maxmark_seen, 4),
+                    'discrimination_index' => null,
+                    'discriminative_efficiency' => null,
+                    'negcovar' => 0,
+                    'effective_weight' => null,
+                ];
             }
         }
-        unset($q);
 
+        // Calculate effective_weight (Moodle formula).
         foreach ($questions as &$q) {
-            if ($covsum > 0 && $q['_covariance'] > 0) {
-                $q['effective_weight'] = round(100 * sqrt($q['_covariance']) / $covsum, 4);
+            $slot = $q['slot'];
+            if ($sumofcovariancewithoverallmark > 0) {
+                $cov = $slotstats[$slot]['covariancewithoverallmark'];
+                if ($cov !== null && $cov >= 0 && !$slotstats[$slot]['negcovar']) {
+                    $q['effective_weight'] = round(100 * sqrt($cov) / $sumofcovariancewithoverallmark, 4);
+                }
             }
-            unset($q['_covariance']);
         }
         unset($q);
 
@@ -558,6 +661,7 @@ class fast_calculator {
         $sql = "SELECT quiza.id AS attemptid, SUM(qas.fraction * qa.maxmark) AS total
                 FROM {question_attempts} qa
                 JOIN {question_attempt_steps} qas ON qas.questionattemptid = qa.id
+                JOIN {question_attempt_steps} qas ON qas.questionattemptid = qa.id
                     AND qas.sequencenumber = (
                         SELECT MAX(qas2.sequencenumber)
                         FROM {question_attempt_steps} qas2
@@ -568,114 +672,6 @@ class fast_calculator {
                 GROUP BY quiza.id";
 
         return $DB->get_records_sql($sql, $params);
-    }
-
-    /**
-     * Calculate discrimination index for a question.
-     * = correlation between question mark and total mark.
-     */
-    private static function calculate_discrimination(array $qmarks, array $totalmarks, float $mean, float $sd): array {
-        if ($sd == 0 || count($qmarks) < 2) {
-            return ['index' => null, 'efficiency' => null];
-        }
-
-        $n = 0;
-        $sum_xy = 0;
-        $sum_x = 0;
-        $sum_y = 0;
-        $sum_y2 = 0;
-
-        foreach ($qmarks as $attid => $qmark) {
-            if (!isset($totalmarks[$attid])) continue;
-            $total = (float)$totalmarks[$attid]->total;
-            $n++;
-            $sum_xy += $qmark * $total;
-            $sum_x += $qmark;
-            $sum_y += $total;
-            $sum_y2 += $total * $total;
-        }
-
-        if ($n < 2) {
-            return ['index' => null, 'efficiency' => null];
-        }
-
-        $var_x = $n * array_sum(array_map(fn($v) => $v * $v, $qmarks)) - $sum_x * $sum_x;
-        $var_y = $n * $sum_y2 - $sum_y * $sum_y;
-
-        if ($var_x <= 0 || $var_y <= 0) {
-            return ['index' => 0, 'efficiency' => 0];
-        }
-
-        $r = ($n * $sum_xy - $sum_x * $sum_y) / sqrt($var_x * $var_y);
-
-        // Discrimination index (0-100 scale).
-        $index = round(100 * $r, 2);
-
-        // Discriminative efficiency is harder without max covariance, approximate.
-        return ['index' => $index, 'efficiency' => null];
-    }
-
-    /**
-     * Calculate covariance between slot marks and total marks.
-     */
-    private static function calculate_slot_covariance(array $qmarks, array $totalmarks): float {
-        $n = 0;
-        $sum_xy = 0;
-        $sum_x = 0;
-        $sum_y = 0;
-
-        foreach ($qmarks as $attid => $qmark) {
-            if (!isset($totalmarks[$attid])) continue;
-            $total = (float)$totalmarks[$attid]->total;
-            $othermark = $total - $qmark;
-            $n++;
-            $sum_xy += $qmark * $othermark;
-            $sum_x += $qmark;
-            $sum_y += $othermark;
-        }
-
-        if ($n < 2) return 0;
-
-        return ($sum_xy - ($sum_x * $sum_y / $n)) / ($n - 1);
-    }
-    /**
-     * Calculate Cronbach's alpha (CIC - Coefficient of Internal Consistency).
-     *
-     * Formula: alpha = (k / (k-1)) * (1 - sum(var_i) / var_total)
-     *   k = number of questions
-     *   var_i = variance of each question's marks
-     *   var_total = variance of the sum of all question marks (total score)
-     *
-     * @param array $questions question stats with 'standard_deviation'
-     * @param array $totalmarks per-attempt total marks {attemptid => {total}}
-     * @return float|null
-     */
-    private static function calculate_cronbach_alpha(array $questions, array $totalmarks): ?float {
-        $k = count($questions);
-        $n = count($totalmarks);
-        if ($k < 2 || $n < 2) {
-            return null;
-        }
-
-        // Sum of individual question variances.
-        $sum_var_i = 0;
-        foreach ($questions as $q) {
-            $sd = $q['standard_deviation'] ?? 0;
-            $sum_var_i += $sd * $sd;
-        }
-
-        // Variance of total scores.
-        $totals = array_map(fn($tm) => (float)$tm->total, $totalmarks);
-        $sum_total = array_sum($totals);
-        $sum_total_sq = array_sum(array_map(fn($t) => $t * $t, $totals));
-        $var_total = ($n > 1) ? ($sum_total_sq - ($sum_total * $sum_total) / $n) / ($n - 1) : 0;
-
-        if ($var_total <= 0) {
-            return null;
-        }
-
-        $alpha = ($k / ($k - 1)) * (1 - $sum_var_i / $var_total);
-        return round($alpha, 5);
     }
 
     /**
