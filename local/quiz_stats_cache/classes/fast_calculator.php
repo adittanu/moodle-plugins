@@ -199,6 +199,7 @@ class fast_calculator {
      * Each method uses different attempt selection per user.
      */
     private static function get_attempt_counts_and_avgs(int $quizid): array {
+        global $DB;
 
         $attempts = $DB->get_records_sql(
             "SELECT id, userid, attempt, sumgrades, uniqueid
@@ -445,6 +446,7 @@ class fast_calculator {
                     MIN(qas.fraction * qa.maxmark) AS minmark,
                     MAX(qas.fraction * qa.maxmark) AS maxmark_seen,
                     SUM(qas.fraction * qa.maxmark) AS totalmarks
+                FROM {question_attempts} qa
                 JOIN {question_attempt_steps} qas ON qas.questionattemptid = qa.id
                     AND qas.sequencenumber = (
                         SELECT MAX(qas2.sequencenumber)
