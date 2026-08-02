@@ -29,4 +29,3 @@ $plugin->requires  = 2022112800; // Moodle 4.1+
 $plugin->component = 'local_aiquizgen';
 $plugin->maturity  = MATURITY_STABLE;
 $plugin->release   = '1.1.0';
-$plugin->supported = [404, 500];

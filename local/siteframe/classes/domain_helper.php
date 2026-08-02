@@ -49,7 +49,7 @@ class domain_helper {
         $domains = array_filter(array_map('trim', explode("\n", $allowed)));
 
         foreach ($domains as $domain) {
-            $domain = strtolower(trim($domain));
+            $domain = self::normalize_domain($domain);
             if (empty($domain)) {
                 continue;
             }
@@ -63,6 +63,29 @@ class domain_helper {
     }
 
     /**
+     * Normalize a domain entry: strip scheme, path, port, whitespace.
+     * Accepts "https://example.com:443/path" → "example.com".
+     * ponytail: minimal normalize, no IDN/punycode conversion (add when intl ext required).
+     *
+     * @param string $domain Raw domain entry from config.
+     * @return string Normalized hostname, or '' if invalid.
+     */
+    public static function normalize_domain(string $domain): string {
+        $domain = strtolower(trim($domain));
+        if ($domain === '') {
+            return '';
+        }
+        // If entry looks like a URL, parse it.
+        if (strpos($domain, '://') !== false || strpos($domain, '/') !== false) {
+            // parse_url needs scheme; prepend // for schemeless "host/path" entries.
+            $candidate = strpos($domain, '://') === false ? '//' . $domain : $domain;
+            $parsed = parse_url($candidate);
+            $domain = $parsed['host'] ?? '';
+        }
+        return strtolower(trim($domain, " \t\n\r\0\x0B/"));
+    }
+
+    /**
      * Sanitize and validate a URL.
      *
      * @param string $url The URL to sanitize.
@@ -70,16 +93,20 @@ class domain_helper {
      */
     public static function sanitize_url(string $url) {
         $url = trim($url);
-        if (empty($url)) {
+        if ($url === '') {
             return false;
         }
 
-        if (!filter_var($url, FILTER_VALIDATE_URL)) {
+        // Parse scheme + host manually — filter_var(FILTER_VALIDATE_URL) rejects
+        // underscores in hostnames (common in Herd/Valet like dali_widget.test)
+        // and some non-ASCII chars. We only need scheme + host to be present.
+        $parsed = parse_url($url);
+        if (!$parsed || empty($parsed['scheme']) || empty($parsed['host'])) {
             return false;
         }
 
-        $scheme = parse_url($url, PHP_URL_SCHEME);
-        if (!in_array($scheme, ['http', 'https'])) {
+        $scheme = strtolower($parsed['scheme']);
+        if (!in_array($scheme, ['http', 'https'], true)) {
             return false;
         }
 
@@ -108,5 +135,27 @@ class domain_helper {
             return in_array($t, $valid);
         });
         return implode(' ', $tokens);
+    }
+
+    /**
+     * Sanitize a CSS dimension value for use in style attribute / width attribute.
+     * Accepts: plain int (treated as px), "100%", "800px", "50vh".
+     * Rejects: anything containing CSS-dangerous chars ( : ; ( ) { } / \ " ' ).
+     * ponytail: whitelist regex over a stricter allow-list; no full CSS parser.
+     *
+     * @param string $value Raw dimension string.
+     * @param string $default Fallback when invalid (default '100%').
+     * @return string Sanitized dimension.
+     */
+    public static function sanitize_css_dimension(string $value, string $default = '100%'): string {
+        $value = trim($value);
+        if ($value === '') {
+            return $default;
+        }
+        // Allow digits, optional unit suffix (% px vh vw em rem pt). No functions, no quotes.
+        if (!preg_match('/^\d+(?:\.\d+)?(?:px|%|vh|vw|em|rem|pt)?$/', $value)) {
+            return $default;
+        }
+        return $value;
     }
 }

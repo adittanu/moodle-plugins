@@ -28,5 +28,15 @@ function xmldb_local_siteframe_upgrade($oldversion) {
     global $DB;
     $dbman = $DB->get_manager();
 
+    // 2026072000: drop unused extra_params column (dead since form never wrote it).
+    if ($oldversion < 2026072000) {
+        $table = new xmldb_table('local_siteframe_items');
+        $field = new xmldb_field('extra_params');
+        if ($dbman->field_exists($table, $field)) {
+            $dbman->drop_field($table, $field);
+        }
+        upgrade_plugin_savepoint(true, 2026072000, 'local', 'siteframe');
+    }
+
     return true;
 }

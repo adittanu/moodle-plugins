@@ -58,8 +58,8 @@ $completion = new completion_info($course);
 $completion->set_module_viewed($cm);
 
 // Build iframe.
-$height = $siteframe->height > 0 ? $siteframe->height : 600;
-$width = !empty($siteframe->width) ? $siteframe->width : '100%';
+$height = $siteframe->height > 0 ? (int) $siteframe->height : 600;
+$width = domain_helper::sanitize_css_dimension($siteframe->width ?? '', '100%');
 $sandbox = domain_helper::get_sandbox_attr();
 
 $iframe = html_writer::tag('iframe', '', [

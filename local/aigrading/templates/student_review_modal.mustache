@@ -1,0 +1,25 @@
+{{!
+    @template local_aigrading/student_review_modal
+}}
+<div class="aigrading-student-review" data-attemptid="{{attemptid}}">
+    <div class="alert alert-info"><strong>{{student}}</strong> — review {{questioncount}} essay answer(s).</div>
+    {{#questions}}
+    <section class="card mb-3 aigrading-student-question" data-slot="{{slot}}" data-maxgrade="{{maxgrade}}">
+        <div class="card-header"><strong>Question {{slot}}:</strong> {{question}}</div>
+        <div class="card-body">
+            <div class="mb-3" style="white-space: pre-wrap;"><strong>Student answer:</strong><br>{{answer}}</div>
+            <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label><strong>Grade</strong> / {{maxgrade}}</label>
+                    <input class="form-control aigrading-student-grade" type="number" min="0" max="{{maxgrade}}" step="any" value="{{grade}}" required>
+                </div>
+                <div class="form-group col-md-9">
+                    <label><strong>Feedback for student</strong></label>
+                    <textarea class="form-control aigrading-student-feedback" rows="3">{{feedback}}</textarea>
+                </div>
+            </div>
+            <small class="text-muted"><strong>AI confidence:</strong> {{confidence}}. {{explanation}}</small>
+        </div>
+    </section>
+    {{/questions}}
+</div>

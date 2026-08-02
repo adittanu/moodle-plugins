@@ -1,0 +1,22 @@
+{{!
+    @template local_aigrading/review_modal
+}}
+<div class="aigrading-review" data-attemptid="{{attemptid}}" data-maxgrade="{{maxgrade}}">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <strong>{{student}}</strong>
+        <span class="badge badge-{{confidenceclass}}">AI confidence: {{confidence}}</span>
+    </div>
+    <div class="card mb-3">
+        <div class="card-header">Student answer</div>
+        <div class="card-body" style="max-height: 14rem; overflow-y: auto; white-space: pre-wrap;">{{answer}}</div>
+    </div>
+    <div class="form-group">
+        <label for="aigrading-review-grade"><strong>Grade</strong> (maximum {{maxgrade}})</label>
+        <input id="aigrading-review-grade" class="form-control" type="number" min="0" max="{{maxgrade}}" step="any" value="{{grade}}" required>
+    </div>
+    <div class="form-group">
+        <label for="aigrading-review-feedback"><strong>Feedback for student</strong></label>
+        <textarea id="aigrading-review-feedback" class="form-control" rows="4">{{feedback}}</textarea>
+    </div>
+    <div class="alert alert-info mb-0"><strong>AI explanation:</strong> {{explanation}}</div>
+</div>

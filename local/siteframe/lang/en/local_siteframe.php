@@ -97,6 +97,11 @@ $string['course_page'] = 'SiteFrame';
 $string['iframe_not_allowed'] = 'This site does not allow embedding. Contact the site administrator.';
 $string['domain_not_allowed'] = 'The URL domain is not in the allowed domains list.';
 $string['url_invalid'] = 'The provided URL is not valid.';
+$string['error_mode_disabled'] = 'This display mode is disabled in settings.';
+$string['error_course_not_found'] = 'Course does not exist.';
+$string['iframe_blocked'] = 'This site cannot be embedded in an iframe (blocked by X-Frame-Options or CSP). Try opening it in a new tab.';
+$string['item_hidden'] = 'This SiteFrame item is hidden.';
+$string['sortorder'] = 'Sort order';
 
 // Widget
 $string['widget_open'] = 'Open SiteFrame';

@@ -41,6 +41,22 @@ $functions = [
         'capabilities' => 'local/aigrading:useaigrading',
         'loginrequired' => true,
     ],
+    'local_aigrading_review_grade_student' => [
+        'classname' => 'local_aigrading\\external\\review_grade_student',
+        'description' => 'Preview and apply reviewed AI grades for one quiz student',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'local/aigrading:useaigrading, mod/quiz:grade',
+        'loginrequired' => true,
+    ],
+    'local_aigrading_review_grade_question' => [
+        'classname' => 'local_aigrading\\external\\review_grade_question',
+        'description' => 'Preview and apply reviewed AI grades for one quiz question',
+        'type' => 'write',
+        'ajax' => true,
+        'capabilities' => 'local/aigrading:useaigrading, mod/quiz:grade',
+        'loginrequired' => true,
+    ],
     'local_aigrading_auto_grade_question' => [
         'classname' => 'local_aigrading\external\auto_grade_question',
         'description' => 'Auto-grade all ungraded essays for a quiz question',

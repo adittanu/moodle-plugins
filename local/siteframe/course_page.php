@@ -49,8 +49,8 @@ echo $OUTPUT->header();
 echo $OUTPUT->heading(get_string('course_page', 'local_siteframe'));
 
 if ($itemid > 0) {
-    // Show specific item.
-    $item = $DB->get_record('local_siteframe_items', ['id' => $itemid], '*', MUST_EXIST);
+    // Show specific item — respect visibility (don't leak hidden items via direct ID).
+    $item = $DB->get_record('local_siteframe_items', ['id' => $itemid, 'visible' => 1], '*', MUST_EXIST);
     $items = [$item];
 } else {
     // Show all items for this course + global items.
@@ -76,8 +76,8 @@ if (empty($items)) {
             continue;
         }
 
-        $height = $item->height > 0 ? $item->height . 'px' : '600px';
-        $width = !empty($item->width) ? $item->width : '100%';
+        $height = $item->height > 0 ? domain_helper::sanitize_css_dimension($item->height . 'px', '600px') : '600px';
+        $width = domain_helper::sanitize_css_dimension($item->width ?? '', '100%');
         $sandbox = domain_helper::get_sandbox_attr();
 
         echo $OUTPUT->heading(format_string($item->name), 3);

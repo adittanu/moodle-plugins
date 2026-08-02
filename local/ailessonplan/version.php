@@ -16,4 +16,3 @@ $plugin->requires  = 2022112800; // Moodle 4.1+.
 $plugin->component = 'local_ailessonplan';
 $plugin->maturity  = MATURITY_ALPHA;
 $plugin->release   = '0.1.0';
-$plugin->supported = [401, 500];

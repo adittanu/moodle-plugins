@@ -45,7 +45,7 @@ class item_form extends \moodleform {
 
         // URL.
         $mform->addElement('text', 'url', get_string('item_url', 'local_siteframe'));
-        $mform->setType('url', PARAM_URL);
+        $mform->setType('url', PARAM_RAW); // ponytail: PARAM_URL rejects underscores, custom validation in validation().
         $mform->addRule('url', null, 'required');
 
         // Display mode.
@@ -83,7 +83,7 @@ class item_form extends \moodleform {
         $mform->setDefault('visible', 1);
 
         // Sort order.
-        $mform->addElement('text', 'sortorder', get_string('sortorder', 'core'));
+        $mform->addElement('text', 'sortorder', get_string('sortorder', 'local_siteframe'));
         $mform->setType('sortorder', PARAM_INT);
         $mform->setDefault('sortorder', 0);
 
@@ -97,13 +97,37 @@ class item_form extends \moodleform {
     }
 
     public function validation($data, $files) {
+        global $DB;
         $errors = parent::validation($data, $files);
 
+        // URL validation — sanitize_url tolerates underscores (Herd/Valet hostnames).
         $url = \local_siteframe\domain_helper::sanitize_url($data['url']);
         if ($url === false) {
             $errors['url'] = get_string('url_invalid', 'local_siteframe');
         } elseif (!\local_siteframe\domain_helper::is_domain_allowed($url)) {
             $errors['url'] = get_string('domain_not_allowed', 'local_siteframe');
+        }
+
+        // Display mode must be enabled in settings.
+        $modekey = 'allow_' . $data['displaymode'];
+        if ($data['displaymode'] === 'fullpage') {
+            $modekey = 'allow_fullpage';
+        } elseif ($data['displaymode'] === 'coursepage') {
+            $modekey = 'allow_coursepage';
+        } elseif ($data['displaymode'] === 'widget') {
+            $modekey = 'allow_widget';
+        } elseif ($data['displaymode'] === 'modal') {
+            $modekey = 'allow_modal';
+        }
+        if (!get_config('local_siteframe', $modekey)) {
+            $errors['displaymode'] = get_string('error_mode_disabled', 'local_siteframe');
+        }
+
+        // Course ID must exist when > 0.
+        if (!empty($data['courseid']) && $data['courseid'] > 0) {
+            if (!$DB->record_exists('course', ['id' => $data['courseid']])) {
+                $errors['courseid'] = get_string('error_course_not_found', 'local_siteframe');
+            }
         }
 
         return $errors;

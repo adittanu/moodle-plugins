@@ -34,6 +34,11 @@ class before_footer_callback {
      * @param \core\hook\output\before_footer_html_generation $hook
      */
     public static function callback(\core\hook\output\before_footer_html_generation $hook): void {
+        // Hook callbacks dispatch before legacy lib.php autoload — load it explicitly.
+        // ponytail: require_once guard, not refactor. local_siteframe_render_widget() lives in lib.php.
+        global $CFG;
+        require_once($CFG->dirroot . '/local/siteframe/lib.php');
+
         $html = \local_siteframe_render_widget();
         if (!empty($html)) {
             $hook->add_html($html);

@@ -38,7 +38,7 @@ $PAGE->set_url('/local/siteframe/manage.php', [
     'id'     => $id,
 ]);
 
-admin_externalpage_setup('local_siteframe_manage');
+admin_externalpage_setup('local_siteframe_manage', '', ['action' => $action, 'id' => $id]);
 
 use local_siteframe\domain_helper;
 

@@ -112,6 +112,11 @@ function($, Ajax, Notification, Templates, ModalFactory, ModalEvents) {
         btn.className = 'btn btn-danger btn-lg aigrading-global-btn';
         btn.innerHTML = '<i class="fa fa-bolt mr-2"></i>' + (strings.autogradeall || 'Auto Grade ALL Questions');
 
+        var reviewBtn = document.createElement('button');
+        reviewBtn.type = 'button';
+        reviewBtn.className = 'btn btn-primary btn-lg aigrading-review-all-btn ml-2';
+        reviewBtn.innerHTML = '<i class="fa fa-check-square-o mr-2"></i>Review All with AI';
+
         var progressDiv = document.createElement('div');
         progressDiv.className = 'aigrading-global-progress mt-2 d-none';
         progressDiv.innerHTML = '<div class="spinner-border spinner-border-sm mr-2" role="status"></div>' +
@@ -122,11 +127,130 @@ function($, Ajax, Notification, Templates, ModalFactory, ModalEvents) {
             handleGlobalAutoGrade(btn, progressDiv);
         });
 
+        reviewBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            handleReviewAll(reviewBtn);
+        });
+
         container.appendChild(btn);
+        container.appendChild(reviewBtn);
         container.appendChild(progressDiv);
 
         // Insert before the table.
         table.parentNode.insertBefore(container, table);
+    };
+
+    /**
+     * Review all ungraded essays across all question slots.
+     *
+     * @param {HTMLElement} btn Review button
+     */
+    var handleReviewAll = function(btn) {
+        var originalText = btn.innerHTML;
+        var afterAttemptId = 0;
+        var reviewedStudents = 0;
+        btn.disabled = true;
+
+        var request = function(action, attemptid, grades) {
+            return Ajax.call([{
+                methodname: 'local_aigrading_review_grade_student',
+                args: {
+                    cmid: config.cmid,
+                    action: action,
+                    afterattemptid: afterAttemptId,
+                    attemptid: attemptid || 0,
+                    grades: grades || []
+                }
+            }])[0];
+        };
+
+        var stop = function(message) {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            Notification.addNotification({message: message, type: 'success'});
+            if (reviewedStudents > 0) {
+                window.location.reload();
+            }
+        };
+
+        var nextStudent = function() {
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin mr-2"></i>' +
+                (strings.processing || 'Processing...');
+            request('preview').then(function(result) {
+                if (result.done) {
+                    stop(reviewedStudents ? reviewedStudents + ' student(s) reviewed and applied.' :
+                        'No ungraded essays found.');
+                    return;
+                }
+
+                afterAttemptId = result.attemptid;
+                return Templates.render('local_aigrading/student_review_modal', {
+                    attemptid: result.attemptid,
+                    student: result.student,
+                    questioncount: result.questions.length,
+                    questions: result.questions
+                }).then(function(html) {
+                    return ModalFactory.create({
+                        title: 'Review All with AI — ' + result.student,
+                        body: html,
+                        type: ModalFactory.types.SAVE_CANCEL,
+                        large: true
+                    });
+                }).then(function(modal) {
+                    var continuing = false;
+                    modal.setSaveButtonText('Confirm All & Next Student');
+                    modal.getRoot().on(ModalEvents.save, function(e) {
+                        e.preventDefault();
+                        var grades = [];
+                        var valid = true;
+                        modal.getRoot()[0].querySelectorAll('.aigrading-student-question').forEach(function(question) {
+                            var input = question.querySelector('.aigrading-student-grade');
+                            var grade = parseFloat(input.value);
+                            var maxgrade = parseFloat(question.dataset.maxgrade);
+                            if (!Number.isFinite(grade) || grade < 0 || grade > maxgrade) {
+                                input.setCustomValidity('Grade must be between 0 and ' + maxgrade + '.');
+                                input.reportValidity();
+                                valid = false;
+                                return;
+                            }
+                            input.setCustomValidity('');
+                            grades.push({
+                                slot: parseInt(question.dataset.slot, 10),
+                                grade: grade,
+                                feedback: question.querySelector('.aigrading-student-feedback').value
+                            });
+                        });
+                        if (!valid) {
+                            return;
+                        }
+                        request('apply', result.attemptid, grades).then(function() {
+                            continuing = true;
+                            reviewedStudents++;
+                            modal.destroy();
+                            nextStudent();
+                        }).catch(Notification.exception);
+                    });
+                    modal.getRoot().on(ModalEvents.cancel, function() {
+                        continuing = true;
+                        modal.destroy();
+                        nextStudent();
+                    });
+                    modal.getRoot().on(ModalEvents.hidden, function() {
+                        if (!continuing) {
+                            btn.disabled = false;
+                            btn.innerHTML = originalText;
+                        }
+                    });
+                    modal.show();
+                });
+            }).catch(function(error) {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+                Notification.exception(error);
+            });
+        };
+
+        nextStudent();
     };
 
     /**
@@ -293,105 +417,116 @@ function($, Ajax, Notification, Templates, ModalFactory, ModalEvents) {
      * @param {int} questionid Question ID
      */
     var handleAutoGrade = function(btn, slot, questionid) {
-        // Confirm with user.
-        if (!confirm('Are you sure you want to auto-grade all ungraded essays for this question? ' +
-                     'This will apply grades automatically without review.')) {
-            return;
-        }
-
         var originalText = btn.innerHTML;
+        var afterAttemptId = 0;
+        var reviewed = 0;
         btn.disabled = true;
-        
-        // Create progress indicator
-        var progressContainer = document.createElement('div');
-        progressContainer.className = 'aigrading-batch-progress mt-2';
-        progressContainer.innerHTML = '<div class="progress mb-2">' +
-            '<div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>' +
-            '</div>' +
-            '<small class="text-muted batch-progress-text">Starting...</small>' +
-            '<br><small class="text-muted batch-stats"></small>';
-        btn.parentNode.appendChild(progressContainer);
-        
-        var progressBar = progressContainer.querySelector('.progress-bar');
-        var progressText = progressContainer.querySelector('.batch-progress-text');
-        var statsText = progressContainer.querySelector('.batch-stats');
-        
-        var totalGraded = 0;
-        var totalFailed = 0;
-        var totalSkipped = 0;
-        var startFrom = 0;
-        var batchNumber = 0;
-        
-        var processBatch = function() {
-            batchNumber++;
-            btn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i> Batch ' + batchNumber + '...';
-            progressText.textContent = 'Processing batch ' + batchNumber + '...';
-            
-            Ajax.call([{
-                methodname: 'local_aigrading_auto_grade_question',
-                args: {
+
+        var request = function(action, values) {
+            return Ajax.call([{
+                methodname: 'local_aigrading_review_grade_question',
+                args: Object.assign({
                     cmid: config.cmid,
-                    slot: parseInt(slot),
-                    questionid: parseInt(questionid),
-                    batchsize: 10,
-                    startfrom: startFrom
+                    slot: parseInt(slot, 10),
+                    questionid: parseInt(questionid, 10),
+                    action: action,
+                    afterattemptid: afterAttemptId,
+                    attemptid: 0,
+                    grade: 0,
+                    feedback: ''
+                }, values || {})
+            }])[0];
+        };
+
+        var finish = function(message) {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+            Notification.addNotification({message: message, type: 'success'});
+            if (reviewed > 0) {
+                window.location.reload();
+            }
+        };
+
+        var loadNext = function() {
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin mr-1"></i> ' +
+                (strings.processing || 'Processing...');
+            request('preview').then(function(result) {
+                if (result.skipped) {
+                    afterAttemptId = result.attemptid;
+                    loadNext();
+                    return;
                 }
-            }])[0].then(function(result) {
-                if (!result.success) {
-                    throw new Error(result.message || 'Batch failed');
+                if (result.done) {
+                    finish(reviewed > 0 ? reviewed + ' grade(s) reviewed and applied.' : 'No ungraded essays found.');
+                    return;
                 }
-                
-                // Update totals
-                totalGraded += result.graded;
-                totalFailed += result.failed;
-                totalSkipped += result.skipped;
-                
-                // Update progress
-                var progress = result.total > 0 ? ((startFrom + result.currentbatch) / result.total) * 100 : 100;
-                progressBar.style.width = Math.min(progress, 100) + '%';
-                
-                statsText.textContent = 'Graded: ' + totalGraded + ' | Failed: ' + totalFailed + ' | Skipped: ' + totalSkipped + ' | Remaining: ' + result.remaining;
-                
-                if (result.hasmore) {
-                    // Continue with next batch
-                    startFrom = result.nextstart;
-                    setTimeout(processBatch, 100); // Small delay to prevent overwhelming
-                } else {
-                    // All done
-                    btn.disabled = false;
-                    btn.innerHTML = originalText;
-                    
-                    progressText.textContent = 'Completed!';
-                    progressBar.style.width = '100%';
-                    progressBar.classList.remove('progress-bar-animated');
-                    progressBar.classList.add('bg-success');
-                    
-                    Notification.addNotification({
-                        message: 'Auto-grading complete: ' + totalGraded + ' graded, ' + totalFailed + ' failed, ' + totalSkipped + ' skipped.',
-                        type: totalFailed > 0 ? 'warning' : 'success'
+
+                afterAttemptId = result.attemptid;
+                return Templates.render('local_aigrading/review_modal', {
+                    attemptid: result.attemptid,
+                    student: result.student,
+                    answer: result.answer,
+                    grade: result.grade,
+                    maxgrade: result.maxgrade,
+                    feedback: result.feedback,
+                    explanation: result.explanation,
+                    confidence: result.confidence,
+                    confidenceclass: result.confidence === 'high' ? 'success' :
+                        (result.confidence === 'low' ? 'danger' : 'warning')
+                }).then(function(html) {
+                    return ModalFactory.create({
+                        title: 'Review AI Grade',
+                        body: html,
+                        type: ModalFactory.types.SAVE_CANCEL,
+                        large: true
                     });
-                    
-                    // Reload the page to show updated counts
-                    if (totalGraded > 0) {
-                        setTimeout(function() {
-                            window.location.reload();
-                        }, 2000);
-                    }
-                    
-                    // Hide progress after delay
-                    setTimeout(function() {
-                        progressContainer.remove();
-                    }, 5000);
-                }
+                }).then(function(modal) {
+                    modal.setSaveButtonText('Confirm & Next');
+                    var continuing = false;
+                    modal.getRoot().on(ModalEvents.save, function(e) {
+                        e.preventDefault();
+                        var root = modal.getRoot()[0];
+                        var gradeInput = root.querySelector('#aigrading-review-grade');
+                        var feedbackInput = root.querySelector('#aigrading-review-feedback');
+                        var grade = parseFloat(gradeInput.value);
+                        if (!Number.isFinite(grade) || grade < 0 || grade > result.maxgrade) {
+                            gradeInput.setCustomValidity('Grade must be between 0 and ' + result.maxgrade + '.');
+                            gradeInput.reportValidity();
+                            return;
+                        }
+                        gradeInput.setCustomValidity('');
+                        request('apply', {
+                            attemptid: result.attemptid,
+                            grade: grade,
+                            feedback: feedbackInput.value
+                        }).then(function() {
+                            continuing = true;
+                            reviewed++;
+                            modal.destroy();
+                            loadNext();
+                        }).catch(Notification.exception);
+                    });
+                    modal.getRoot().on(ModalEvents.cancel, function() {
+                        continuing = true;
+                        modal.destroy();
+                        loadNext();
+                    });
+                    modal.getRoot().on(ModalEvents.hidden, function() {
+                        if (!continuing) {
+                            btn.disabled = false;
+                            btn.innerHTML = originalText;
+                        }
+                    });
+                    modal.show();
+                });
             }).catch(function(error) {
                 btn.disabled = false;
                 btn.innerHTML = originalText;
-                progressContainer.remove();
                 Notification.exception(error);
             });
         };
-        
-        processBatch();
+
+        loadNext();
     };
 
     /**

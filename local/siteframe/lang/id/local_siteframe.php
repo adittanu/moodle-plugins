@@ -97,6 +97,11 @@ $string['course_page'] = 'SiteFrame';
 $string['iframe_not_allowed'] = 'Situs ini tidak mengizinkan embedding. Hubungi administrator situs.';
 $string['domain_not_allowed'] = 'Domain URL tidak ada dalam daftar domain yang diizinkan.';
 $string['url_invalid'] = 'URL yang diberikan tidak valid.';
+$string['error_mode_disabled'] = 'Mode tampilan ini dinonaktifkan di pengaturan.';
+$string['error_course_not_found'] = 'Kursus tidak ditemukan.';
+$string['iframe_blocked'] = 'Situs ini tidak dapat dimuat dalam iframe (diblokir X-Frame-Options atau CSP). Coba buka di tab baru.';
+$string['item_hidden'] = 'Item SiteFrame ini tersembunyi.';
+$string['sortorder'] = 'Urutan';
 
 // Widget
 $string['widget_open'] = 'Buka SiteFrame';

@@ -33,6 +33,11 @@ require_login();
 $context = context_system::instance();
 require_capability('local/siteframe:view', $context);
 
+// Hidden items only visible to managers (avoid info leak via direct ID).
+if (empty($item->visible) && !has_capability('local/siteframe:manage', $context)) {
+    throw new moodle_exception('item_hidden', 'local_siteframe');
+}
+
 // Validate domain.
 use local_siteframe\domain_helper;
 $url = domain_helper::sanitize_url($item->url);
@@ -52,8 +57,8 @@ $PAGE->set_pagelayout('standard');
 $PAGE->navbar->add(get_string('pluginname', 'local_siteframe'), new moodle_url('/local/siteframe/'));
 $PAGE->navbar->add(format_string($item->name));
 
-$height = $item->height > 0 ? $item->height . 'px' : '100%';
-$width = !empty($item->width) ? $item->width : '100%';
+$height = $item->height > 0 ? domain_helper::sanitize_css_dimension($item->height . 'px', '100%') : '100%';
+$width = domain_helper::sanitize_css_dimension($item->width ?? '', '100%');
 $sandbox = domain_helper::get_sandbox_attr();
 
 echo $OUTPUT->header();
@@ -72,6 +77,14 @@ if ($item->displaymode === 'modal') {
     );
 } else {
     // Fullpage / inline mode: render iframe directly.
+    // Ponytail: detect X-Frame-Options/CSP block via onload timeout — if iframe
+    // doesn't fire load within 3s, show fallback message (server can't pre-check).
+    echo html_writer::start_div('siteframe-container');
+    echo html_writer::div(
+        get_string('iframe_blocked', 'local_siteframe'),
+        'siteframe-blocked-fallback',
+        ['style' => 'display:none; padding:20px; background:#fff3cd; border:1px solid #ffeaa7; border-radius:8px; margin:10px 0;']
+    );
     echo html_writer::tag('iframe', '', [
         'src'       => $url,
         'width'     => $width,
@@ -83,6 +96,27 @@ if ($item->displaymode === 'modal') {
         'class'     => 'siteframe-iframe siteframe-display-fullpage',
         'style'     => 'border: none; width: ' . $width . '; height: ' . $height . ';',
     ]);
+    echo html_writer::end_div();
+    echo '<script>
+        (function() {
+            var iframe = document.querySelector(".siteframe-display-fullpage");
+            var fallback = document.querySelector(".siteframe-blocked-fallback");
+            if (!iframe || !fallback) return;
+            var loaded = false;
+            iframe.addEventListener("load", function() { loaded = true; });
+            setTimeout(function() {
+                if (!loaded) {
+                    try {
+                        // If blocked by X-Frame-Options, accessing contentDocument throws.
+                        var doc = iframe.contentDocument || iframe.contentWindow.document;
+                    } catch (e) {
+                        fallback.style.display = "block";
+                        iframe.style.display = "none";
+                    }
+                }
+            }, 3000);
+        })();
+    </script>';
 }
 
 echo $OUTPUT->footer();

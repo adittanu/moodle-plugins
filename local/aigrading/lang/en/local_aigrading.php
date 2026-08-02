@@ -97,7 +97,7 @@ $string['aigrading:useaigrading'] = 'Use AI grading suggestions';
 // UI strings.
 $string['aisuggestgrade'] = 'AI Suggest Grade';
 $string['bulkaigrade'] = 'Bulk AI Grade All';
-$string['autograde'] = 'Auto AI Grade';
+$string['autograde'] = 'Review with AI';
 $string['autogradeall'] = 'Auto Grade ALL Questions';
 $string['processing'] = 'Processing...';
 $string['processingprogress'] = 'Processing {$a->current} of {$a->total}...';

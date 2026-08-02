@@ -115,6 +115,17 @@ class quizaccess_webcamguard extends quiz_access_rule_base {
         $mform->addHelpButton('webcamguard_enabled', 'enabled', 'quizaccess_webcamguard');
         $mform->setDefault('webcamguard_enabled', 0);
 
+        $devicemodes = [
+            'any' => get_string('deviceany', 'quizaccess_webcamguard'),
+            'mobile' => get_string('devicemobile', 'quizaccess_webcamguard'),
+            'desktop' => get_string('devicedesktop', 'quizaccess_webcamguard'),
+        ];
+        $mform->addElement('select', 'webcamguard_devicemode',
+            get_string('devicemode', 'quizaccess_webcamguard'), $devicemodes);
+        $mform->addHelpButton('webcamguard_devicemode', 'devicemode', 'quizaccess_webcamguard');
+        $mform->setDefault('webcamguard_devicemode', 'any');
+        $mform->hideIf('webcamguard_devicemode', 'webcamguard_enabled', 'notchecked');
+
         $mform->addElement('advcheckbox', 'webcamguard_snapshotonviolation',
             get_string('snapshotonviolation', 'quizaccess_webcamguard'));
         $mform->addHelpButton('webcamguard_snapshotonviolation', 'snapshotonviolation', 'quizaccess_webcamguard');
@@ -197,6 +208,11 @@ class quizaccess_webcamguard extends quiz_access_rule_base {
             return $errors;
         }
 
+        $devicemode = $data['webcamguard_devicemode'] ?? 'any';
+        if (!in_array($devicemode, ['any', 'mobile', 'desktop'], true)) {
+            $errors['webcamguard_devicemode'] = get_string('invaliddevicemode', 'quizaccess_webcamguard');
+        }
+
         if (!in_array((int)$data['webcamguard_intervalseconds'], self::ALLOWED_INTERVALS, true)) {
             $errors['webcamguard_intervalseconds'] = get_string('invalidinterval', 'quizaccess_webcamguard');
         }
@@ -252,6 +268,9 @@ class quizaccess_webcamguard extends quiz_access_rule_base {
                 && in_array($quiz->webcamguard_identitymode, self::ALLOWED_IDENTITY_MODES, true)
                     ? $quiz->webcamguard_identitymode : 'flag',
             'liveenabled' => empty($quiz->webcamguard_liveenabled) ? 0 : 1,
+            'devicemode' => isset($quiz->webcamguard_devicemode)
+                && in_array($quiz->webcamguard_devicemode, ['any', 'mobile', 'desktop'], true)
+                    ? $quiz->webcamguard_devicemode : 'any',
             'timemodified' => $now,
         ];
 
@@ -291,7 +310,7 @@ class quizaccess_webcamguard extends quiz_access_rule_base {
                 'wg.identityenabled AS webcamguard_identityenabled, ' .
                 'wg.identitythreshold AS webcamguard_identitythreshold, ' .
                 'wg.identitymode AS webcamguard_identitymode, ' .
-                'wg.liveenabled AS webcamguard_liveenabled',
+                'wg.liveenabled AS webcamguard_liveenabled, wg.devicemode AS webcamguard_devicemode',
             'LEFT JOIN {quizaccess_wg_config} wg ON wg.quizid = quiz.id',
             [],
         ];
@@ -358,6 +377,10 @@ class quizaccess_webcamguard extends quiz_access_rule_base {
 
         $mform->addElement('advcheckbox', self::FIELD_CONSENT, '', get_string('consentlabel', 'quizaccess_webcamguard'));
         $mform->addElement('hidden', self::FIELD_READY, 0);
+        $mform->addElement('hidden', 'webcamguarddevicevalid', 0);
+        $mform->setType('webcamguarddevicevalid', PARAM_BOOL);
+        $mform->addElement('static', 'webcamguarddevicelabel', '',
+            html_writer::div('', 'alert alert-info', ['id' => 'quizaccess-webcamguard-device-label']));
         $mform->setType(self::FIELD_READY, PARAM_BOOL);
         $mform->addElement('hidden', self::FIELD_IDENTITY_STATUS, '');
         $mform->setType(self::FIELD_IDENTITY_STATUS, PARAM_ALPHANUMEXT);
@@ -400,6 +423,9 @@ class quizaccess_webcamguard extends quiz_access_rule_base {
             'readyFieldName' => self::FIELD_READY,
             'consentFieldId' => 'id_' . self::FIELD_CONSENT,
             'consentFieldName' => self::FIELD_CONSENT,
+            'deviceValidFieldId' => 'id_webcamguarddevicevalid',
+            'deviceLabelId' => 'quizaccess-webcamguard-device-label',
+            'deviceMode' => $this->quiz->webcamguard_devicemode ?? 'any',
             'identityStatusFieldId' => 'id_' . self::FIELD_IDENTITY_STATUS,
             'identityStatusFieldName' => self::FIELD_IDENTITY_STATUS,
             'identityDistanceFieldId' => 'id_' . self::FIELD_IDENTITY_DISTANCE,
@@ -440,6 +466,13 @@ class quizaccess_webcamguard extends quiz_access_rule_base {
                 'permissiondenied' => get_string('permissiondenied', 'quizaccess_webcamguard'),
                 'cameranotfound' => get_string('cameranotfound', 'quizaccess_webcamguard'),
                 'detectorunavailable' => get_string('detectorunavailable', 'quizaccess_webcamguard'),
+                'deviceblocked' => get_string('deviceblocked', 'quizaccess_webcamguard'),
+                'deviceany' => get_string('deviceany', 'quizaccess_webcamguard'),
+                'devicemobile' => get_string('devicemobile', 'quizaccess_webcamguard'),
+                'devicedesktop' => get_string('devicedesktop', 'quizaccess_webcamguard'),
+                'devicepassed' => get_string('devicepassed', 'quizaccess_webcamguard'),
+                'devicefailed' => get_string('devicefailed', 'quizaccess_webcamguard'),
+                'devicerequired' => get_string('devicerequired', 'quizaccess_webcamguard'),
             ],
         ]]);
         if (!$identityenabled) {
@@ -591,6 +624,7 @@ class quizaccess_webcamguard extends quiz_access_rule_base {
         // We still record what the client reported into session so that the
         // teacher review screen can flag suspicious attempts (mode=flag
         // semantics), even though we no longer hard-block.
+
         if (!empty($this->quiz->webcamguard_identityenabled)) {
             $identitystatus = isset($data[self::FIELD_IDENTITY_STATUS]) ? $data[self::FIELD_IDENTITY_STATUS] : '';
             $identitydistance = isset($data[self::FIELD_IDENTITY_DISTANCE]) ? $data[self::FIELD_IDENTITY_DISTANCE] : '';

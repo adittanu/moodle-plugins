@@ -53,12 +53,25 @@ function siteframe_supports($feature) {
 function siteframe_add_instance($siteframe, $mform = null) {
     global $DB;
 
-    $siteframe->timecreated = time();
-    $siteframe->timemodified = time();
+    $now = time();
+    // Explicit field whitelist — moodleform_mod submits many extra fields
+    // (coursemodule, section, module, add, update, submitbutton, ...) that
+    // must never land in the siteframe table.
+    $record = (object) [
+        'course'      => $siteframe->course,
+        'name'        => $siteframe->name,
+        'intro'       => $siteframe->intro ?? '',
+        'introformat' => $siteframe->introformat ?? 0,
+        'url'         => $siteframe->url,
+        'displaymode' => $siteframe->displaymode ?? 'inline',
+        'height'      => $siteframe->height ?? 0,
+        'width'       => $siteframe->width ?? '100%',
+        'scrolling'   => $siteframe->scrolling ?? 'auto',
+        'timemodified' => $now,
+        'timecreated' => $now,
+    ];
 
-    $siteframe->id = $DB->insert_record('siteframe', $siteframe);
-
-    return $siteframe->id;
+    return $DB->insert_record('siteframe', $record);
 }
 
 /**
@@ -71,11 +84,24 @@ function siteframe_add_instance($siteframe, $mform = null) {
 function siteframe_update_instance($siteframe, $mform = null) {
     global $DB;
 
-    $siteframe->timemodified = time();
-    $siteframe->id = $siteframe->instance;
+    // Explicit field whitelist — see add_instance note.
+    $record = (object) [
+        'id'          => $siteframe->instance,
+        'course'      => $siteframe->course,
+        'name'        => $siteframe->name,
+        'intro'       => $siteframe->intro ?? '',
+        'introformat' => $siteframe->introformat ?? 0,
+        'url'         => $siteframe->url,
+        'displaymode' => $siteframe->displaymode ?? 'inline',
+        'height'      => $siteframe->height ?? 0,
+        'width'       => $siteframe->width ?? '100%',
+        'scrolling'   => $siteframe->scrolling ?? 'auto',
+        'timemodified' => time(),
+    ];
 
-    return $DB->update_record('siteframe', $siteframe);
+    return $DB->update_record('siteframe', $record);
 }
+
 
 /**
  * Deletes a siteframe instance.

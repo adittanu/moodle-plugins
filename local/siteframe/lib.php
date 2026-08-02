@@ -88,6 +88,13 @@ function local_siteframe_render_widget() {
         return '';
     }
 
+    // Skip widget on pages where it would interfere (quiz attempt, login, review).
+    // ponytail: simple pagetype regex. Add more patterns here if widget interferes with other pages.
+    $pagetype = $PAGE->pagetype ?? '';
+    if (preg_match('/^(mod-quiz-attempt|mod-quiz-review|login|admin-search)/', $pagetype)) {
+        return '';
+    }
+
     $defaulturl = get_config('local_siteframe', 'default_url');
     if (empty($defaulturl)) {
         return '';
@@ -129,10 +136,11 @@ function local_siteframe_render_widget() {
         html_writer::div(
             html_writer::div($title, 'siteframe-widget-panel-header') .
             html_writer::tag('iframe', '', [
-                'src'       => $defaulturl,
-                'sandbox'   => $sandbox,
+                'src'         => 'about:blank',
+                'sandbox'     => $sandbox,
                 'frameborder' => '0',
-                'class'     => 'siteframe-widget-iframe',
+                'class'       => 'siteframe-widget-iframe',
+                'loading'     => 'lazy',
             ]),
             'siteframe-widget-panel'
         ),

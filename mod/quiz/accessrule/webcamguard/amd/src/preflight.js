@@ -255,6 +255,41 @@ define([], function() {
 
     // ─── Run Check ─────────────────────────────────────────────────────
 
+    var detectedDevice = function() {
+        // ponytail: dimension-only heuristic; current viewport avoids stale DevTools-emulated screen width.
+        return window.innerWidth < 768 ? 'mobile' : 'desktop';
+    };
+
+    var deviceMatches = function(config) {
+        return !config.deviceMode || config.deviceMode === 'any' || config.deviceMode === detectedDevice();
+    };
+
+    var deviceLabel = function(config, mode) {
+        return mode === 'mobile' ? config.strings.devicemobile : config.strings.devicedesktop;
+    };
+
+    var deviceMessage = function(config, valid) {
+        var detected = deviceLabel(config, detectedDevice());
+        if (valid) {
+            return config.strings.devicepassed + ': ' + detected + '.';
+        }
+        return config.strings.devicefailed + ': ' + detected + '; ' +
+            deviceLabel(config, config.deviceMode) + ' ' + config.strings.devicerequired.toLowerCase() + '. ' +
+            config.strings.deviceblocked;
+    };
+
+    var setDeviceValidity = function(config) {
+        var field = document.getElementById(config.deviceValidFieldId);
+        var label = document.getElementById(config.deviceLabelId);
+        var valid = deviceMatches(config);
+        if (field) { field.value = valid ? '1' : '0'; }
+        if (label) {
+            label.className = valid ? 'alert alert-info' : 'alert alert-danger';
+            label.textContent = deviceMessage(config, valid);
+        }
+        return valid;
+    };
+
     var runCheck = function(config) {
         var readyField = getField(config.readyFieldId, config.readyFieldName);
         var consentField = getField(config.consentFieldId, config.consentFieldName);
@@ -266,6 +301,13 @@ define([], function() {
         var video = document.getElementById(config.videoId);
         var statusEl = document.getElementById(config.statusId);
         var placeholder = document.getElementById('wcg-camera-placeholder');
+        if (!setDeviceValidity(config)) {
+            setReadyValue(config, '0');
+            setFaceState('idle');
+            setStatus(statusEl, config.strings.deviceblocked, 'alert alert-danger');
+            return;
+        }
+
 
         setReadyValue(config, '0');
         setFaceState('searching');
@@ -379,6 +421,8 @@ define([], function() {
     // ─── Init ──────────────────────────────────────────────────────────
 
     var init = function(config) {
+        setDeviceValidity(config);
+        window.addEventListener('resize', function() { setDeviceValidity(config); });
         var tryBind = function() {
             ensureLayout();
             var button = findButton(config);
@@ -416,7 +460,13 @@ define([], function() {
             var form = document.getElementById('mod_quiz_preflight_form');
             if (form && !form.dataset.wcgSubmitBound) {
                 form.dataset.wcgSubmitBound = '1';
-                form.addEventListener('submit', function() {
+                form.addEventListener('submit', function(e) {
+                    if (!setDeviceValidity(config)) {
+                        e.preventDefault();
+                        setStatus(document.getElementById(config.statusId),
+                            config.strings.deviceblocked, 'alert alert-danger');
+                        return;
+                    }
                     if (config.liveState) { stopLiveLoop(config.liveState); }
                     var video = document.getElementById(config.videoId);
                     if (video && video.srcObject) {

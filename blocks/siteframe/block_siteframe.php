@@ -39,6 +39,12 @@ class block_siteframe extends block_base {
         $this->content->text = '';
         $this->content->footer = '';
 
+        // Respect the global enable toggle from local_siteframe.
+        if (!get_config('local_siteframe', 'enabled')) {
+            $this->content->text = '';
+            return $this->content;
+        }
+
         $url = isset($this->config->url) ? $this->config->url : '';
         if (empty($url)) {
             $defaulturl = get_config('local_siteframe', 'default_url');
@@ -57,8 +63,8 @@ class block_siteframe extends block_base {
             return $this->content;
         }
 
-        $height = isset($this->config->height) && $this->config->height > 0 ? $this->config->height : 400;
-        $width = isset($this->config->width) && !empty($this->config->width) ? $this->config->width : '100%';
+        $height = isset($this->config->height) && $this->config->height > 0 ? (int) $this->config->height : 400;
+        $width = \local_siteframe\domain_helper::sanitize_css_dimension($this->config->width ?? '', '100%');
         $scrolling = isset($this->config->scrolling) ? $this->config->scrolling : 'auto';
         $sandbox = local_siteframe\domain_helper::get_sandbox_attr();
 
