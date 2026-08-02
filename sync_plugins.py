@@ -21,6 +21,7 @@ PLUGINS = (
     "blocks/siteframe",
     "mod/siteframe",
     "mod/quiz/accessrule/webcamguard",
+    "mod/quiz/report/lightstats",
 )
 
 
