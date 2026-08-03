@@ -31,66 +31,80 @@ require_once($CFG->libdir . '/formslib.php');
 class item_form extends \moodleform {
 
     public function definition() {
+        global $DB;
+
         $mform = $this->_form;
         $item = $this->_customdata['item'];
-
-        // Hidden ID for edit mode.
         $mform->addElement('hidden', 'id');
         $mform->setType('id', PARAM_INT);
 
-        // Name.
-        $mform->addElement('text', 'name', get_string('item_name', 'local_siteframe'));
+        $mform->addElement('header', 'contentheader', get_string('content', 'local_siteframe'));
+        $mform->addElement('text', 'name', get_string('item_name', 'local_siteframe'), ['size' => 50]);
         $mform->setType('name', PARAM_TEXT);
-        $mform->addRule('name', null, 'required');
+        $mform->addRule('name', null, 'required', null, 'client');
+        $mform->addRule('name', get_string('maximumchars', '', 255), 'maxlength', 255, 'client');
+        $mform->addHelpButton('name', 'item_name', 'local_siteframe');
 
-        // URL.
-        $mform->addElement('text', 'url', get_string('item_url', 'local_siteframe'));
-        $mform->setType('url', PARAM_RAW); // ponytail: PARAM_URL rejects underscores, custom validation in validation().
-        $mform->addRule('url', null, 'required');
+        $mform->addElement('text', 'url', get_string('item_url', 'local_siteframe'), ['size' => 70]);
+        $mform->setType('url', PARAM_RAW_TRIMMED);
+        $mform->addRule('url', null, 'required', null, 'client');
+        $mform->addHelpButton('url', 'item_url', 'local_siteframe');
 
-        // Display mode.
-        $modes = [
-            'fullpage'   => get_string('displaymode_fullpage', 'local_siteframe'),
-            'coursepage' => get_string('displaymode_coursepage', 'local_siteframe'),
-            'widget'     => get_string('displaymode_widget', 'local_siteframe'),
-            'modal'      => get_string('displaymode_modal', 'local_siteframe'),
-        ];
+        $modes = [];
+        foreach (['fullpage', 'coursepage', 'widget'] as $mode) {
+            if (get_config('local_siteframe', 'allow_' . $mode)) {
+                $modes[$mode] = get_string('displaymode_' . $mode, 'local_siteframe');
+            }
+        }
+        if (($item->displaymode ?? '') === 'modal') {
+            $modes['modal'] = get_string('displaymode_modal', 'local_siteframe');
+        }
         $mform->addElement('select', 'displaymode', get_string('item_displaymode', 'local_siteframe'), $modes);
-        $mform->setDefault('displaymode', 'fullpage');
+        $mform->addHelpButton('displaymode', 'item_displaymode', 'local_siteframe');
+        $mform->setDefault('displaymode', array_key_first($modes) ?: 'fullpage');
 
-        // Course ID.
-        $mform->addElement('text', 'courseid', get_string('item_courseid', 'local_siteframe'));
+        $courses = [0 => get_string('scope_global', 'local_siteframe')];
+        foreach ($DB->get_records_select('course', 'id <> :siteid', ['siteid' => SITEID], 'fullname ASC', 'id,fullname') as $course) {
+            $courses[$course->id] = format_string($course->fullname);
+        }
+        $mform->addElement('autocomplete', 'courseid', get_string('item_courseid', 'local_siteframe'), $courses);
         $mform->setType('courseid', PARAM_INT);
         $mform->setDefault('courseid', 0);
+        $mform->addHelpButton('courseid', 'item_courseid', 'local_siteframe');
 
-        // Height.
+        $mform->addElement('advcheckbox', 'visible', get_string('item_visible', 'local_siteframe'));
+        $mform->setDefault('visible', 1);
+        $mform->addHelpButton('visible', 'item_visible', 'local_siteframe');
+
+        $mform->addElement('header', 'advancedheader', get_string('advanced', 'core'));
+        $mform->setAdvanced('advancedheader');
         $mform->addElement('text', 'height', get_string('item_height', 'local_siteframe'));
         $mform->setType('height', PARAM_INT);
         $mform->setDefault('height', 0);
+        $mform->addHelpButton('height', 'item_height', 'local_siteframe');
+        $mform->setAdvanced('height');
 
-        // Width.
         $mform->addElement('text', 'width', get_string('item_width', 'local_siteframe'));
         $mform->setType('width', PARAM_TEXT);
         $mform->setDefault('width', '100%');
+        $mform->addHelpButton('width', 'item_width', 'local_siteframe');
+        $mform->setAdvanced('width');
 
-        // Scrolling.
-        $scrolling = ['auto' => 'auto', 'yes' => 'yes', 'no' => 'no'];
-        $mform->addElement('select', 'scrolling', get_string('item_scrolling', 'local_siteframe'), $scrolling);
+        $mform->addElement('select', 'scrolling', get_string('item_scrolling', 'local_siteframe'), [
+            'auto' => get_string('scrolling_auto', 'local_siteframe'),
+            'yes' => get_string('yes'),
+            'no' => get_string('no'),
+        ]);
         $mform->setDefault('scrolling', 'auto');
+        $mform->addHelpButton('scrolling', 'item_scrolling', 'local_siteframe');
+        $mform->setAdvanced('scrolling');
 
-        // Visible.
-        $mform->addElement('advcheckbox', 'visible', get_string('item_visible', 'local_siteframe'));
-        $mform->setDefault('visible', 1);
-
-        // Sort order.
         $mform->addElement('text', 'sortorder', get_string('sortorder', 'local_siteframe'));
         $mform->setType('sortorder', PARAM_INT);
         $mform->setDefault('sortorder', 0);
-
-        // Action buttons.
+        $mform->setAdvanced('sortorder');
         $this->add_action_buttons(true, get_string('savechanges'));
 
-        // Set data if editing.
         if (!empty($item->id)) {
             $this->set_data($item);
         }
@@ -118,6 +132,18 @@ class item_form extends \moodleform {
             $modekey = 'allow_widget';
         } elseif ($data['displaymode'] === 'modal') {
             $modekey = 'allow_modal';
+        }
+
+        if (($data['displaymode'] ?? '') === 'widget' && !empty($data['visible'])) {
+            $params = ['mode' => 'widget', 'courseid' => (int)($data['courseid'] ?? 0)];
+            $select = 'displaymode = :mode AND courseid = :courseid AND visible = 1';
+            if (!empty($data['id'])) {
+                $select .= ' AND id <> :id';
+                $params['id'] = (int)$data['id'];
+            }
+            if ($DB->record_exists_select('local_siteframe_items', $select, $params)) {
+                $errors['displaymode'] = get_string('error_widget_exists', 'local_siteframe');
+            }
         }
         if (!get_config('local_siteframe', $modekey)) {
             $errors['displaymode'] = get_string('error_mode_disabled', 'local_siteframe');

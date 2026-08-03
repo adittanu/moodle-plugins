@@ -38,5 +38,27 @@ function xmldb_local_siteframe_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026072000, 'local', 'siteframe');
     }
 
+    // 2026080201: make stored items the single runtime source for the widget.
+    if ($oldversion < 2026080201) {
+        $defaulturl = get_config('local_siteframe', 'default_url');
+        if ($defaulturl && !$DB->record_exists('local_siteframe_items', ['displaymode' => 'widget'])) {
+            $DB->insert_record('local_siteframe_items', (object)[
+                'name' => get_config('local_siteframe', 'widget_title') ?: 'SiteFrame',
+                'url' => $defaulturl,
+                'displaymode' => 'widget',
+                'courseid' => 0,
+                'height' => 0,
+                'width' => '100%',
+                'scrolling' => 'auto',
+                'visible' => 1,
+                'sortorder' => 0,
+                'timecreated' => time(),
+                'timemodified' => time(),
+            ]);
+        }
+        unset_config('default_url', 'local_siteframe');
+        upgrade_plugin_savepoint(true, 2026080201, 'local', 'siteframe');
+    }
+
     return true;
 }

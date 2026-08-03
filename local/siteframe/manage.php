@@ -40,6 +40,7 @@ $PAGE->set_url('/local/siteframe/manage.php', [
 
 admin_externalpage_setup('local_siteframe_manage', '', ['action' => $action, 'id' => $id]);
 
+$listurl = new moodle_url('/local/siteframe/manage.php');
 use local_siteframe\domain_helper;
 
 // Delete action.
@@ -61,6 +62,15 @@ if ($action === 'delete' && $id > 0) {
     echo $OUTPUT->footer();
     exit;
 }
+// Visibility toggle action.
+if ($action === 'toggle' && $id > 0) {
+    require_sesskey();
+    $item = $DB->get_record('local_siteframe_items', ['id' => $id], '*', MUST_EXIST);
+    $DB->set_field('local_siteframe_items', 'visible', empty($item->visible) ? 1 : 0, ['id' => $id]);
+    redirect($listurl, get_string('visibility_updated', 'local_siteframe'), null,
+        \core\output\notification::NOTIFY_SUCCESS);
+}
+
 
 // Add/Edit form processing.
 if ($action === 'edit' || $action === 'add') {
@@ -72,10 +82,11 @@ if ($action === 'edit' || $action === 'add') {
         }
     }
 
-    $mform = new \local_siteframe\form\item_form(null, ['item' => $item]);
+    $formurl = new moodle_url('/local/siteframe/manage.php', ['action' => $action, 'id' => $id]);
+    $mform = new \local_siteframe\form\item_form($formurl, ['item' => $item]);
 
     if ($mform->is_cancelled()) {
-        redirect($PAGE->url);
+        redirect($listurl);
     } else if ($data = $mform->get_data()) {
         // Validate URL.
         $url = domain_helper::sanitize_url($data->url);
@@ -96,7 +107,7 @@ if ($action === 'edit' || $action === 'add') {
             $DB->insert_record('local_siteframe_items', $data);
         }
 
-        redirect($PAGE->url, get_string('item_saved', 'local_siteframe'), null, \core\output\notification::NOTIFY_SUCCESS);
+        redirect($listurl, get_string('item_saved', 'local_siteframe'), null, \core\output\notification::NOTIFY_SUCCESS);
     }
 
     echo $OUTPUT->header();
@@ -128,17 +139,18 @@ if (empty($items)) {
     $table = new html_table();
     $table->head = [
         get_string('item_name', 'local_siteframe'),
-        get_string('item_url', 'local_siteframe'),
-        get_string('item_displaymode', 'local_siteframe'),
-        get_string('item_courseid', 'local_siteframe'),
-        get_string('item_visible', 'local_siteframe'),
+        get_string('placement', 'local_siteframe'),
+        get_string('scope', 'local_siteframe'),
+        get_string('status', 'core'),
         get_string('actions', 'local_siteframe'),
     ];
     $table->attributes['class'] = 'generaltable';
 
     foreach ($items as $item) {
-        $editurl = new moodle_url($PAGE->url, ['action' => 'edit', 'id' => $item->id]);
-        $deleteurl = new moodle_url($PAGE->url, ['action' => 'delete', 'id' => $item->id]);
+        $previewurl = new moodle_url('/local/siteframe/view.php', ['id' => $item->id]);
+        $editurl = new moodle_url($listurl, ['action' => 'edit', 'id' => $item->id]);
+        $deleteurl = new moodle_url($listurl, ['action' => 'delete', 'id' => $item->id]);
+        $toggleurl = new moodle_url($listurl, ['action' => 'toggle', 'id' => $item->id, 'sesskey' => sesskey()]);
 
         $coursename = '-';
         if ($item->courseid > 0) {
@@ -146,15 +158,16 @@ if (empty($items)) {
             $coursename = $course ? format_string($course->fullname) : $item->courseid;
         }
 
-        $actions = html_writer::link($editurl, get_string('edit_siteframe', 'local_siteframe')) . ' | ' .
-                   html_writer::link($deleteurl, get_string('delete', 'core'));
+        $actions = html_writer::link($previewurl, get_string('preview', 'local_siteframe'), ['target' => '_blank']) . ' | ' .
+            html_writer::link($editurl, get_string('edit')) . ' | ' .
+            html_writer::link($toggleurl, get_string($item->visible ? 'disable' : 'enable', 'core')) . ' | ' .
+            html_writer::link($deleteurl, get_string('delete'));
 
         $table->data[] = [
             format_string($item->name),
-            html_writer::tag('code', s($item->url)),
             get_string('displaymode_' . $item->displaymode, 'local_siteframe'),
-            $coursename,
-            $item->visible ? get_string('yes') : get_string('no'),
+            $item->courseid > 0 ? $coursename : get_string('scope_global', 'local_siteframe'),
+            $item->visible ? get_string('status_active', 'local_siteframe') : get_string('status_hidden', 'local_siteframe'),
             $actions,
         ];
     }

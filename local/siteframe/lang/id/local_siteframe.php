@@ -65,6 +65,7 @@ $string['displaymode_coursepage'] = 'Halaman Kursus';
 $string['displaymode_widget'] = 'Widget Mengambang';
 $string['displaymode_modal'] = 'Modal/Lightbox';
 
+$string['content'] = 'Konten dan penempatan';
 // Manage page
 $string['manage_siteframes'] = 'Kelola Item SiteFrame';
 $string['manage_heading'] = 'Item SiteFrame';
@@ -90,6 +91,15 @@ $string['item_saved'] = 'Item SiteFrame berhasil disimpan.';
 $string['item_deleted'] = 'Item SiteFrame dihapus.';
 $string['no_items'] = 'Belum ada item SiteFrame yang dikonfigurasi.';
 $string['actions'] = 'Aksi';
+$string['placement'] = 'Penempatan';
+$string['preview'] = 'Pratinjau';
+$string['scope'] = 'Cakupan';
+$string['scope_global'] = 'Global (semua kursus)';
+$string['scrolling_auto'] = 'Otomatis';
+$string['status_active'] = 'Aktif';
+$string['status_hidden'] = 'Tersembunyi';
+$string['error_widget_exists'] = 'Widget mengambang aktif sudah ada untuk cakupan ini. Edit, sembunyikan, atau hapus widget tersebut terlebih dahulu.';
+$string['visibility_updated'] = 'Visibilitas diperbarui.';
 
 // View page
 $string['view_title'] = 'SiteFrame';

@@ -73,74 +73,64 @@ function local_siteframe_before_footer() {
  * @return string HTML for the widget, or empty if disabled.
  */
 function local_siteframe_render_widget() {
-    global $PAGE;
+    global $DB, $PAGE;
 
-    if (!get_config('local_siteframe', 'enabled')) {
+    if (!get_config('local_siteframe', 'enabled') || !get_config('local_siteframe', 'allow_widget')) {
         return '';
     }
-
-    if (!get_config('local_siteframe', 'allow_widget')) {
-        return '';
-    }
-
     $context = context_system::instance();
     if (!has_capability('local/siteframe:view', $context)) {
         return '';
     }
-
-    // Skip widget on pages where it would interfere (quiz attempt, login, review).
-    // ponytail: simple pagetype regex. Add more patterns here if widget interferes with other pages.
     $pagetype = $PAGE->pagetype ?? '';
     if (preg_match('/^(mod-quiz-attempt|mod-quiz-review|login|admin-search)/', $pagetype)) {
         return '';
     }
 
-    $defaulturl = get_config('local_siteframe', 'default_url');
-    if (empty($defaulturl)) {
+    $courseid = !empty($PAGE->course->id) && (int)$PAGE->course->id !== SITEID ? (int)$PAGE->course->id : 0;
+    $params = ['mode' => 'widget', 'courseid' => $courseid];
+    $item = $DB->get_record_sql(
+        "SELECT *
+           FROM {local_siteframe_items}
+          WHERE displaymode = :mode AND visible = 1 AND (courseid = :courseid OR courseid = 0)
+       ORDER BY courseid DESC, sortorder ASC, id ASC",
+        $params,
+        IGNORE_MULTIPLE
+    );
+    if (!$item) {
+        return '';
+    }
+    $url = \local_siteframe\domain_helper::sanitize_url($item->url);
+    if ($url === false || !\local_siteframe\domain_helper::is_domain_allowed($url)) {
         return '';
     }
 
-    $position = get_config('local_siteframe', 'widget_position');
-    if (empty($position)) {
-        $position = 'bottom-right';
-    }
-
-    $icon = get_config('local_siteframe', 'widget_icon');
-    if (empty($icon)) {
-        $icon = '🌐';
-    }
-
-    $title = get_config('local_siteframe', 'widget_title');
-    if (empty($title)) {
-        $title = 'SiteFrame';
-    }
-
+    $position = get_config('local_siteframe', 'widget_position') ?: 'bottom-right';
+    $icon = get_config('local_siteframe', 'widget_icon') ?: '🌐';
+    $title = format_string($item->name);
     $sandbox = \local_siteframe\domain_helper::get_sandbox_attr();
-
     $config = json_encode([
-        'url'          => $defaulturl,
-        'title'        => $title,
-        'icon'         => $icon,
-        'position'     => $position,
+        'url' => $url,
+        'title' => $title,
+        'icon' => $icon,
+        'position' => $position,
         'sandboxFlags' => $sandbox,
     ]);
-
     $PAGE->requires->js_call_amd('local_siteframe/widget', 'init', [$config]);
 
     return html_writer::div(
         html_writer::div(
-            html_writer::span($icon, 'siteframe-widget-icon') .
-            html_writer::span($title, 'siteframe-widget-title'),
+            html_writer::span($icon, 'siteframe-widget-icon') . html_writer::span($title, 'siteframe-widget-title'),
             'siteframe-widget-button'
         ) .
         html_writer::div(
             html_writer::div($title, 'siteframe-widget-panel-header') .
             html_writer::tag('iframe', '', [
-                'src'         => 'about:blank',
-                'sandbox'     => $sandbox,
+                'src' => 'about:blank',
+                'sandbox' => $sandbox,
                 'frameborder' => '0',
-                'class'       => 'siteframe-widget-iframe',
-                'loading'     => 'lazy',
+                'class' => 'siteframe-widget-iframe',
+                'loading' => 'lazy',
             ]),
             'siteframe-widget-panel'
         ),

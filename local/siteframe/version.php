@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_siteframe';
-$plugin->version = 2026072000;
+$plugin->version = 2026080201;
 $plugin->requires = 2022112800; // Moodle 4.1+
 $plugin->maturity = MATURITY_BETA;
-$plugin->release = '0.2.0';
+$plugin->release = '0.3.0';

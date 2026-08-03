@@ -45,11 +45,7 @@ class block_siteframe extends block_base {
             return $this->content;
         }
 
-        $url = isset($this->config->url) ? $this->config->url : '';
-        if (empty($url)) {
-            $defaulturl = get_config('local_siteframe', 'default_url');
-            $url = $defaulturl ?: '';
-        }
+        $url = $this->config->url ?? '';
 
         if (empty($url)) {
             $this->content->text = get_string('no_items', 'local_siteframe');

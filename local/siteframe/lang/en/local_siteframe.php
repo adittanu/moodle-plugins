@@ -66,6 +66,7 @@ $string['displaymode_widget'] = 'Floating Widget';
 $string['displaymode_modal'] = 'Modal/Lightbox';
 
 // Manage page
+$string['content'] = 'Content and placement';
 $string['manage_siteframes'] = 'Manage SiteFrame Items';
 $string['manage_heading'] = 'SiteFrame Items';
 $string['add_siteframe'] = 'Add SiteFrame Item';
@@ -90,6 +91,15 @@ $string['item_saved'] = 'SiteFrame item saved successfully.';
 $string['item_deleted'] = 'SiteFrame item deleted.';
 $string['no_items'] = 'No SiteFrame items configured yet.';
 $string['actions'] = 'Actions';
+$string['placement'] = 'Placement';
+$string['preview'] = 'Preview';
+$string['scope'] = 'Scope';
+$string['scope_global'] = 'Global (all courses)';
+$string['scrolling_auto'] = 'Automatic';
+$string['status_active'] = 'Active';
+$string['status_hidden'] = 'Hidden';
+$string['error_widget_exists'] = 'An active floating widget already exists for this scope. Edit, hide, or delete it first.';
+$string['visibility_updated'] = 'Visibility updated.';
 
 // View page
 $string['view_title'] = 'SiteFrame';

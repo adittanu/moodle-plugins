@@ -44,4 +44,17 @@ class block_siteframe_edit_form extends block_edit_form {
         $mform->addElement('select', 'config_scrolling', get_string('item_scrolling', 'local_siteframe'), $scrolling);
         $mform->setDefault('config_scrolling', 'auto');
     }
+
+    public function validation($data, $files) {
+        $errors = parent::validation($data, $files);
+        if (!empty($data['config_url'])) {
+            $url = \local_siteframe\domain_helper::sanitize_url($data['config_url']);
+            if ($url === false) {
+                $errors['config_url'] = get_string('url_invalid', 'local_siteframe');
+            } else if (!\local_siteframe\domain_helper::is_domain_allowed($url)) {
+                $errors['config_url'] = get_string('domain_not_allowed', 'local_siteframe');
+            }
+        }
+        return $errors;
+    }
 }

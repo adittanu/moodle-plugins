@@ -51,14 +51,6 @@ if ($hassiteconfig) {
         1
     ));
 
-    // Default URL.
-    $settings->add(new admin_setting_configtext(
-        'local_siteframe/default_url',
-        get_string('default_url', 'local_siteframe'),
-        get_string('default_url_desc', 'local_siteframe'),
-        '',
-        PARAM_URL
-    ));
 
     // Allowed domains.
     $settings->add(new admin_setting_configtextarea(
@@ -147,12 +139,4 @@ if ($hassiteconfig) {
         PARAM_TEXT
     ));
 
-    // Extra allowed URLs.
-    $settings->add(new admin_setting_configtextarea(
-        'local_siteframe/extra_allowed_urls',
-        get_string('extra_allowed_urls', 'local_siteframe'),
-        get_string('extra_allowed_urls_desc', 'local_siteframe'),
-        '',
-        PARAM_TEXT
-    ));
 }

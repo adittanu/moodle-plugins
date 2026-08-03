@@ -54,7 +54,7 @@ class domain_helper {
                 continue;
             }
             // Exact match or subdomain match.
-            if ($hostname === $domain || str_ends_with($hostname, '.' . $domain)) {
+            if ($hostname === $domain || substr($hostname, -strlen('.' . $domain)) === '.' . $domain) {
                 return true;
             }
         }
