@@ -16,12 +16,14 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-require_once($CFG->dirroot . '/mod/quiz/accessrule/accessrulebase.php');
+require_once($CFG->dirroot . '/mod/quiz/locallib.php');
+use mod_quiz\local\access_rule_base;
+use mod_quiz\quiz_settings;
 
 /**
  * Quiz access rule that requires webcam monitoring and logs evidence for teacher review.
  */
-class quizaccess_webcamguard extends quiz_access_rule_base {
+class quizaccess_webcamguard extends access_rule_base {
     /** @var string Ready field used by the preflight form. */
     const FIELD_READY = 'webcamguardready';
 
@@ -77,7 +79,7 @@ class quizaccess_webcamguard extends quiz_access_rule_base {
      * @param bool $canignoretimelimits Ignored.
      * @return quizaccess_webcamguard|null
      */
-    public static function make(quiz $quizobj, $timenow, $canignoretimelimits) {
+    public static function make(quiz_settings $quizobj, $timenow, $canignoretimelimits) {
         $quiz = $quizobj->get_quiz();
         if (empty($quiz->webcamguard_enabled)) {
             return null;

@@ -28,4 +28,4 @@ $plugin->version   = 2026072801;
 $plugin->requires  = 2022112800;
 $plugin->component = 'quizaccess_webcamguard';
 $plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.9.0';
+$plugin->release   = '0.9.1';
