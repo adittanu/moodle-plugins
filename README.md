@@ -40,4 +40,41 @@ Semua dokumentasi repository disimpan di [`docs/guides/`](docs/guides/):
 - [Light Statistics](docs/guides/lightstats/GUIDE_LIGHTSTATS.md)
 - [Webcam Guard](docs/guides/webcamguard/)
 
+## Prompt Instalasi untuk AI
+
+Salin prompt berikut, lalu ganti nilai `MOODLE_PATH`:
+
+```text
+Install atau update plugin Moodle dari repository https://github.com/adittanu/moodle-plugins.git ke server ini.
+
+Target Moodle:
+MOODLE_PATH=/var/www/moodle
+
+Instruksi:
+1. Periksa apakah target plugin sudah ada dan tampilkan versi saat ini.
+2. Clone repository jika belum ada; gunakan `git pull --ff-only origin main` jika sudah ada.
+3. Salin hanya plugin yang diminta ke `MOODLE_PATH`, tanpa menghapus plugin Moodle lain:
+   - Untuk local plugin: `local/<nama-plugin>`
+   - Untuk block plugin: `blocks/<nama-plugin>`
+   - Untuk mod plugin: `mod/<nama-plugin>`
+   - Untuk quiz access rule: `mod/quiz/accessrule/<nama-plugin>`
+4. Pertahankan ownership dan permission sesuai plugin Moodle lain di direktori target.
+5. Jalankan upgrade Moodle non-interaktif jika `version.php` berubah:
+   `php MOODLE_PATH/admin/cli/upgrade.php --non-interactive`
+6. Purge cache:
+   `php MOODLE_PATH/admin/cli/purge_caches.php`
+7. Verifikasi plugin terpasang, versi plugin, dan tidak ada error PHP.
+8. Jangan mengubah database, config.php, plugin lain, atau menghapus file tanpa instruksi eksplisit.
+9. Jika butuh sudo, minta akses atau tampilkan command yang perlu dijalankan; jangan menebak password.
+
+Plugin yang diminta: <CONTOH: mod/quiz/accessrule/webcamguard>
+
+Laporkan command yang dijalankan, file yang berubah, versi sebelum/sesudah, dan error jika ada.
+```
+
+Ganti:
+
+- `MOODLE_PATH` dengan path root Moodle, yaitu folder yang berisi `config.php`.
+- `<CONTOH: mod/quiz/accessrule/webcamguard>` dengan path plugin yang ingin dipasang.
+
 Dokumentasi khusus plugin juga boleh tetap berada di folder plugin bila dibutuhkan Moodle saat distribusi.
