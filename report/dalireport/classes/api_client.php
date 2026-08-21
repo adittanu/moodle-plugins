@@ -4,10 +4,15 @@ namespace report_dalireport;
 
 defined('MOODLE_INTERNAL') || die();
 
-/** Requests short-lived report URLs from Dali. */
+/** Requests report data from Dali. */
 class api_client {
-    /** @return string Signed iframe URL. */
-    public function get_embed_url(?int $courseid): string {
+    /**
+     * Fetch a tenant-scoped report.
+     *
+     * @param array $params Report filters.
+     * @return array Report payload.
+     */
+    public function get_report(array $params): array {
         global $CFG;
         require_once($CFG->libdir . '/filelib.php');
 
@@ -17,18 +22,17 @@ class api_client {
             throw new \moodle_exception('notconfigured', 'report_dalireport');
         }
 
-        $params = $courseid ? ['course_id' => $courseid] : [];
         $curl = new \curl();
         $curl->setHeader(['Authorization: Bearer ' . $apikey, 'Accept: application/json']);
-        $response = $curl->get($baseurl . '/api/v1/reports/embed-url', $params);
+        $response = $curl->get($baseurl . '/api/v1/reports', array_filter($params, static fn($value) => $value !== ''));
         $info = $curl->get_info();
         $data = json_decode($response, true);
 
-        if (($info['http_code'] ?? 500) !== 200 || empty($data['url'])) {
-            $message = $data['error'] ?? $curl->error ?? ('HTTP ' . ($info['http_code'] ?? 500));
+        if (($info['http_code'] ?? 500) !== 200 || !is_array($data) || empty($data['summary'])) {
+            $message = $data['message'] ?? $data['error'] ?? $curl->error ?? ('HTTP ' . ($info['http_code'] ?? 500));
             throw new \moodle_exception('connectionfailed', 'report_dalireport', '', $message);
         }
 
-        return clean_param($data['url'], PARAM_URL);
+        return $data;
     }
 }
