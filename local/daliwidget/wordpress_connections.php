@@ -39,6 +39,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $result = $client->deleteWordpressConnection($id);
     } else if ($action === 'toggle') {
         $result = $client->updateWordpressConnection($id, ['enabled' => required_param('enabled', PARAM_BOOL)]);
+    } else if ($action === 'reviewremovals') {
+        $result = $client->reviewWordpressHeldRemovals($id, required_param('hold', PARAM_INT), required_param('decision', PARAM_ALPHA));
+    } else {
+        $result = ['success' => false, 'error' => get_string('wordpress_action_failed', 'local_daliwidget')];
     }
     redirect($PAGE->url, ($result['success'] ?? false) ? get_string('wordpress_action_success', 'local_daliwidget') : ($result['error'] ?? get_string('wordpress_action_failed', 'local_daliwidget')), null, ($result['success'] ?? false) ? \core\output\notification::NOTIFY_SUCCESS : \core\output\notification::NOTIFY_ERROR);
 }
@@ -59,7 +63,47 @@ foreach ($connections as $connection) {
     $actions .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'enabled', 'value' => $connection['enabled'] ? 0 : 1]);
     $actions .= ' ' . html_writer::tag('button', get_string('delete'), ['name' => 'action', 'value' => 'delete', 'class' => 'btn btn-sm btn-danger']);
     $actions .= html_writer::end_tag('form');
-    echo html_writer::tag('tr', html_writer::tag('td', s($connection['name'])) . html_writer::tag('td', s($connection['site_url'])) . html_writer::tag('td', $connection['enabled'] ? get_string('enabled', 'local_daliwidget') : get_string('disabled', 'core')) . html_writer::tag('td', $actions));
+    $impact = '';
+    if (!empty($connection['pending_removal_count'])) {
+        $holds = $client->getWordpressHeldRemovals($connection['id'])['data'] ?? [];
+        foreach ($holds as $hold) {
+            $impact .= html_writer::start_div('alert alert-warning mt-2');
+            $impact .= html_writer::tag('strong', get_string('wordpress_removals_held', 'local_daliwidget', $hold['count']));
+            $impact .= html_writer::tag('ul', implode('', array_map(fn($removal) => html_writer::tag('li', s($removal['post_id'] . ' (' . $removal['locale'] . ')')), $hold['removals'])));
+            foreach (['approve', 'reject'] as $decision) {
+                $impact .= html_writer::start_tag('form', ['method' => 'post', 'class' => 'd-inline mr-1']);
+                foreach (['sesskey' => sesskey(), 'action' => 'reviewremovals', 'id' => $connection['id'], 'hold' => $hold['id'], 'decision' => $decision] as $name => $value) {
+                    $impact .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => $name, 'value' => $value]);
+                }
+                $impact .= html_writer::tag('button', get_string('wordpress_' . $decision . '_removals', 'local_daliwidget'), [
+                    'type' => 'submit', 'class' => 'btn btn-sm ' . ($decision === 'approve' ? 'btn-danger' : 'btn-secondary'),
+                    'onclick' => "return confirm('" . get_string('wordpress_review_confirm', 'local_daliwidget') . "')",
+                ]);
+                $impact .= html_writer::end_tag('form');
+            }
+            $impact .= html_writer::end_div();
+        }
+    }
+    $runs = $client->getWordpressRuns($connection['id'])['data'] ?? [];
+    if ($runs) {
+        $impact .= html_writer::tag('h6', get_string('wordpress_recent_runs', 'local_daliwidget'), ['class' => 'mt-2']);
+        foreach (array_slice($runs, 0, 5) as $run) {
+            $counts = $run['counts'] ?? [];
+            $summary = get_string('wordpress_run_summary', 'local_daliwidget', (object) [
+                'status' => $run['status'], 'trigger' => $run['trigger'],
+                'added' => $counts['added'] ?? 0, 'updated' => $counts['updated'] ?? 0,
+                'removed' => $counts['removed'] ?? 0, 'failed' => $counts['failed'] ?? 0,
+            ]);
+            $impact .= html_writer::start_div(in_array($run['status'], ['failed', 'partial'], true) ? 'alert alert-danger mt-1' : 'alert alert-light mt-1');
+            $impact .= html_writer::tag('strong', s($summary));
+            if (!empty($run['checkpoint_page'])) $impact .= html_writer::tag('div', get_string('wordpress_resume_page', 'local_daliwidget', $run['checkpoint_page']));
+            if (!empty($run['error'])) $impact .= html_writer::tag('div', s($run['error']));
+            $failures = array_filter($run['outcomes'] ?? [], fn($outcome) => ($outcome['status'] ?? '') === 'failed');
+            if ($failures) $impact .= html_writer::tag('ul', implode('', array_map(fn($failure) => html_writer::tag('li', s(($failure['title'] ?? $failure['post_id']) . ': ' . ($failure['error'] ?? get_string('wordpress_action_failed', 'local_daliwidget')))), $failures)));
+            $impact .= html_writer::end_div();
+        }
+    }
+    echo html_writer::tag('tr', html_writer::tag('td', s($connection['name'])) . html_writer::tag('td', s($connection['site_url'])) . html_writer::tag('td', $connection['enabled'] ? get_string('enabled', 'local_daliwidget') : get_string('disabled', 'core')) . html_writer::tag('td', $actions . $impact));
 }
 echo html_writer::end_tag('table');
 

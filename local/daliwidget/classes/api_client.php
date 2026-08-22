@@ -198,6 +198,19 @@ class api_client {
     public function updateWordpressConnection(int $id, array $data): array { return $this->request('PUT', "/api/v1/wordpress/connections/{$id}", $data); }
     public function validateWordpressConnection(int $id): array { return $this->request('POST', "/api/v1/wordpress/connections/{$id}/validate", []); }
     public function deleteWordpressConnection(int $id): array { return $this->request('DELETE', "/api/v1/wordpress/connections/{$id}"); }
+    public function getWordpressHeldRemovals(int $id): array {
+        return $this->request('GET', "/api/v1/wordpress/connections/{$id}/held-removals");
+    }
+
+    public function reviewWordpressHeldRemovals(int $connectionid, int $holdid, string $decision): array {
+        return $this->request('POST', "/api/v1/wordpress/connections/{$connectionid}/held-removals/{$holdid}", [
+            'decision' => $decision, 'confirmed' => true,
+        ]);
+    }
+    public function getWordpressRuns(int $id): array {
+        return $this->request('GET', "/api/v1/wordpress/connections/{$id}/runs");
+    }
+
     /**
      * Discover posts from a WordPress connection.
      *

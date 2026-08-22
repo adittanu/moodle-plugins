@@ -40,8 +40,19 @@ $filters = [
 $result = $client->getWordpressPosts($connectionid, $filters);
 $posts = $result['data'] ?? [];
 $meta = $result['meta'] ?? ['page' => 1, 'pages' => 1];
+$runs = $connectionid ? ($client->getWordpressRuns($connectionid)['data'] ?? []) : [];
 
 echo $OUTPUT->header();
+if ($runs) {
+    echo html_writer::tag('h3', get_string('wordpress_recent_runs', 'local_daliwidget'));
+    foreach (array_slice($runs, 0, 5) as $run) {
+        $counts = $run['counts'] ?? [];
+        echo html_writer::div(s(get_string('wordpress_run_summary', 'local_daliwidget', (object) [
+            'status' => $run['status'], 'trigger' => $run['trigger'], 'added' => $counts['added'] ?? 0,
+            'updated' => $counts['updated'] ?? 0, 'removed' => $counts['removed'] ?? 0, 'failed' => $counts['failed'] ?? 0,
+        ])), in_array($run['status'], ['failed', 'partial'], true) ? 'alert alert-danger' : 'alert alert-light');
+    }
+}
 echo html_writer::start_tag('form', ['method' => 'get', 'class' => 'form-inline mb-3']);
 echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'connection', 'value' => $connectionid]);
 echo html_writer::empty_tag('input', ['name' => 'search', 'value' => $filters['search'], 'placeholder' => get_string('search'), 'class' => 'form-control mr-2']);

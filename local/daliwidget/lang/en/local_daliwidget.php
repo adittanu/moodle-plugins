@@ -95,6 +95,13 @@ $string['wordpress_select'] = 'Select';
 $string['wordpress_cancel_selection'] = 'Cancel selection';
 $string['wordpress_cancel_confirm'] = 'Cancel this manual selection? Knowledge may be removed when no automatic marker remains.';
 $string['wordpress_selection_saved'] = 'WordPress post selection updated.';
+$string['wordpress_removals_held'] = '{$a} proposed removals are held for site administrator review.';
+$string['wordpress_approve_removals'] = 'Approve exact removals';
+$string['wordpress_reject_removals'] = 'Reject removals';
+$string['wordpress_review_confirm'] = 'Confirm this decision for the exact listed WordPress sources?';
+$string['wordpress_recent_runs'] = 'Recent synchronization runs';
+$string['wordpress_run_summary'] = '{$a->status} ({$a->trigger}): {$a->added} added, {$a->updated} updated, {$a->removed} removed, {$a->failed} failed';
+$string['wordpress_resume_page'] = 'Synchronization will resume at page {$a}.';
 
 
 // Activity Sync
