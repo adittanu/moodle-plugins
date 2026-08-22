@@ -76,6 +76,9 @@ function local_daliwidget_before_footer() {
         $apikey = get_config('local_daliwidget', 'apikey');
         $baseurl = get_config('local_daliwidget', 'baseurl');
         $knowledgeaccessmode = get_config('local_daliwidget', 'knowledge_access_mode') ?: 'course_scoped';
+        if ($knowledgeaccessmode === 'site_wide' && isguestuser()) {
+            return '';
+        }
         $debugmode = get_config('local_daliwidget', 'debug_mode');
 
         // Don't load widget if no API key configured

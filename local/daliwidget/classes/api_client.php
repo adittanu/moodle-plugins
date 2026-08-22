@@ -482,6 +482,7 @@ class api_client {
                 'id' => $course->id,
                 'fullname' => $course->fullname,
                 'shortname' => $course->shortname,
+                'visible' => !empty($course->visible),
             ],
         ];
 
