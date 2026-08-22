@@ -49,6 +49,22 @@ function local_daliwidget_extend_navigation_course($navigation, $course, $contex
 }
 
 /**
+ * Add WordPress post discovery for managers.
+ *
+ * @param settings_navigation $settingsnav Settings navigation.
+ * @param context $context Current context.
+ */
+function local_daliwidget_extend_settings_navigation($settingsnav, $context) {
+    if (has_capability('local/daliwidget:manageglobalwordpress', context_system::instance())) {
+        $settingsnav->add(
+            get_string('wordpress_posts', 'local_daliwidget'),
+            new moodle_url('/local/daliwidget/wordpress_posts.php'),
+            navigation_node::TYPE_SETTING
+        );
+    }
+}
+
+/**
  * Legacy callback for before footer (Moodle 4.1 - 4.4).
  * Injects the Dali AI widget into page footer.
  *

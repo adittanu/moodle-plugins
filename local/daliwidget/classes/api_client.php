@@ -198,6 +198,40 @@ class api_client {
     public function updateWordpressConnection(int $id, array $data): array { return $this->request('PUT', "/api/v1/wordpress/connections/{$id}", $data); }
     public function validateWordpressConnection(int $id): array { return $this->request('POST', "/api/v1/wordpress/connections/{$id}/validate", []); }
     public function deleteWordpressConnection(int $id): array { return $this->request('DELETE', "/api/v1/wordpress/connections/{$id}"); }
+    /**
+     * Discover posts from a WordPress connection.
+     *
+     * @param int $id Connection ID.
+     * @param array $filters Discovery filters.
+     * @return array API response.
+     */
+    public function getWordpressPosts(int $id, array $filters = []): array {
+        return $this->request('GET', "/api/v1/wordpress/connections/{$id}/posts", $filters);
+    }
+
+    /**
+     * Persist or cancel a manual post selection.
+     *
+     * @param int $connectionid Connection ID.
+     * @param int $postid WordPress post ID.
+     * @param bool $selected Whether the post is manually selected.
+     * @param string $locale Translation identity.
+     * @param bool $confirmed Whether deselection was confirmed.
+     * @return array API response.
+     */
+    public function selectWordpressPost(
+        int $connectionid,
+        int $postid,
+        bool $selected,
+        string $locale,
+        bool $confirmed = false
+    ): array {
+        return $this->request(
+            'PUT',
+            "/api/v1/wordpress/connections/{$connectionid}/posts/{$postid}/selection",
+            ['selected' => $selected, 'locale' => $locale, 'confirmed' => $confirmed]
+        );
+    }
 
     /**
      * Get all knowledge sources.

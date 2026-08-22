@@ -53,6 +53,7 @@ foreach ($connections as $connection) {
     $actions .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
     $actions .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'id', 'value' => $connection['id']]);
     $actions .= html_writer::tag('button', get_string('wordpress_validate', 'local_daliwidget'), ['name' => 'action', 'value' => 'validate', 'class' => 'btn btn-sm btn-secondary']);
+    $actions .= ' ' . html_writer::link(new moodle_url('/local/daliwidget/wordpress_posts.php', ['connection' => $connection['id']]), get_string('wordpress_posts', 'local_daliwidget'), ['class' => 'btn btn-sm btn-info']);
     $actions .= ' ' . html_writer::link(new moodle_url($PAGE->url, ['edit' => $connection['id']]), get_string('edit'), ['class' => 'btn btn-sm btn-primary']);
     $actions .= ' ' . html_writer::tag('button', $connection['enabled'] ? get_string('disable') : get_string('enable'), ['name' => 'action', 'value' => 'toggle', 'class' => 'btn btn-sm btn-warning']);
     $actions .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'enabled', 'value' => $connection['enabled'] ? 0 : 1]);

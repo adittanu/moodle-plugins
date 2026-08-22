@@ -85,6 +85,16 @@ $string['wordpress_marker_slug'] = 'Automatic marker slug';
 $string['wordpress_validate'] = 'Validate';
 $string['wordpress_action_success'] = 'WordPress connection updated.';
 $string['wordpress_action_failed'] = 'WordPress connection request failed.';
+$string['wordpress_posts'] = 'Discover posts';
+$string['wordpress_taxonomy_id'] = 'Taxonomy ID';
+$string['wordpress_inclusion'] = 'Inclusion';
+$string['wordpress_automatic'] = 'Automatic';
+$string['wordpress_manual'] = 'Manual';
+$string['wordpress_pending'] = 'Pending publication';
+$string['wordpress_select'] = 'Select';
+$string['wordpress_cancel_selection'] = 'Cancel selection';
+$string['wordpress_cancel_confirm'] = 'Cancel this manual selection? Knowledge may be removed when no automatic marker remains.';
+$string['wordpress_selection_saved'] = 'WordPress post selection updated.';
 
 
 // Activity Sync
