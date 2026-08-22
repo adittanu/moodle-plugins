@@ -135,6 +135,21 @@ $string['wordpress_review_confirm'] = 'Confirm this decision for the exact liste
 $string['wordpress_recent_runs'] = 'Recent synchronization runs';
 $string['wordpress_run_summary'] = '{$a->status} ({$a->trigger}): {$a->added} added, {$a->updated} updated, {$a->removed} removed, {$a->failed} failed';
 $string['wordpress_resume_page'] = 'Synchronization will resume at page {$a}.';
+$string['wordpress_run_notification'] = 'WordPress connection "{$a->name}" had a {$a->status} sync: {$a->added} added, {$a->updated} updated, {$a->removed} removed, {$a->failed} failed.';
+$string['wordpress_delete_confirm'] = 'This connection owns {$a} knowledge source(s). Choose what to do with them before deleting.';
+$string['wordpress_delete_choice_required'] = 'You must choose whether to delete or retain owned sources.';
+$string['wordpress_delete_sources'] = 'Delete all owned sources';
+$string['wordpress_retain_sources'] = 'Retain sources (orphan them)';
+$string['confirmdelete'] = 'Confirm delete';
+$string['wordpress_preview_sync'] = 'Preview sync changes';
+$string['wordpress_preview_title'] = 'Sync preview';
+$string['wordpress_preview_desc'] = 'Review the changes that will be applied before confirming the sync.';
+$string['wordpress_preview_add'] = '{$a} to add';
+$string['wordpress_preview_update'] = '{$a} to update';
+$string['wordpress_preview_remove'] = '{$a} to remove';
+$string['wordpress_preview_pending'] = '{$a} pending publication';
+$string['wordpress_preview_unchanged'] = '{$a} unchanged';
+$string['wordpress_preview_more'] = '...and {$a} more.';
 
 
 // Activity Sync

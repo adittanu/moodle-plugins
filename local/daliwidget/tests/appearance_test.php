@@ -44,6 +44,13 @@ class appearance_test extends \advanced_testcase {
     public function test_only_supported_avatar_is_emitted(): void {
         $this->resetAfterTest();
         $context = \context_system::instance();
+        // Create a valid 1x1 PNG so getimagesizefromstring passes.
+        $img = imagecreatetruecolor(1, 1);
+        ob_start();
+        imagepng($img);
+        $png = ob_get_clean();
+        imagedestroy($img);
+
         $file = get_file_storage()->create_file_from_string([
             'contextid' => $context->id,
             'component' => 'local_daliwidget',
@@ -52,12 +59,27 @@ class appearance_test extends \advanced_testcase {
             'filepath' => '/',
             'filename' => 'avatar.png',
             'mimetype' => 'image/png',
-        ], 'png');
+        ], $png);
 
         $overrides = appearance::overrides();
         $this->assertStringContainsString('/local_daliwidget/avatar/0/avatar.png', $overrides['botAvatar']);
 
         $file->delete();
+        $this->assertArrayNotHasKey('botAvatar', appearance::overrides());
+    }
+
+    public function test_avatar_with_spoofed_mime_is_rejected(): void {
+        $this->resetAfterTest();
+        $context = \context_system::instance();
+        get_file_storage()->create_file_from_string([
+            'contextid' => $context->id,
+            'component' => 'local_daliwidget',
+            'filearea' => 'avatar',
+            'itemid' => 0,
+            'filepath' => '/',
+            'filename' => 'fake.png',
+            'mimetype' => 'image/png',
+        ], 'not-a-real-image');
         $this->assertArrayNotHasKey('botAvatar', appearance::overrides());
     }
 

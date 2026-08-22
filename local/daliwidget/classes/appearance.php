@@ -62,6 +62,12 @@ class appearance {
             return null;
         }
 
+        // Validate actual image bytes to prevent MIME spoofing.
+        $imageInfo = @getimagesizefromstring($file->get_content());
+        if (!$imageInfo || !in_array($imageInfo['mime'], ['image/png', 'image/jpeg', 'image/webp'], true)) {
+            return null;
+        }
+
         return \moodle_url::make_pluginfile_url(
             $context->id,
             'local_daliwidget',

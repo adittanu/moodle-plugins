@@ -31,10 +31,10 @@ $params = [
     'to' => $to,
     'role' => $role,
     'status' => $status,
-    'per_page' => $download ? 'all' : 20,
+    'per_page' => 20,
+    'page' => $page + 1,
 ];
 $report = (new \report_dalireport\api_client())->get_report($params);
-$sessions = $report['sessions'];
 
 if ($download) {
     $table = new flexible_table('report-dalireport-export');
@@ -47,16 +47,34 @@ if ($download) {
     ]);
     $table->is_downloading('csv', 'dali-report-' . $from . '-' . $to);
     $table->setup();
-    foreach ($sessions['data'] as $session) {
-        $table->add_data([
-            $session['updated_at'], $session['visitor'], $session['role'], $session['course'], $session['activity'],
-            $session['agent'], $session['topic'], get_string('status_' . $session['response_status'], 'report_dalireport'),
-            $session['title'], $session['messages_count'], $session['last_message'],
-        ]);
-    }
+    $dlparams = $params;
+    $dlparams['per_page'] = 100;
+    $dlpage = 1;
+    do {
+        $dlparams['page'] = $dlpage;
+        $dlreport = (new \report_dalireport\api_client())->get_report($dlparams);
+        foreach ($dlreport['sessions']['data'] as $session) {
+            $table->add_data([
+                $session['updated_at'],
+                \report_dalireport\api_client::neutralize_csv_value($session['visitor']),
+                $session['role'],
+                \report_dalireport\api_client::neutralize_csv_value($session['course']),
+                \report_dalireport\api_client::neutralize_csv_value($session['activity']),
+                \report_dalireport\api_client::neutralize_csv_value($session['agent']),
+                \report_dalireport\api_client::neutralize_csv_value($session['topic']),
+                get_string('status_' . $session['response_status'], 'report_dalireport'),
+                \report_dalireport\api_client::neutralize_csv_value($session['title']),
+                $session['messages_count'],
+                \report_dalireport\api_client::neutralize_csv_value($session['last_message']),
+            ]);
+        }
+        $dlpage++;
+    } while ($dlpage <= (int) $dlreport['sessions']['last_page']);
     $table->finish_output();
     exit;
 }
+
+$sessions = $report['sessions'];
 
 $urlparams = array_filter(['courseid' => $courseid ?: null, 'filtercourseid' => $filtercourseid ?: null, 'from' => $from, 'to' => $to, 'role' => $role, 'status' => $status]);
 $PAGE->set_url(new moodle_url('/report/dalireport/index.php', $urlparams));

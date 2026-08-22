@@ -96,12 +96,20 @@ class api_client {
             'Accept: application/json',
         ];
 
+        // Send privileged admin header on WordPress mutation requests only.
+        $isWpMutation = str_starts_with($endpoint, '/api/v1/wordpress/')
+            && in_array($method, ['POST', 'PUT', 'DELETE'], true);
+        if ($isWpMutation) {
+            $headers[] = 'X-Moodle-Site-Admin: 1';
+        }
+
         curl_setopt_array($ch, [
             CURLOPT_URL => $url,
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 30,
             CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_SSL_VERIFYPEER => false, // For local development
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
         ]);
 
         if ($method === 'POST') {
@@ -124,6 +132,10 @@ class api_client {
             curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data ?? []));
         } else if ($method === 'DELETE') {
             curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
+            if ($data) {
+                $headers[] = 'Content-Type: application/json';
+                curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+            }
         } else if ($method === 'GET' && $data) {
             $url .= '?' . http_build_query($data);
             curl_setopt($ch, CURLOPT_URL, $url);
@@ -197,7 +209,7 @@ class api_client {
     public function createWordpressConnection(array $data): array { return $this->request('POST', '/api/v1/wordpress/connections', $data); }
     public function updateWordpressConnection(int $id, array $data): array { return $this->request('PUT', "/api/v1/wordpress/connections/{$id}", $data); }
     public function validateWordpressConnection(int $id): array { return $this->request('POST', "/api/v1/wordpress/connections/{$id}/validate", []); }
-    public function deleteWordpressConnection(int $id): array { return $this->request('DELETE', "/api/v1/wordpress/connections/{$id}"); }
+    public function deleteWordpressConnection(int $id, ?array $body = null): array { return $this->request('DELETE', "/api/v1/wordpress/connections/{$id}", $body); }
     public function getWordpressHeldRemovals(int $id): array {
         return $this->request('GET', "/api/v1/wordpress/connections/{$id}/held-removals");
     }
@@ -209,6 +221,26 @@ class api_client {
     }
     public function getWordpressRuns(int $id): array {
         return $this->request('GET', "/api/v1/wordpress/connections/{$id}/runs");
+    }
+
+    /**
+     * Get the count of knowledge sources owned by a WordPress connection.
+     *
+     * @param int $id Connection ID.
+     * @return array API response with 'owned_source_count' in data.
+     */
+    public function getWordpressOwnedSourceCount(int $id): array {
+        return $this->request('GET', "/api/v1/wordpress/connections/{$id}/owned-sources");
+    }
+
+    /**
+     * Preview sync changes for a WordPress connection.
+     *
+     * @param int $id Connection ID.
+     * @return array API response with preview diff.
+     */
+    public function previewWordpressSync(int $id): array {
+        return $this->request('POST', "/api/v1/wordpress/connections/{$id}/preview", []);
     }
 
     /**

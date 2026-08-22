@@ -172,6 +172,7 @@ class before_footer_callback {
             moodle_my_courses_endpoint: daliConfig.endpoints && daliConfig.endpoints.myCourses ? daliConfig.endpoints.myCourses : null,
             moodle_fetch_user_id: daliConfig.fetchAuth ? daliConfig.fetchAuth.signed_user_id : null,
             moodle_fetch_expires: daliConfig.fetchAuth ? daliConfig.fetchAuth.expires : null,
+            moodle_fetch_sig: daliConfig.fetchAuth ? daliConfig.fetchAuth.sig : null,
             course_id: daliConfig.course ? daliConfig.course.id : null,
             course_name: daliConfig.course ? daliConfig.course.fullname : null,
             course_shortname: daliConfig.course ? daliConfig.course.shortname : null,
@@ -184,14 +185,6 @@ class before_footer_callback {
             knowledge_access_mode: daliConfig.knowledge_access_mode
         }
     };
-
-    if (daliConfig.endpoints && daliConfig.endpoints.myCourses && daliConfig.fetchAuth) {
-        var debugMyCoursesUrl = new URL(daliConfig.endpoints.myCourses, window.location.origin);
-        debugMyCoursesUrl.searchParams.set('signed_user_id', daliConfig.fetchAuth.signed_user_id || '');
-        debugMyCoursesUrl.searchParams.set('expires', daliConfig.fetchAuth.expires || '');
-        debugMyCoursesUrl.searchParams.set('sig', daliConfig.fetchAuth.sig || '');
-        console.log('[Dali AI Widget] Moodle myCourses signed URL:', debugMyCoursesUrl.toString());
-    }
 
     // Dynamically load the Dali SDK
     var script = document.createElement('script');

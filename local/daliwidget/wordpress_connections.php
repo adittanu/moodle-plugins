@@ -36,7 +36,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else if ($action === 'validate') {
         $result = $client->validateWordpressConnection($id);
     } else if ($action === 'delete') {
-        $result = $client->deleteWordpressConnection($id);
+        $deleteChoice = required_param('delete_sources', PARAM_ALPHA);
+        if (!in_array($deleteChoice, ['delete', 'retain'], true)) {
+            redirect($PAGE->url, get_string('wordpress_delete_choice_required', 'local_daliwidget'), null, \core\output\notification::NOTIFY_ERROR);
+        }
+        $result = $client->deleteWordpressConnection($id, ['delete_sources' => $deleteChoice]);
     } else if ($action === 'toggle') {
         $result = $client->updateWordpressConnection($id, ['enabled' => required_param('enabled', PARAM_BOOL)]);
     } else if ($action === 'reviewremovals') {
@@ -48,6 +52,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $connections = $client->getWordpressConnections()['data'] ?? [];
+
+// Surface failed/partial runs as admin notifications.
+foreach ($connections as $conn) {
+    $runs = $client->getWordpressRuns($conn['id'])['data'] ?? [];
+    foreach (array_slice($runs, 0, 3) as $run) {
+        if (in_array($run['status'] ?? '', ['failed', 'partial'], true)) {
+            $counts = $run['counts'] ?? [];
+            $msg = get_string('wordpress_run_notification', 'local_daliwidget', (object) [
+                'name' => $conn['name'],
+                'status' => $run['status'],
+                'added' => $counts['added'] ?? 0,
+                'updated' => $counts['updated'] ?? 0,
+                'removed' => $counts['removed'] ?? 0,
+                'failed' => $counts['failed'] ?? 0,
+            ]);
+            \core\notification::add($msg, \core\output\notification::NOTIFY_WARNING);
+            break;
+        }
+    }
+}
+
 echo $OUTPUT->header();
 echo html_writer::tag('p', get_string('wordpress_connections_desc', 'local_daliwidget'));
 echo html_writer::start_tag('table', ['class' => 'table table-striped']);
@@ -61,8 +86,15 @@ foreach ($connections as $connection) {
     $actions .= ' ' . html_writer::link(new moodle_url($PAGE->url, ['edit' => $connection['id']]), get_string('edit'), ['class' => 'btn btn-sm btn-primary']);
     $actions .= ' ' . html_writer::tag('button', $connection['enabled'] ? get_string('disable') : get_string('enable'), ['name' => 'action', 'value' => 'toggle', 'class' => 'btn btn-sm btn-warning']);
     $actions .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'enabled', 'value' => $connection['enabled'] ? 0 : 1]);
-    $actions .= ' ' . html_writer::tag('button', get_string('delete'), ['name' => 'action', 'value' => 'delete', 'class' => 'btn btn-sm btn-danger']);
     $actions .= html_writer::end_tag('form');
+
+    // Delete button opens a confirmation section (not inline form).
+    $deleteBtn = html_writer::link(
+        $PAGE->url . '#delete-' . $connection['id'],
+        get_string('delete'),
+        ['class' => 'btn btn-sm btn-danger', 'data-toggle' => 'collapse', 'data-target' => '#delete-confirm-' . $connection['id']]
+    );
+
     $impact = '';
     if (!empty($connection['pending_removal_count'])) {
         $holds = $client->getWordpressHeldRemovals($connection['id'])['data'] ?? [];
@@ -103,9 +135,63 @@ foreach ($connections as $connection) {
             $impact .= html_writer::end_div();
         }
     }
-    echo html_writer::tag('tr', html_writer::tag('td', s($connection['name'])) . html_writer::tag('td', s($connection['site_url'])) . html_writer::tag('td', $connection['enabled'] ? get_string('enabled', 'local_daliwidget') : get_string('disabled', 'core')) . html_writer::tag('td', $actions . $impact));
+
+    // Delete confirmation with owned-source count and delete-vs-retain choice.
+    $ownedCount = 0;
+    $ownedResult = $client->getWordpressOwnedSourceCount($connection['id']);
+    if (!empty($ownedResult['success'])) {
+        $ownedCount = (int) ($ownedResult['data']['count'] ?? 0);
+    }
+    $deleteConfirm = html_writer::start_div('collapse mt-2', ['id' => 'delete-confirm-' . $connection['id']]);
+    $deleteConfirm .= html_writer::start_div('alert alert-danger');
+    $deleteConfirm .= html_writer::tag('p', get_string('wordpress_delete_confirm', 'local_daliwidget', $ownedCount));
+    $deleteConfirm .= html_writer::start_tag('form', ['method' => 'post']);
+    foreach (['sesskey' => sesskey(), 'action' => 'delete', 'id' => $connection['id']] as $name => $value) {
+        $deleteConfirm .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => $name, 'value' => $value]);
+    }
+    $deleteConfirm .= html_writer::start_div('form-check');
+    $deleteConfirm .= html_writer::empty_tag('input', ['type' => 'radio', 'name' => 'delete_sources', 'value' => 'delete', 'id' => 'ds-del-' . $connection['id'], 'class' => 'form-check-input', 'required' => 'required']);
+    $deleteConfirm .= html_writer::tag('label', get_string('wordpress_delete_sources', 'local_daliwidget'), ['for' => 'ds-del-' . $connection['id'], 'class' => 'form-check-label']);
+    $deleteConfirm .= html_writer::end_div();
+    $deleteConfirm .= html_writer::start_div('form-check');
+    $deleteConfirm .= html_writer::empty_tag('input', ['type' => 'radio', 'name' => 'delete_sources', 'value' => 'retain', 'id' => 'ds-ret-' . $connection['id'], 'class' => 'form-check-input']);
+    $deleteConfirm .= html_writer::tag('label', get_string('wordpress_retain_sources', 'local_daliwidget'), ['for' => 'ds-ret-' . $connection['id'], 'class' => 'form-check-label']);
+    $deleteConfirm .= html_writer::end_div();
+    $deleteConfirm .= html_writer::tag('button', get_string('confirmdelete'), ['type' => 'submit', 'class' => 'btn btn-danger mt-2']);
+    $deleteConfirm .= html_writer::end_tag('form');
+    $deleteConfirm .= html_writer::end_div();
+    $deleteConfirm .= html_writer::end_div();
+
+    echo html_writer::tag('tr', html_writer::tag('td', s($connection['name'])) . html_writer::tag('td', s($connection['site_url'])) . html_writer::tag('td', $connection['enabled'] ? get_string('enabled', 'local_daliwidget') : get_string('disabled', 'core')) . html_writer::tag('td', $actions . ' ' . $deleteBtn . $deleteConfirm . $impact));
 }
 echo html_writer::end_tag('table');
+
+// Preview section.
+$previewid = optional_param('preview', 0, PARAM_INT);
+if ($previewid) {
+    $preview = $client->previewWordpressSync($previewid);
+    if (!empty($preview['success'])) {
+        $diff = $preview['data'] ?? [];
+        echo html_writer::tag('h3', get_string('wordpress_preview_title', 'local_daliwidget'));
+        echo html_writer::tag('p', get_string('wordpress_preview_desc', 'local_daliwidget'));
+        $categories = ['add' => 'success', 'update' => 'info', 'remove' => 'danger', 'pending' => 'warning', 'unchanged' => 'secondary'];
+        foreach ($categories as $cat => $style) {
+            $items = $diff[$cat] ?? [];
+            $label = get_string('wordpress_preview_' . $cat, 'local_daliwidget', count($items));
+            echo html_writer::start_div('alert alert-' . $style . ' mb-1');
+            echo html_writer::tag('strong', $label);
+            if ($items) {
+                echo html_writer::tag('ul', implode('', array_map(fn($item) => html_writer::tag('li', s($item['title'] ?? $item['post_id'] ?? '')), array_slice($items, 0, 20))));
+                if (count($items) > 20) {
+                    echo html_writer::tag('em', get_string('wordpress_preview_more', 'local_daliwidget', count($items) - 20));
+                }
+            }
+            echo html_writer::end_div();
+        }
+    } else {
+        echo html_writer::div(s($preview['error'] ?? get_string('wordpress_action_failed', 'local_daliwidget')), 'alert alert-danger');
+    }
+}
 
 $editing = null;
 foreach ($connections as $connection) {
@@ -127,4 +213,13 @@ echo html_writer::checkbox('enabled', 1, $editing['enabled'] ?? true, get_string
 echo html_writer::empty_tag('br');
 echo html_writer::tag('button', get_string('savechanges'), ['type' => 'submit', 'class' => 'btn btn-primary mt-3']);
 echo html_writer::end_tag('form');
+
+// Preview button for existing connections.
+if ($editing) {
+    echo html_writer::start_tag('form', ['method' => 'get', 'class' => 'mt-2']);
+    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'preview', 'value' => $editing['id']]);
+    echo html_writer::tag('button', get_string('wordpress_preview_sync', 'local_daliwidget'), ['type' => 'submit', 'class' => 'btn btn-info']);
+    echo html_writer::end_tag('form');
+}
+
 echo $OUTPUT->footer();
