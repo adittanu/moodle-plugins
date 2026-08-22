@@ -24,6 +24,40 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+if (!class_exists('local_daliwidget_admin_setting_text')) {
+    /** Text setting with a strict maximum length. */
+    class local_daliwidget_admin_setting_text extends admin_setting_configtext {
+        private int $maxlength;
+
+        public function __construct($name, $visiblename, $description, $defaultsetting, int $maxlength) {
+            $this->maxlength = $maxlength;
+            parent::__construct($name, $visiblename, $description, $defaultsetting, PARAM_TEXT);
+        }
+
+        public function validate($data) {
+            $error = parent::validate($data);
+            if ($error !== true) {
+                return $error;
+            }
+            return core_text::strlen(trim((string) $data)) <= $this->maxlength
+                ? true
+                : get_string('appearance_too_long', 'local_daliwidget', $this->maxlength);
+        }
+    }
+}
+
+if (!class_exists('local_daliwidget_admin_setting_color')) {
+    /** Optional six-digit hexadecimal color setting. */
+    class local_daliwidget_admin_setting_color extends admin_setting_configtext {
+        public function validate($data) {
+            $data = trim((string) $data);
+            return $data === '' || preg_match('/^#[0-9a-fA-F]{6}$/', $data)
+                ? true
+                : get_string('accent_color_invalid', 'local_daliwidget');
+        }
+    }
+}
+
 if ($hassiteconfig) {
     $ADMIN->add('localplugins', new admin_externalpage(
         'local_daliwidget_global_knowledge',
@@ -127,6 +161,65 @@ if ($hassiteconfig) {
             'course_scoped' => get_string('knowledge_access_mode_course_scoped', 'local_daliwidget'),
             'site_wide' => get_string('knowledge_access_mode_site_wide', 'local_daliwidget'),
         ]
+    ));
+
+    $settings->add(new admin_setting_heading(
+        'local_daliwidget/appearance_heading',
+        get_string('appearance_heading', 'local_daliwidget'),
+        get_string('appearance_heading_desc', 'local_daliwidget')
+    ));
+
+    $settings->add(new local_daliwidget_admin_setting_text(
+        'local_daliwidget/assistant_name',
+        get_string('assistant_name', 'local_daliwidget'),
+        get_string('assistant_name_desc', 'local_daliwidget'),
+        '',
+        60
+    ));
+    $settings->add(new local_daliwidget_admin_setting_text(
+        'local_daliwidget/welcome_message',
+        get_string('welcome_message', 'local_daliwidget'),
+        get_string('welcome_message_desc', 'local_daliwidget'),
+        '',
+        500
+    ));
+    $settings->add(new admin_setting_configselect(
+        'local_daliwidget/theme',
+        get_string('appearance_theme', 'local_daliwidget'),
+        get_string('appearance_default_desc', 'local_daliwidget'),
+        '',
+        [
+            '' => get_string('appearance_default', 'local_daliwidget'),
+            'light' => get_string('appearance_light', 'local_daliwidget'),
+            'dark' => get_string('appearance_dark', 'local_daliwidget'),
+        ]
+    ));
+    $settings->add(new local_daliwidget_admin_setting_color(
+        'local_daliwidget/accent_color',
+        get_string('accent_color', 'local_daliwidget'),
+        get_string('accent_color_desc', 'local_daliwidget'),
+        '',
+        PARAM_RAW
+    ));
+    $settings->add(new admin_setting_configselect(
+        'local_daliwidget/border_radius',
+        get_string('border_radius', 'local_daliwidget'),
+        get_string('appearance_default_desc', 'local_daliwidget'),
+        '',
+        [
+            '' => get_string('appearance_default', 'local_daliwidget'),
+            'sharp' => get_string('border_radius_square', 'local_daliwidget'),
+            'rounded' => get_string('border_radius_slight', 'local_daliwidget'),
+            'pill' => get_string('border_radius_rounded', 'local_daliwidget'),
+        ]
+    ));
+    $settings->add(new admin_setting_configstoredfile(
+        'local_daliwidget/avatar',
+        get_string('avatar', 'local_daliwidget'),
+        get_string('avatar_desc', 'local_daliwidget'),
+        'avatar',
+        0,
+        ['maxfiles' => 1, 'maxbytes' => 2 * 1024 * 1024, 'accepted_types' => ['.png', '.jpg', '.jpeg', '.webp']]
     ));
 
     // Debug Mode

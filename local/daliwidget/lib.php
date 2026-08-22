@@ -25,6 +25,30 @@
 defined('MOODLE_INTERNAL') || die();
 
 require_once(__DIR__ . '/classes/fetch_auth_helper.php');
+require_once(__DIR__ . '/classes/appearance.php');
+
+/**
+ * Serve only the configured public assistant avatar.
+ */
+function local_daliwidget_pluginfile($course, $cm, $context, $filearea, $args, $forcedownload,
+        array $options = []) {
+    if ($context->contextlevel !== CONTEXT_SYSTEM || $filearea !== 'avatar' || count($args) !== 2
+            || (int) $args[0] !== 0) {
+        return false;
+    }
+    $filename = clean_param($args[1], PARAM_FILE);
+    $files = get_file_storage()->get_area_files(
+        $context->id, 'local_daliwidget', 'avatar', 0, 'id DESC', false
+    );
+    $file = reset($files);
+    if (!$file || $file->get_filename() !== $filename
+            || !in_array($file->get_mimetype(), ['image/png', 'image/jpeg', 'image/webp'], true)
+            || $file->get_filesize() > 2 * 1024 * 1024) {
+        return false;
+    }
+
+    send_stored_file($file, DAYSECS, 0, false, $options);
+}
 
 /**
  * Extend course navigation to add Knowledge Base link
@@ -133,6 +157,7 @@ function local_daliwidget_before_footer() {
                 'url' => $PAGE->url->out(false),
             ],
             'knowledge_access_mode' => $knowledgeaccessmode,
+            'appearance' => \local_daliwidget\appearance::overrides(),
             'debug_mode' => !empty($debugmode),
         ];
 
@@ -257,6 +282,7 @@ function local_daliwidget_before_footer() {
             sesskey: daliConfig.sesskey,
             endpoints: daliConfig.endpoints || {}
         },
+        appearance: daliConfig.appearance || {},
         user: {
             name: daliConfig.user.fullname || daliConfig.user.username,
             email: daliConfig.user.email || (daliConfig.user.username + '@moodle.local')
@@ -280,6 +306,7 @@ function local_daliwidget_before_footer() {
             activity_name: daliConfig.activity ? daliConfig.activity.name : null,
             page_type: daliConfig.page.type,
             page_url: daliConfig.page.url,
+            assistant_display_name: daliConfig.appearance && daliConfig.appearance.botName ? daliConfig.appearance.botName : null,
             knowledge_access_mode: daliConfig.knowledge_access_mode
         },
         debug: daliConfig.debug_mode

@@ -27,6 +27,7 @@ namespace local_daliwidget\hook\output;
 use core\hook\output\before_footer_html_generation;
 
 require_once(__DIR__ . '/../../../classes/fetch_auth_helper.php');
+require_once(__DIR__ . '/../../../classes/appearance.php');
 
 /**
  * Hook callbacks for injecting the Dali AI widget
@@ -99,6 +100,7 @@ class before_footer_callback {
                 'url' => $PAGE->url->out(false),
             ],
             'knowledge_access_mode' => $knowledgeaccessmode,
+            'appearance' => \local_daliwidget\appearance::overrides(),
         ];
 
         // Add course context if on a course page
@@ -152,6 +154,7 @@ class before_footer_callback {
             sesskey: daliConfig.sesskey,
             endpoints: daliConfig.endpoints || {}
         },
+        appearance: daliConfig.appearance || {},
         // User identity for chat widget (auto-fills identity form)
         user: {
             name: daliConfig.user.fullname || daliConfig.user.username,
@@ -176,6 +179,7 @@ class before_footer_callback {
             activity_name: daliConfig.activity ? daliConfig.activity.name : null,
             page_type: daliConfig.page.type,
             page_url: daliConfig.page.url,
+            assistant_display_name: daliConfig.appearance && daliConfig.appearance.botName ? daliConfig.appearance.botName : null,
             knowledge_access_mode: daliConfig.knowledge_access_mode
         }
     };

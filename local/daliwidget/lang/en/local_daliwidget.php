@@ -42,6 +42,27 @@ $string['signed_url_baseurl'] = 'Signed URL base URL';
 $string['signed_url_baseurl_desc'] = 'Optional public base URL used when generating signed file links. Use this for temporary tunnels such as Cloudflare Tunnel, for example https://your-tunnel.trycloudflare.com. Leave empty to use Moodle wwwroot.';
 $string['enabled'] = 'Enable Widget';
 $string['enabled_desc'] = 'When enabled, the AI chat widget will appear on all pages.';
+$string['appearance_heading'] = 'Appearance';
+$string['appearance_heading_desc'] = 'Optional site-wide overrides. Default keeps the matching Dali Application setting.';
+$string['appearance_default'] = 'Default';
+$string['appearance_default_desc'] = 'Default keeps the Dali Application value.';
+$string['appearance_light'] = 'Light';
+$string['appearance_dark'] = 'Dark';
+$string['appearance_theme'] = 'Theme';
+$string['assistant_name'] = 'Assistant name';
+$string['assistant_name_desc'] = 'Optional display name, up to 60 characters.';
+$string['welcome_message'] = 'Welcome message';
+$string['welcome_message_desc'] = 'Optional welcome message, up to 500 characters.';
+$string['accent_color'] = 'Accent color';
+$string['accent_color_desc'] = 'Optional six-digit hexadecimal color, for example #7C3AED.';
+$string['accent_color_invalid'] = 'Enter a six-digit hexadecimal color beginning with #, or leave this empty.';
+$string['appearance_too_long'] = 'Enter no more than {$a} characters.';
+$string['border_radius'] = 'Border radius';
+$string['border_radius_square'] = 'Square';
+$string['border_radius_slight'] = 'Slightly rounded';
+$string['border_radius_rounded'] = 'Rounded';
+$string['avatar'] = 'Avatar';
+$string['avatar_desc'] = 'Optional PNG, JPEG, or WebP image up to 2 MB. Removing it restores the Dali Application avatar.';
 
 // Widget
 $string['widget_title'] = 'AI Assistant';
