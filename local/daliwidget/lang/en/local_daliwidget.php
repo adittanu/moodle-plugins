@@ -73,6 +73,19 @@ $string['no_links'] = 'No web links added yet. Add URLs to scrape for knowledge.
 $string['no_videos'] = 'No YouTube videos added yet. Add video URLs for transcript extraction.';
 $string['no_global_sources'] = 'No global knowledge sources yet.';
 $string['global_retry_started'] = 'Retry started. The global source is processing again.';
+$string['wordpress_connections'] = 'WordPress Connections';
+$string['wordpress_connections_desc'] = 'Connect public or Application Password-protected WordPress sites. Credentials are stored only by Dali.';
+$string['wordpress_add_connection'] = 'Add WordPress Connection';
+$string['wordpress_edit_connection'] = 'Edit WordPress Connection';
+$string['wordpress_name'] = 'Connection name';
+$string['wordpress_site_url'] = 'WordPress site URL';
+$string['wordpress_username'] = 'WordPress username';
+$string['wordpress_application_password'] = 'Application Password';
+$string['wordpress_marker_slug'] = 'Automatic marker slug';
+$string['wordpress_validate'] = 'Validate';
+$string['wordpress_action_success'] = 'WordPress connection updated.';
+$string['wordpress_action_failed'] = 'WordPress connection request failed.';
+
 
 // Activity Sync
 $string['activity_sync'] = 'Activity Content Sync';

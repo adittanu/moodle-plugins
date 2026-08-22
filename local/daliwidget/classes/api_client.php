@@ -54,7 +54,7 @@ class api_client {
     /**
      * Make an HTTP request to the Dali API.
      *
-     * @param string $method HTTP method (GET, POST, DELETE)
+     * @param string $method HTTP method (GET, POST, PUT, DELETE)
      * @param string $endpoint API endpoint (e.g., /api/v1/knowledge/sources)
      * @param array|null $data Request body data
      * @param array|null $files Files to upload
@@ -66,6 +66,10 @@ class api_client {
         $url = $this->baseUrl . $endpoint;
         $debugmode = get_config('local_daliwidget', 'debug_mode');
         $debuglog = [];
+        $logdata = $data;
+        if (isset($logdata['application_password'])) {
+            $logdata['application_password'] = '[redacted]';
+        }
 
         // Log request if debug mode enabled
         if ($debugmode) {
@@ -75,13 +79,13 @@ class api_client {
                 'method' => $method,
                 'url' => $url,
                 'api_key_preview' => substr($this->apiKey, 0, 10) . '...',
-                'data' => $data,
+                'data' => $logdata,
             ];
 
             // Log to Moodle debug log
             debugging('[DaliWidget] API Request: ' . $method . ' ' . $url, DEBUG_DEVELOPER);
-            if ($data) {
-                debugging('[DaliWidget] Request Data: ' . json_encode($data), DEBUG_DEVELOPER);
+            if ($logdata) {
+                debugging('[DaliWidget] Request Data: ' . json_encode($logdata), DEBUG_DEVELOPER);
             }
         }
 
@@ -114,6 +118,10 @@ class api_client {
                 $headers[] = 'Content-Type: application/json';
                 curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
             }
+        } else if ($method === 'PUT') {
+            curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'PUT');
+            $headers[] = 'Content-Type: application/json';
+            curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data ?? []));
         } else if ($method === 'DELETE') {
             curl_setopt($ch, CURLOPT_CUSTOMREQUEST, 'DELETE');
         } else if ($method === 'GET' && $data) {
@@ -184,6 +192,12 @@ class api_client {
         $result['_debug'] = $debuglog;
         return $result;
     }
+
+    public function getWordpressConnections(): array { return $this->request('GET', '/api/v1/wordpress/connections'); }
+    public function createWordpressConnection(array $data): array { return $this->request('POST', '/api/v1/wordpress/connections', $data); }
+    public function updateWordpressConnection(int $id, array $data): array { return $this->request('PUT', "/api/v1/wordpress/connections/{$id}", $data); }
+    public function validateWordpressConnection(int $id): array { return $this->request('POST', "/api/v1/wordpress/connections/{$id}/validate", []); }
+    public function deleteWordpressConnection(int $id): array { return $this->request('DELETE', "/api/v1/wordpress/connections/{$id}"); }
 
     /**
      * Get all knowledge sources.

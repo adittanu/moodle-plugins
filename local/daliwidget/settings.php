@@ -32,6 +32,8 @@ if ($hassiteconfig) {
         'moodle/site:config'
     ));
 
+    $ADMIN->add('localplugins', new admin_externalpage('local_daliwidget_wordpress_connections', get_string('wordpress_connections', 'local_daliwidget'), new moodle_url('/local/daliwidget/wordpress_connections.php'), 'moodle/site:config'));
+
     $settings = new admin_settingpage('local_daliwidget', get_string('pluginname', 'local_daliwidget'));
     $ADMIN->add('localplugins', $settings);
 
