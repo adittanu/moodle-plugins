@@ -84,11 +84,13 @@ $string['no_activities'] = 'No activities found in this course.';
 $string['showing_activities'] = 'Showing {$a->shown} of {$a->total} activities.';
 $string['activity_type'] = 'Type';
 
-// Course Scope Settings
-$string['course_scope_heading'] = 'Course Scope Settings';
-$string['course_scope_heading_desc'] = 'Control how the AI assistant responds within course contexts.';
-$string['strict_course_mode'] = 'Strict Course Mode';
-$string['strict_course_mode_desc'] = 'Jika diaktifkan, AI HANYA akan menjawab pertanyaan berdasarkan materi kursus yang sudah disinkronkan. Pertanyaan di luar cakupan kursus akan ditolak secara sopan agar pembelajaran tetap fokus pada konten kursus.';
+// Knowledge Access Mode.
+$string['knowledge_access_heading'] = 'Knowledge Access';
+$string['knowledge_access_heading_desc'] = 'Control which Course Knowledge and Global Knowledge the assistant may query.';
+$string['knowledge_access_mode'] = 'Knowledge Access Mode';
+$string['knowledge_access_mode_desc'] = 'Course-scoped uses the Active Course plus Global Knowledge, or Global Knowledge alone outside a course. Site-wide allows all eligible visible-course knowledge.';
+$string['knowledge_access_mode_course_scoped'] = 'Course-scoped';
+$string['knowledge_access_mode_site_wide'] = 'Site-wide';
 
 // Sync Mode
 $string['sync_mode'] = 'Sync Mode';

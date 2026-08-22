@@ -75,7 +75,7 @@ function local_daliwidget_before_footer() {
         // Get settings
         $apikey = get_config('local_daliwidget', 'apikey');
         $baseurl = get_config('local_daliwidget', 'baseurl');
-        $strictcoursemode = get_config('local_daliwidget', 'strict_course_mode');
+        $knowledgeaccessmode = get_config('local_daliwidget', 'knowledge_access_mode') ?: 'course_scoped';
         $debugmode = get_config('local_daliwidget', 'debug_mode');
 
         // Don't load widget if no API key configured
@@ -113,7 +113,7 @@ function local_daliwidget_before_footer() {
                 'type' => $PAGE->pagetype,
                 'url' => $PAGE->url->out(false),
             ],
-            'strict_course_mode' => !empty($strictcoursemode),
+            'knowledge_access_mode' => $knowledgeaccessmode,
             'debug_mode' => !empty($debugmode),
         ];
 
@@ -221,7 +221,7 @@ function local_daliwidget_before_footer() {
             apiKeyPreview: daliConfig.apiKey ? daliConfig.apiKey.substring(0, 10) + '...' : 'NOT SET',
             user: daliConfig.user.fullname || daliConfig.user.username,
             course: daliConfig.course ? daliConfig.course.fullname : 'No course context',
-            strict_course_mode: daliConfig.strict_course_mode
+            knowledge_access_mode: daliConfig.knowledge_access_mode
         });
     }
     
@@ -261,7 +261,7 @@ function local_daliwidget_before_footer() {
             activity_name: daliConfig.activity ? daliConfig.activity.name : null,
             page_type: daliConfig.page.type,
             page_url: daliConfig.page.url,
-            strict_course_mode: daliConfig.strict_course_mode
+            knowledge_access_mode: daliConfig.knowledge_access_mode
         },
         debug: daliConfig.debug_mode
     };

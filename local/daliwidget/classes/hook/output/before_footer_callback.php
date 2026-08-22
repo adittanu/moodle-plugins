@@ -56,7 +56,7 @@ class before_footer_callback {
         // Get settings
         $apikey = get_config('local_daliwidget', 'apikey');
         $baseurl = get_config('local_daliwidget', 'baseurl');
-        $strictcoursemode = get_config('local_daliwidget', 'strict_course_mode');
+        $knowledgeaccessmode = get_config('local_daliwidget', 'knowledge_access_mode') ?: 'course_scoped';
 
         // Don't load widget if no API key configured
         if (empty($apikey) || empty($baseurl)) {
@@ -95,7 +95,7 @@ class before_footer_callback {
                 'type' => $PAGE->pagetype,
                 'url' => $PAGE->url->out(false),
             ],
-            'strict_course_mode' => !empty($strictcoursemode),
+            'knowledge_access_mode' => $knowledgeaccessmode,
         ];
 
         // Add course context if on a course page
@@ -173,7 +173,7 @@ class before_footer_callback {
             activity_name: daliConfig.activity ? daliConfig.activity.name : null,
             page_type: daliConfig.page.type,
             page_url: daliConfig.page.url,
-            strict_course_mode: daliConfig.strict_course_mode
+            knowledge_access_mode: daliConfig.knowledge_access_mode
         }
     };
 

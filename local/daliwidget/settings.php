@@ -109,19 +109,22 @@ if ($hassiteconfig) {
         ]
     ));
 
-    // Course Scope Settings Heading
+    // Knowledge Access Mode.
     $settings->add(new admin_setting_heading(
-        'local_daliwidget/course_scope_heading',
-        get_string('course_scope_heading', 'local_daliwidget'),
-        get_string('course_scope_heading_desc', 'local_daliwidget')
+        'local_daliwidget/knowledge_access_heading',
+        get_string('knowledge_access_heading', 'local_daliwidget'),
+        get_string('knowledge_access_heading_desc', 'local_daliwidget')
     ));
 
-    // Strict Course Mode
-    $settings->add(new admin_setting_configcheckbox(
-        'local_daliwidget/strict_course_mode',
-        get_string('strict_course_mode', 'local_daliwidget'),
-        get_string('strict_course_mode_desc', 'local_daliwidget'),
-        0 // Default disabled
+    $settings->add(new admin_setting_configselect(
+        'local_daliwidget/knowledge_access_mode',
+        get_string('knowledge_access_mode', 'local_daliwidget'),
+        get_string('knowledge_access_mode_desc', 'local_daliwidget'),
+        'course_scoped',
+        [
+            'course_scoped' => get_string('knowledge_access_mode_course_scoped', 'local_daliwidget'),
+            'site_wide' => get_string('knowledge_access_mode_site_wide', 'local_daliwidget'),
+        ]
     ));
 
     // Debug Mode

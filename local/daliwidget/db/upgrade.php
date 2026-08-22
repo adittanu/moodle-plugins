@@ -51,5 +51,12 @@ function xmldb_local_daliwidget_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026030501, 'local', 'daliwidget');
     }
 
+    if ($oldversion < 2026082200) {
+        set_config('knowledge_access_mode', 'course_scoped', 'local_daliwidget');
+        unset_config('strict_course_mode', 'local_daliwidget');
+
+        upgrade_plugin_savepoint(true, 2026082200, 'local', 'daliwidget');
+    }
+
     return true;
 }
