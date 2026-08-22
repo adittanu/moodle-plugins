@@ -63,6 +63,18 @@ $string['border_radius_slight'] = 'Slightly rounded';
 $string['border_radius_rounded'] = 'Rounded';
 $string['avatar'] = 'Avatar';
 $string['avatar_desc'] = 'Optional PNG, JPEG, or WebP image up to 2 MB. Removing it restores the Dali Application avatar.';
+$string['persona_heading'] = 'Personality and speaking style';
+$string['persona_heading_desc'] = 'Optional private instructions applied after Dali core behavior and safety rules.';
+$string['speaking_style'] = 'Speaking style';
+$string['speaking_style_desc'] = 'Select an optional tone. Default adds no Moodle style instruction.';
+$string['speaking_style_professional'] = 'Professional';
+$string['speaking_style_friendly'] = 'Friendly';
+$string['speaking_style_casual'] = 'Casual';
+$string['speaking_style_concise'] = 'Concise';
+$string['speaking_style_tutor'] = 'Tutor/Socratic';
+$string['custom_instruction'] = 'Custom instruction';
+$string['custom_instruction_desc'] = 'Optional, up to 2,000 characters. Sent to an AI service. Do not include passwords, API keys, personal data, or institutional secrets.';
+
 
 // Widget
 $string['widget_title'] = 'AI Assistant';

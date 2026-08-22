@@ -87,4 +87,23 @@ class appearance_test extends \advanced_testcase {
         ], str_repeat('x', 2 * 1024 * 1024 + 1));
         $this->assertArrayNotHasKey('botAvatar', appearance::overrides());
     }
+
+    public function test_persona_configuration_accepts_supported_values(): void {
+        $this->resetAfterTest();
+        set_config('speaking_style', 'tutor', 'local_daliwidget');
+        set_config('custom_instruction', 'Ask one guiding question at a time.', 'local_daliwidget');
+
+        $this->assertSame('tutor', get_config('local_daliwidget', 'speaking_style'));
+        $this->assertSame('Ask one guiding question at a time.', get_config('local_daliwidget', 'custom_instruction'));
+    }
+
+    public function test_fetch_signature_rejects_forged_and_expired_values(): void {
+        $this->resetAfterTest();
+        set_config('download_secret', 'test-secret', 'local_daliwidget');
+        $signed = fetch_auth_helper::generate_for_user(7);
+
+        $this->assertTrue(fetch_auth_helper::validate(7, $signed['expires'], $signed['sig']));
+        $this->assertFalse(fetch_auth_helper::validate(7, $signed['expires'], str_repeat('a', 64)));
+        $this->assertFalse(fetch_auth_helper::validate(7, time() - 1, $signed['sig']));
+    }
 }

@@ -46,6 +46,18 @@ if (!class_exists('local_daliwidget_admin_setting_text')) {
     }
 }
 
+if (!class_exists('local_daliwidget_admin_setting_persona_text')) {
+    /** Private plain-text instruction with a strict maximum length. */
+    class local_daliwidget_admin_setting_persona_text extends admin_setting_configtextarea {
+        public function validate($data) {
+            return core_text::strlen(trim((string) $data)) <= 2000
+                ? true
+                : get_string('appearance_too_long', 'local_daliwidget', 2000);
+        }
+    }
+}
+
+
 if (!class_exists('local_daliwidget_admin_setting_color')) {
     /** Optional six-digit hexadecimal color setting. */
     class local_daliwidget_admin_setting_color extends admin_setting_configtext {
@@ -220,6 +232,32 @@ if ($hassiteconfig) {
         'avatar',
         0,
         ['maxfiles' => 1, 'maxbytes' => 2 * 1024 * 1024, 'accepted_types' => ['.png', '.jpg', '.jpeg', '.webp']]
+    ));
+
+    $settings->add(new admin_setting_heading(
+        'local_daliwidget/persona_heading',
+        get_string('persona_heading', 'local_daliwidget'),
+        get_string('persona_heading_desc', 'local_daliwidget')
+    ));
+    $settings->add(new admin_setting_configselect(
+        'local_daliwidget/speaking_style',
+        get_string('speaking_style', 'local_daliwidget'),
+        get_string('speaking_style_desc', 'local_daliwidget'),
+        'default',
+        [
+            'default' => get_string('appearance_default', 'local_daliwidget'),
+            'professional' => get_string('speaking_style_professional', 'local_daliwidget'),
+            'friendly' => get_string('speaking_style_friendly', 'local_daliwidget'),
+            'casual' => get_string('speaking_style_casual', 'local_daliwidget'),
+            'concise' => get_string('speaking_style_concise', 'local_daliwidget'),
+            'tutor' => get_string('speaking_style_tutor', 'local_daliwidget'),
+        ]
+    ));
+    $settings->add(new local_daliwidget_admin_setting_persona_text(
+        'local_daliwidget/custom_instruction',
+        get_string('custom_instruction', 'local_daliwidget'),
+        get_string('custom_instruction_desc', 'local_daliwidget'),
+        ''
     ));
 
     // Debug Mode

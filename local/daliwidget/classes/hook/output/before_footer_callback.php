@@ -85,6 +85,8 @@ class before_footer_callback {
             'endpoints' => [
                 'myCourses' => (new \moodle_url('/local/daliwidget/user_courses.php'))->out(false),
             ],
+
+
             'sesskey' => sesskey(),
             'fetchAuth' => $fetchauth,
             'user' => [
@@ -170,7 +172,6 @@ class before_footer_callback {
             moodle_my_courses_endpoint: daliConfig.endpoints && daliConfig.endpoints.myCourses ? daliConfig.endpoints.myCourses : null,
             moodle_fetch_user_id: daliConfig.fetchAuth ? daliConfig.fetchAuth.signed_user_id : null,
             moodle_fetch_expires: daliConfig.fetchAuth ? daliConfig.fetchAuth.expires : null,
-            moodle_fetch_sig: daliConfig.fetchAuth ? daliConfig.fetchAuth.sig : null,
             course_id: daliConfig.course ? daliConfig.course.id : null,
             course_name: daliConfig.course ? daliConfig.course.fullname : null,
             course_shortname: daliConfig.course ? daliConfig.course.shortname : null,
