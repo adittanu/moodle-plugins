@@ -58,7 +58,7 @@ class before_footer_callback {
         $apikey = get_config('local_daliwidget', 'apikey');
         $baseurl = get_config('local_daliwidget', 'baseurl');
         $knowledgeaccessmode = get_config('local_daliwidget', 'knowledge_access_mode') ?: 'course_scoped';
-        if ($knowledgeaccessmode === 'site_wide' && isguestuser()) {
+        if (!local_daliwidget_can_render_for_user($knowledgeaccessmode)) {
             return;
         }
 

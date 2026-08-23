@@ -89,6 +89,16 @@ function local_daliwidget_extend_settings_navigation($settingsnav, $context) {
 }
 
 /**
+ * Whether the widget may render for the current user under the access mode.
+ *
+ * @param string $knowledgeaccessmode
+ * @return bool
+ */
+function local_daliwidget_can_render_for_user(string $knowledgeaccessmode): bool {
+    return $knowledgeaccessmode !== 'site_wide' || !isguestuser();
+}
+
+/**
  * Legacy callback for before footer (Moodle 4.1 - 4.4).
  * Injects the Dali AI widget into page footer.
  *
@@ -116,7 +126,7 @@ function local_daliwidget_before_footer() {
         $apikey = get_config('local_daliwidget', 'apikey');
         $baseurl = get_config('local_daliwidget', 'baseurl');
         $knowledgeaccessmode = get_config('local_daliwidget', 'knowledge_access_mode') ?: 'course_scoped';
-        if ($knowledgeaccessmode === 'site_wide' && isguestuser()) {
+        if (!local_daliwidget_can_render_for_user($knowledgeaccessmode)) {
             return '';
         }
         $debugmode = get_config('local_daliwidget', 'debug_mode');

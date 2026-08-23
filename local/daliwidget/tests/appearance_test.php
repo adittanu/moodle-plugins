@@ -128,4 +128,15 @@ class appearance_test extends \advanced_testcase {
         $this->assertFalse(fetch_auth_helper::validate(7, $signed['expires'], str_repeat('a', 64)));
         $this->assertFalse(fetch_auth_helper::validate(7, time() - 1, $signed['sig']));
     }
+
+    public function test_site_wide_widget_is_hidden_only_for_guests(): void {
+        $this->resetAfterTest();
+
+        $this->assertTrue(local_daliwidget_can_render_for_user('site_wide'));
+        $this->assertTrue(local_daliwidget_can_render_for_user('course_scoped'));
+
+        $this->setGuestUser();
+        $this->assertFalse(local_daliwidget_can_render_for_user('site_wide'));
+        $this->assertTrue(local_daliwidget_can_render_for_user('course_scoped'));
+    }
 }
