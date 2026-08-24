@@ -591,7 +591,8 @@ if ($mform->is_cancelled()) {
             $data->questiontype,
             $data->difficulty,
             $data->language,
-            $data->additionalinstructions ?? ''
+            $data->additionalinstructions ?? '',
+            $data->questiontype === 'multichoice' ? (int)$data->answeroptioncount : null
         );
 
         if (empty($questions)) {

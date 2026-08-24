@@ -118,6 +118,12 @@ class generate_form extends \moodleform {
         $mform->addElement('select', 'questiontype', get_string('questiontype', 'local_aiquizgen'), $types);
         $mform->setDefault('questiontype', 'multichoice');
         $mform->addHelpButton('questiontype', 'questiontype', 'local_aiquizgen');
+        $answeroptioncounts = array_combine(range(3, 10), range(3, 10));
+        $mform->addElement('select', 'answeroptioncount', get_string('answeroptioncount', 'local_aiquizgen'), $answeroptioncounts);
+        $mform->setType('answeroptioncount', PARAM_INT);
+        $mform->setDefault('answeroptioncount', 5);
+        $mform->addHelpButton('answeroptioncount', 'answeroptioncount', 'local_aiquizgen');
+        $mform->disabledIf('answeroptioncount', 'questiontype', 'neq', 'multichoice');
 
         $difficulties = [
             'easy' => get_string('easy', 'local_aiquizgen'),
@@ -209,6 +215,7 @@ class generate_form extends \moodleform {
             ['rows' => 3, 'cols' => 60]);
         $mform->setType('additionalinstructions', PARAM_TEXT);
         $mform->addHelpButton('additionalinstructions', 'additionalinstructions', 'local_aiquizgen');
+
 
         if (isset($customdata['courseid'])) {
             $mform->addElement('hidden', 'courseid', $customdata['courseid']);
@@ -380,6 +387,11 @@ class generate_form extends \moodleform {
 
         if (empty($data['category'])) {
             $errors['category'] = get_string('nocategory', 'local_aiquizgen');
+        }
+
+        if (($data['questiontype'] ?? '') === 'multichoice'
+            && (!isset($data['answeroptioncount']) || !in_array((int)$data['answeroptioncount'], range(3, 10), true))) {
+            $errors['answeroptioncount'] = get_string('answeroptioncountinvalid', 'local_aiquizgen');
         }
 
         return $errors;

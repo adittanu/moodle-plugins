@@ -37,17 +37,17 @@ class mastra_client {
         $this->apibaseurl = get_config('local_aiquizgen', 'apibaseurl') ?: 'http://localhost:8000';
     }
 
-    public function generate_questions($topic, $count, $type, $difficulty, $language, $additionalinstructions = '') {
+    public function generate_questions($topic, $count, $type, $difficulty, $language, $additionalinstructions = '', $answeroptioncount = null) {
         if (empty($this->apikey)) {
             throw new \moodle_exception('noapikey', 'local_aiquizgen');
         }
 
-        $response = $this->call_api($topic, $count, $type, $difficulty, $language, $additionalinstructions);
+        $response = $this->call_api($topic, $count, $type, $difficulty, $language, $additionalinstructions, $answeroptioncount);
 
         return $this->parse_response($response);
     }
 
-    private function call_api($topic, $count, $type, $difficulty, $language, $additionalinstructions) {
+    private function call_api($topic, $count, $type, $difficulty, $language, $additionalinstructions, $answeroptioncount) {
         $data = [
             'topic' => $topic,
             'count' => $count,
@@ -56,6 +56,10 @@ class mastra_client {
             'language' => $language,
             'additionalinstructions' => $additionalinstructions
         ];
+
+        if ($type === 'multichoice') {
+            $data['answerOptionCount'] = $answeroptioncount;
+        }
 
         $url = rtrim($this->apibaseurl, '/') . '/api/moodle/quiz';
 
@@ -152,7 +156,7 @@ class mastra_client {
         
         try {
             // Using a very simple request for connection test
-            $this->call_api('connection test', 1, 'truefalse', 'easy', 'english', '');
+            $this->call_api('connection test', 1, 'truefalse', 'easy', 'english', '', null);
             return ['success' => true, 'message' => 'Connection successful'];
         } catch (\Exception $e) {
             return ['success' => false, 'message' => $e->getMessage()];
