@@ -154,6 +154,12 @@ $string['wordpress_preview_remove'] = '{$a} to remove';
 $string['wordpress_preview_pending'] = '{$a} pending publication';
 $string['wordpress_preview_unchanged'] = '{$a} unchanged';
 $string['wordpress_preview_more'] = '...and {$a} more.';
+$string['wordpress_preview_label_add'] = 'add';
+$string['wordpress_preview_label_update'] = 'update';
+$string['wordpress_preview_label_remove'] = 'remove';
+$string['wordpress_preview_label_pending'] = 'pending';
+$string['wordpress_preview_label_unchanged'] = 'unchanged';
+$string['wordpress_sync_now'] = 'Ingest now';
 
 
 // Activity Sync

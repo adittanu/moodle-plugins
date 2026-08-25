@@ -242,6 +242,15 @@ class api_client {
     public function previewWordpressSync(int $id): array {
         return $this->request('POST', "/api/v1/wordpress/connections/{$id}/preview", []);
     }
+    /**
+     * Run an already-previewed WordPress synchronization immediately.
+     *
+     * @param int $id Connection ID.
+     * @return array API response.
+     */
+    public function syncWordpressConnection(int $id): array {
+        return $this->request('POST', "/api/v1/wordpress/connections/{$id}/sync", ['confirmed' => true]);
+    }
 
     /**
      * Discover posts from a WordPress connection.
