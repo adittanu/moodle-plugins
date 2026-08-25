@@ -24,8 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2026072801;
+$plugin->version   = 2026082500;
 $plugin->requires  = 2022112800;
 $plugin->component = 'quizaccess_webcamguard';
-$plugin->maturity  = MATURITY_ALPHA;
-$plugin->release   = '0.9.1';
+$plugin->maturity  = MATURITY_BETA;
+$plugin->release   = '0.9.2';
