@@ -30,7 +30,7 @@ class api_client_test extends \advanced_testcase {
     public function test_admin_header_present_on_wp_mutations(): void {
         $source = file_get_contents(__DIR__ . '/../classes/api_client.php');
         $this->assertStringContainsString('X-Moodle-Site-Admin: 1', $source);
-        $this->assertStringContainsString("str_starts_with(\$endpoint, '/api/v1/wordpress/')", $source);
+        $this->assertStringContainsString("strpos(\$endpoint, '/api/v1/wordpress/') === 0", $source);
     }
 
     /**

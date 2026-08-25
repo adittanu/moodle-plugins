@@ -19,10 +19,14 @@ require_once($CFG->libdir . '/adminlib.php');
 require_once(__DIR__ . '/classes/api_client.php');
 
 use local_daliwidget\api_client;
+use local_daliwidget\knowledge_lifecycle;
 
 require_login();
 
 $systemcontext = context_system::instance();
+if (!knowledge_lifecycle::can_view_history()) {
+    throw new required_capability_exception($systemcontext, 'moodle/site:config', 'nopermissions', '');
+}
 require_capability('moodle/site:config', $systemcontext);
 
 $PAGE->set_url(new moodle_url('/local/daliwidget/global_knowledge.php'));
@@ -92,14 +96,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && confirm_sesskey()) {
         }
 
         if (!empty($_FILES['source_file']['name'])) {
-            $result = $apiClient->uploadDocument($_FILES['source_file'], null, $globalmetadata, $sourceType);
+            $storedfile = get_file_storage()->create_file_from_pathname([
+                'contextid' => $systemcontext->id,
+                'component' => 'local_daliwidget',
+                'filearea' => 'knowledge',
+                'itemid' => 0,
+                'filepath' => '/',
+                'filename' => clean_param($_FILES['source_file']['name'], PARAM_FILE),
+            ], $_FILES['source_file']['tmp_name']);
+            $metadata = array_merge($globalmetadata, ['moodle_file_id' => $storedfile->get_id()]);
+            $result = $apiClient->uploadDocument($_FILES['source_file'], null, $metadata, $sourceType);
             if ($result['success'] ?? false) {
                 redirect($PAGE->url, get_string('source_added', 'local_daliwidget'), null, \core\output\notification::NOTIFY_SUCCESS);
             }
+            $storedfile->delete();
             redirect($PAGE->url, $result['error'] ?? 'Failed to upload file', null, \core\output\notification::NOTIFY_ERROR);
         }
     }
 
+    if ($action === 'unsync') {
+        $sourceids = optional_param_array('sourceids', [], PARAM_INT);
+        $sourcesbyid = array_column($apiClient->getSources(null)['data'] ?? [], null, 'id');
+        $selected = array_values(array_intersect_key($sourcesbyid, array_flip($sourceids)));
+        $result = knowledge_lifecycle::unsync(
+            $selected,
+            null,
+            $USER->id,
+            static fn(int $sourceid): array => $apiClient->deleteSource($sourceid)
+        );
+        redirect($PAGE->url, get_string('unsync_result', 'local_daliwidget', $result), null,
+            $result['failed'] ? \core\output\notification::NOTIFY_WARNING : \core\output\notification::NOTIFY_SUCCESS);
+    }
     if ($action === 'delete') {
         $sourceid = required_param('sourceid', PARAM_INT);
         $result = $apiClient->deleteSource($sourceid);
@@ -179,22 +206,23 @@ echo $OUTPUT->notification(
     \core\output\notification::NOTIFY_INFO
 );
 
+echo html_writer::start_tag('form', ['method' => 'post', 'id' => 'bulk-unsync-global',
+    'onsubmit' => "return confirm('" . get_string('confirm_unsync', 'local_daliwidget') . "');"]);
+echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
+echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'unsync']);
+echo html_writer::end_tag('form');
 echo html_writer::start_div('card');
 echo html_writer::start_div('card-header d-flex justify-content-between align-items-center');
 echo html_writer::tag('h5', 'Global Knowledge Sources', ['class' => 'mb-0']);
-echo html_writer::tag('button', '<i class="fa fa-plus mr-1"></i>Add Source', [
-    'type' => 'button',
-    'class' => 'btn btn-primary btn-sm',
-    'data-toggle' => 'modal',
-    'data-bs-toggle' => 'modal',
-    'data-target' => '#global-add-source-modal',
-    'data-bs-target' => '#global-add-source-modal',
+echo html_writer::tag('button', get_string('unsync_selected', 'local_daliwidget'), [
+    'type' => 'submit', 'class' => 'btn btn-warning btn-sm', 'form' => 'bulk-unsync-global',
 ]);
 echo html_writer::end_div();
 echo html_writer::start_div('card-body p-0');
 echo html_writer::start_tag('table', ['class' => 'table table-striped mb-0']);
 echo html_writer::start_tag('thead');
 echo html_writer::start_tag('tr');
+echo html_writer::tag('th', get_string('select'));
 echo html_writer::tag('th', get_string('name'));
 echo html_writer::tag('th', 'Type');
 echo html_writer::tag('th', get_string('status'));
@@ -270,6 +298,12 @@ foreach ($pagedsources as $sourcearr) {
     }
 
     echo html_writer::start_tag('tr');
+    $moodlefileid = (int) ($source->metadata['moodle_file_id'] ?? 0);
+    echo html_writer::tag('td', $moodlefileid > 0
+        ? html_writer::checkbox('sourceids[]', $source->id, false, '', [
+            'value' => $source->id, 'form' => 'bulk-unsync-global',
+        ])
+        : '');
     echo html_writer::tag('td', '<i class="fa fa-' . $typeConfig['icon'] . ' ' . $typeConfig['class'] . ' mr-1"></i>' . s($source->title));
     echo html_writer::tag('td', html_writer::tag('span', $typeConfig['label'], ['class' => 'badge badge-light']));
 
@@ -331,6 +365,15 @@ if ($totalcount > $perpage) {
     echo html_writer::end_div();
 }
 echo html_writer::end_div();
+$history = knowledge_lifecycle::history();
+echo html_writer::tag('h3', get_string('unsynced_history', 'local_daliwidget'), ['class' => 'mt-4']);
+$table = new html_table();
+$table->head = [get_string('name'), get_string('type'), get_string('status'), get_string('user'), get_string('date')];
+foreach ($history as $record) {
+    $table->data[] = [s($record->title), s($record->sourcetype), s($record->lifecyclestatus),
+        fullname($DB->get_record('user', ['id' => $record->userid], '*', MUST_EXIST)), userdate($record->timeunsynced)];
+}
+echo html_writer::table($table);
 
 echo html_writer::start_div('modal fade', [
     'id' => 'global-add-source-modal',

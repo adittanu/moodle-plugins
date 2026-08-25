@@ -97,7 +97,7 @@ class api_client {
         ];
 
         // Send privileged admin header on WordPress mutation requests only.
-        $isWpMutation = str_starts_with($endpoint, '/api/v1/wordpress/')
+        $isWpMutation = strpos($endpoint, '/api/v1/wordpress/') === 0
             && in_array($method, ['POST', 'PUT', 'DELETE'], true);
         if ($isWpMutation) {
             $headers[] = 'X-Moodle-Site-Admin: 1';

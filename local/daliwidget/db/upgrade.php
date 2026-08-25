@@ -58,5 +58,27 @@ function xmldb_local_daliwidget_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026082200, 'local', 'daliwidget');
     }
 
+    if ($oldversion < 2026082400) {
+        $table = new xmldb_table('local_daliwidget_unsynced');
+        $table->add_field('id', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, XMLDB_SEQUENCE);
+        $table->add_field('sourceulid', XMLDB_TYPE_CHAR, '64', null, XMLDB_NOTNULL);
+        $table->add_field('moodlefileid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+        $table->add_field('title', XMLDB_TYPE_CHAR, '255', null, XMLDB_NOTNULL);
+        $table->add_field('sourcetype', XMLDB_TYPE_CHAR, '20', null, XMLDB_NOTNULL, null, 'document');
+        $table->add_field('scope', XMLDB_TYPE_CHAR, '10', null, XMLDB_NOTNULL);
+        $table->add_field('courseid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('lifecyclestatus', XMLDB_TYPE_CHAR, '30', null, XMLDB_NOTNULL);
+        $table->add_field('timesynced', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL, null, '0');
+        $table->add_field('timeunsynced', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+        $table->add_field('userid', XMLDB_TYPE_INTEGER, '10', null, XMLDB_NOTNULL);
+        $table->add_key('primary', XMLDB_KEY_PRIMARY, ['id']);
+        $table->add_index('course_time', XMLDB_INDEX_NOTUNIQUE, ['courseid', 'timeunsynced']);
+        $table->add_index('sourceulid', XMLDB_INDEX_NOTUNIQUE, ['sourceulid']);
+        if (!$dbman->table_exists($table)) {
+            $dbman->create_table($table);
+        }
+        upgrade_plugin_savepoint(true, 2026082400, 'local', 'daliwidget');
+    }
+
     return true;
 }

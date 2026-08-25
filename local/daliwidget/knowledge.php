@@ -28,6 +28,7 @@ require_once(__DIR__ . '/classes/sync_helper.php');
 
 use local_daliwidget\api_client;
 use local_daliwidget\sync_helper;
+use local_daliwidget\knowledge_lifecycle;
 
 // Get course ID parameter
 $courseid = required_param('id', PARAM_INT);
@@ -116,15 +117,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && confirm_sesskey()) {
         if (empty($_FILES[$fileField]['name']) && !empty($_FILES['document']['name'])) {
             $fileField = 'document';
         }
-
         if (!empty($_FILES[$fileField]['name'])) {
-            $result = $apiClient->uploadDocument($_FILES[$fileField], null, $courseMetadata, $sourceType);
+            $storedfile = get_file_storage()->create_file_from_pathname([
+                'contextid' => $context->id,
+                'component' => 'local_daliwidget',
+                'filearea' => 'knowledge',
+                'itemid' => 0,
+                'filepath' => '/',
+                'filename' => clean_param($_FILES[$fileField]['name'], PARAM_FILE),
+            ], $_FILES[$fileField]['tmp_name']);
+            $metadata = array_merge($courseMetadata, ['moodle_file_id' => $storedfile->get_id()]);
+            $result = $apiClient->uploadDocument($_FILES[$fileField], null, $metadata, $sourceType);
             if ($result['success'] ?? false) {
                 redirect($PAGE->url, get_string('source_added', 'local_daliwidget'), null, \core\output\notification::NOTIFY_SUCCESS);
-            } else {
-                redirect($PAGE->url, $result['error'] ?? 'Failed to upload file', null, \core\output\notification::NOTIFY_ERROR);
             }
+            $storedfile->delete();
+            redirect($PAGE->url, $result['error'] ?? 'Failed to upload file', null, \core\output\notification::NOTIFY_ERROR);
         }
+    }
+    if ($action === 'unsync') {
+        $sourceids = optional_param_array('sourceids', [], PARAM_INT);
+        $sourcesbyid = array_column($apiClient->getSources($courseid)['data'] ?? [], null, 'id');
+        $selected = array_values(array_intersect_key($sourcesbyid, array_flip($sourceids)));
+        $result = knowledge_lifecycle::unsync(
+            $selected,
+            $courseid,
+            $USER->id,
+            static fn(int $sourceid): array => $apiClient->deleteSource($sourceid)
+        );
+        redirect($PAGE->url, get_string('unsync_result', 'local_daliwidget', $result), null,
+            $result['failed'] ? \core\output\notification::NOTIFY_WARNING : \core\output\notification::NOTIFY_SUCCESS);
     }
     
     if ($action === 'delete') {
@@ -411,14 +433,14 @@ foreach ($queuestatuses as $cmid => $row) {
 
     $cm = $activitiesbyid[$cmid];
     $preview = $activitypreviews[$cmid];
-    $pendingType = match ($preview['category'] ?? 'text') {
+    $pendingtypes = [
         'documents' => 'document',
         'video' => 'video',
         'audio' => 'audio',
         'scorm' => 'scorm',
         'url' => 'url',
-        default => 'text',
-    };
+    ];
+    $pendingType = $pendingtypes[$preview['category'] ?? 'text'] ?? 'text';
 
     $pendingKnowledgeRows[] = (object) [
         'id' => 0,
@@ -427,11 +449,10 @@ foreach ($queuestatuses as $cmid => $row) {
         'status' => $row->status,
         'error_message' => $row->errormessage,
         'metadata' => [
-            'transport' => match ($pendingType) {
+            'transport' => [
                 'text' => 'inline_text',
                 'url' => 'url_fetch',
-                default => \local_daliwidget\file_url_helper::is_enabled() ? 'signed_url' : 'binary_upload',
-            },
+            ][$pendingType] ?? (\local_daliwidget\file_url_helper::is_enabled() ? 'signed_url' : 'binary_upload'),
             'pending_placeholder' => true,
         ],
         'is_placeholder' => true,
@@ -545,16 +566,16 @@ $allKnowledgeSources = array_merge(
     $scormSources
 );
 
+echo html_writer::start_tag('form', ['method' => 'post', 'id' => 'bulk-unsync-course',
+    'onsubmit' => "return confirm('" . get_string('confirm_unsync', 'local_daliwidget') . "');"]);
+echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
+echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'unsync']);
+echo html_writer::end_tag('form');
 echo html_writer::start_div('card mt-4');
 echo html_writer::start_div('card-header d-flex justify-content-between align-items-center');
 echo html_writer::tag('h5', 'Knowledge Sources', ['class' => 'mb-0']);
-echo html_writer::tag('button', '<i class="fa fa-plus mr-1"></i>Add Source', [
-    'type' => 'button',
-    'class' => 'btn btn-primary btn-sm',
-    'data-toggle' => 'modal',
-    'data-bs-toggle' => 'modal',
-    'data-target' => '#add-source-modal',
-    'data-bs-target' => '#add-source-modal',
+echo html_writer::tag('button', get_string('unsync_selected', 'local_daliwidget'), [
+    'type' => 'submit', 'class' => 'btn btn-warning btn-sm', 'form' => 'bulk-unsync-course',
 ]);
 echo html_writer::end_div();
 
@@ -562,6 +583,7 @@ echo html_writer::start_div('card-body p-0');
 echo html_writer::start_tag('table', ['class' => 'table table-striped mb-0']);
 echo html_writer::start_tag('thead');
 echo html_writer::start_tag('tr');
+echo html_writer::tag('th', get_string('select'));
 echo html_writer::tag('th', get_string('name'));
 echo html_writer::tag('th', 'Type');
 echo html_writer::tag('th', get_string('status'));
@@ -575,31 +597,37 @@ echo html_writer::start_tag('tbody');
 foreach ($allKnowledgeSources as $source) {
     echo html_writer::start_tag('tr');
 
-    $typeConfig = match ($source->type) {
+    $typeconfigs = [
         'document' => ['label' => 'Document', 'icon' => 'file-alt', 'class' => 'text-primary'],
         'text' => ['label' => 'Custom Text', 'icon' => 'file-text', 'class' => 'text-info'],
         'url' => ['label' => 'Link', 'icon' => 'link', 'class' => 'text-info'],
         'video' => ['label' => 'Video', 'icon' => 'film', 'class' => 'text-primary'],
         'audio' => ['label' => 'Audio', 'icon' => 'music', 'class' => 'text-success'],
         'scorm' => ['label' => 'SCORM', 'icon' => 'archive', 'class' => 'text-warning'],
-        default => ['label' => 'YouTube', 'icon' => 'youtube', 'class' => 'text-danger'],
-    };
+    ];
+    $typeConfig = $typeconfigs[$source->type] ?? ['label' => 'YouTube', 'icon' => 'youtube', 'class' => 'text-danger'];
 
+    $moodlefileid = (int) ($source->metadata['moodle_file_id'] ?? 0);
+    echo html_writer::tag('td', $moodlefileid > 0
+        ? html_writer::checkbox('sourceids[]', $source->id, false, '', [
+            'value' => $source->id, 'form' => 'bulk-unsync-course',
+        ])
+        : '');
     echo html_writer::tag('td', '<i class="fa fa-' . $typeConfig['icon'] . ' ' . $typeConfig['class'] . ' mr-1"></i>' . s($source->title));
     echo html_writer::tag('td', html_writer::tag('span', $typeConfig['label'], ['class' => 'badge badge-light']));
 
-    $statusclass = match ($source->status) {
+    $statusclasses = [
         'ready' => 'badge-success',
         'failed' => 'badge-danger',
         'queued' => 'badge-secondary',
-        default => 'badge-warning',
-    };
-    $statusicon = match ($source->status) {
+    ];
+    $statusclass = $statusclasses[$source->status] ?? 'badge-warning';
+    $statusicons = [
         'ready' => '<i class="fa fa-check mr-1"></i>',
         'failed' => '<i class="fa fa-times mr-1"></i>',
         'queued' => '<i class="fa fa-clock mr-1"></i>',
-        default => '<i class="fa fa-spinner fa-spin mr-1"></i>',
-    };
+    ];
+    $statusicon = $statusicons[$source->status] ?? '<i class="fa fa-spinner fa-spin mr-1"></i>';
     $statushtml = html_writer::tag('span', $statusicon . ucfirst($source->status), ['class' => 'badge ' . $statusclass]);
     if ($source->status === 'failed' && !empty($source->error_message)) {
         $friendlyError = $format_source_error((string) $source->error_message);
@@ -612,11 +640,12 @@ foreach ($allKnowledgeSources as $source) {
     $transportClass = 'badge-light';
     $transportNote = '';
     if (!empty($source->metadata['pending_placeholder'])) {
-        $transportLabel = match ($source->type) {
+        $transportlabels = [
             'text' => 'Text Extract',
             'url' => 'URL Fetch',
-            default => \local_daliwidget\file_url_helper::is_enabled() ? 'Signed URL first' : 'File Upload',
-        };
+        ];
+        $transportLabel = $transportlabels[$source->type]
+            ?? (\local_daliwidget\file_url_helper::is_enabled() ? 'Signed URL first' : 'File Upload');
     } else if ($transport === 'signed_url') {
         $transportLabel = 'Signed URL';
         $transportClass = 'badge-info';
@@ -699,13 +728,24 @@ foreach ($allKnowledgeSources as $source) {
 }
 
 if (empty($allKnowledgeSources)) {
-    echo html_writer::tag('tr', html_writer::tag('td', 'No knowledge sources yet.', ['colspan' => 6, 'class' => 'text-center text-muted py-4']));
+    echo html_writer::tag('tr', html_writer::tag('td', 'No knowledge sources yet.', ['colspan' => 7, 'class' => 'text-center text-muted py-4']));
 }
 
 echo html_writer::end_tag('tbody');
 echo html_writer::end_tag('table');
 echo html_writer::end_div();
 echo html_writer::end_div();
+if (knowledge_lifecycle::can_view_history()) {
+    $history = knowledge_lifecycle::history($courseid);
+    echo html_writer::tag('h3', get_string('unsynced_history', 'local_daliwidget'), ['class' => 'mt-4']);
+    $table = new html_table();
+    $table->head = [get_string('name'), get_string('type'), get_string('status'), get_string('user'), get_string('date')];
+    foreach ($history as $record) {
+        $table->data[] = [s($record->title), s($record->sourcetype), s($record->lifecyclestatus),
+            fullname($DB->get_record('user', ['id' => $record->userid], '*', MUST_EXIST)), userdate($record->timeunsynced)];
+    }
+    echo html_writer::table($table);
+}
 
 // Add Source modal.
 echo html_writer::start_div('modal fade', [

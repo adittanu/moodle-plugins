@@ -39,3 +39,15 @@ _Avoid_: Strict mode, closed AI
 **Knowledge-preferred Policy**:
 An Answer Source Policy where the assistant may use model knowledge when retrieval succeeds without relevant knowledge and clearly identifies that fallback.
 _Avoid_: Open mode, internet knowledge
+
+**Answer Option Count**:
+The required number of answers in each AI-generated Multiple Choice question.
+_Avoid_: Choice count, option total
+
+**Synced Moodle File**:
+A file uploaded from a Moodle course to Dali Knowledge and available to retrieval.
+_Avoid_: External file, active file
+
+**Unsynced History**:
+The immutable metadata record of a Synced Moodle File removed from retrieval.
+_Avoid_: Temporary file, deleted source
