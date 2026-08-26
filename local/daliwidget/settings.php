@@ -175,6 +175,17 @@ if ($hassiteconfig) {
         ]
     ));
 
+    $settings->add(new admin_setting_configselect(
+        'local_daliwidget/answer_source_policy',
+        get_string('answer_source_policy', 'local_daliwidget'),
+        get_string('answer_source_policy_desc', 'local_daliwidget'),
+        'knowledge_only',
+        [
+            'knowledge_only' => get_string('answer_source_policy_knowledge_only', 'local_daliwidget'),
+            'knowledge_preferred' => get_string('answer_source_policy_knowledge_preferred', 'local_daliwidget'),
+        ]
+    ));
+
     $settings->add(new admin_setting_heading(
         'local_daliwidget/appearance_heading',
         get_string('appearance_heading', 'local_daliwidget'),

@@ -80,5 +80,10 @@ function xmldb_local_daliwidget_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026082400, 'local', 'daliwidget');
     }
 
+    if ($oldversion < 2026082602) {
+        set_config('answer_source_policy', 'knowledge_only', 'local_daliwidget');
+        upgrade_plugin_savepoint(true, 2026082602, 'local', 'daliwidget');
+    }
+
     return true;
 }

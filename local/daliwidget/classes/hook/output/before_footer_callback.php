@@ -58,6 +58,7 @@ class before_footer_callback {
         $apikey = get_config('local_daliwidget', 'apikey');
         $baseurl = get_config('local_daliwidget', 'baseurl');
         $knowledgeaccessmode = get_config('local_daliwidget', 'knowledge_access_mode') ?: 'course_scoped';
+        $answersourcepolicy = get_config('local_daliwidget', 'answer_source_policy') ?: 'knowledge_only';
         if (!local_daliwidget_can_render_for_user($knowledgeaccessmode)) {
             return;
         }
@@ -103,6 +104,7 @@ class before_footer_callback {
                 'url' => $PAGE->url->out(false),
             ],
             'knowledge_access_mode' => $knowledgeaccessmode,
+            'answer_source_policy' => $answersourcepolicy,
             'appearance' => \local_daliwidget\appearance::overrides(),
         ];
 
@@ -183,7 +185,8 @@ class before_footer_callback {
             page_type: daliConfig.page.type,
             page_url: daliConfig.page.url,
             assistant_display_name: daliConfig.appearance && daliConfig.appearance.botName ? daliConfig.appearance.botName : null,
-            knowledge_access_mode: daliConfig.knowledge_access_mode
+            knowledge_access_mode: daliConfig.knowledge_access_mode,
+            answer_source_policy: daliConfig.answer_source_policy
         }
     };
 

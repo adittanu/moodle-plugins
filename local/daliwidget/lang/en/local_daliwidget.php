@@ -186,6 +186,10 @@ $string['knowledge_access_mode'] = 'Knowledge Access Mode';
 $string['knowledge_access_mode_desc'] = 'Course-scoped uses the Active Course plus Global Knowledge, or Global Knowledge alone outside a course. Site-wide allows all eligible visible-course knowledge.';
 $string['knowledge_access_mode_course_scoped'] = 'Course-scoped';
 $string['knowledge_access_mode_site_wide'] = 'Site-wide';
+$string['answer_source_policy'] = 'Answer Source Policy';
+$string['answer_source_policy_desc'] = 'Knowledge-only answers strictly from relevant managed knowledge. Knowledge-preferred searches managed knowledge first, then may use the AI model’s existing knowledge when no relevant result is found and discloses that fallback.';
+$string['answer_source_policy_knowledge_only'] = 'Knowledge-only';
+$string['answer_source_policy_knowledge_preferred'] = 'Knowledge-preferred';
 
 // Sync Mode
 $string['sync_mode'] = 'Sync Mode';

@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'local_daliwidget';
-$plugin->version = 2026082601;
+$plugin->version = 2026082602;
 $plugin->requires = 2022112800;
 $plugin->maturity = MATURITY_STABLE;
-$plugin->release = 'v1.4.3';
+$plugin->release = 'v1.4.4';
