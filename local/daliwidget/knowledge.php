@@ -248,6 +248,14 @@ echo html_writer::start_div();
 echo html_writer::tag('h2', get_string('knowledge_base', 'local_daliwidget'), ['class' => 'mb-2']);
 echo html_writer::tag('p', get_string('knowledge_description', 'local_daliwidget'), ['class' => 'text-muted']);
 echo html_writer::end_div();
+echo html_writer::tag('button', '<i class="fa fa-plus mr-1"></i>Add Source', [
+    'type' => 'button',
+    'class' => 'btn btn-primary mr-2',
+    'data-toggle' => 'modal',
+    'data-target' => '#add-source-modal',
+    'data-bs-toggle' => 'modal',
+    'data-bs-target' => '#add-source-modal',
+]);
 if (has_capability('moodle/site:config', context_system::instance())) {
     echo html_writer::link(
         new moodle_url('/local/daliwidget/global_knowledge.php'),
