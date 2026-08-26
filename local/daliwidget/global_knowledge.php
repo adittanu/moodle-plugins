@@ -208,10 +208,21 @@ echo html_writer::start_div();
 echo html_writer::tag('h2', get_string('global_knowledge_base', 'local_daliwidget'), ['class' => 'mb-2']);
 echo html_writer::tag('p', get_string('global_knowledge_description', 'local_daliwidget'), ['class' => 'text-muted mb-0']);
 echo html_writer::end_div();
-echo html_writer::link(
-    new moodle_url('/admin/settings.php', ['section' => 'local_daliwidget']),
-    get_string('settings_heading', 'local_daliwidget'),
-    ['class' => 'btn btn-outline-secondary']
+echo html_writer::tag('div',
+    html_writer::tag('button', '<i class="fa fa-plus mr-1"></i>Add Source', [
+        'type' => 'button',
+        'class' => 'btn btn-primary mr-2',
+        'data-toggle' => 'modal',
+        'data-target' => '#global-add-source-modal',
+        'data-bs-toggle' => 'modal',
+        'data-bs-target' => '#global-add-source-modal',
+    ]) .
+    html_writer::link(
+        new moodle_url('/admin/settings.php', ['section' => 'local_daliwidget']),
+        get_string('settings_heading', 'local_daliwidget'),
+        ['class' => 'btn btn-outline-secondary']
+    ),
+    ['class' => 'd-flex align-items-center']
 );
 echo html_writer::end_div();
 
