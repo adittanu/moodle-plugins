@@ -84,6 +84,7 @@ class before_footer_callback {
             'baseUrl' => rtrim($baseurl, '/'),
             'endpoints' => [
                 'myCourses' => (new \moodle_url('/local/daliwidget/user_courses.php'))->out(false),
+                'refreshAuth' => (new \moodle_url('/local/daliwidget/refresh_auth.php'))->out(false),
             ],
 
 
