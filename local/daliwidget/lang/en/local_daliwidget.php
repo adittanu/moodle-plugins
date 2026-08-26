@@ -23,17 +23,17 @@
  */
 
 $string['pluginname'] = 'Dali AI Widget';
-$string['daliwidget:view'] = 'View Dali AI Widget';
+$string['daliwidget:view'] = 'View AI Assistant';
 
 // Settings
-$string['settings_heading'] = 'Dali AI Widget Settings';
-$string['settings_heading_desc'] = 'Configure your connection to the Dali AI platform.';
+$string['settings_heading'] = 'AI Assistant Settings';
+$string['settings_heading_desc'] = 'Configure the connection to your AI platform.';
 $string['apikey'] = 'API Key';
-$string['apikey_desc'] = 'Enter the API key from your Dali AI dashboard (My Agents > Manage > API Key).';
+$string['apikey_desc'] = 'Enter the API key from your AI platform dashboard (My Agents > Manage > API Key).';
 $string['baseurl'] = 'Base URL';
-$string['baseurl_desc'] = 'The URL of your Dali AI application (e.g., https://dali-app.test).';
+$string['baseurl_desc'] = 'The URL of your AI application (for example, https://ai.example.com).';
 $string['maxuploadmb'] = 'Max upload size (MB)';
-$string['maxuploadmb_desc'] = 'Maximum file size sent to Dali Knowledge Sync, in MB. Keep this equal to or below your API server upload limit.';
+$string['maxuploadmb_desc'] = 'Maximum file size sent to Knowledge Sync, in MB. Keep this equal to or below your API server upload limit.';
 $string['signed_url_enabled'] = 'Enable signed URL file sync';
 $string['signed_url_enabled_desc'] = 'When enabled, Moodle sends secure temporary file URLs for resource/scorm/media sync first. If the remote API rejects the URL workflow, the plugin automatically falls back to binary upload.';
 $string['download_secret'] = 'Signed download secret';
@@ -43,9 +43,9 @@ $string['signed_url_baseurl_desc'] = 'Optional public base URL used when generat
 $string['enabled'] = 'Enable Widget';
 $string['enabled_desc'] = 'When enabled, the AI chat widget will appear on all pages.';
 $string['appearance_heading'] = 'Appearance';
-$string['appearance_heading_desc'] = 'Optional site-wide overrides. Default keeps the matching Dali Application setting.';
+$string['appearance_heading_desc'] = 'Optional site-wide overrides. Default keeps the matching AI application setting.';
 $string['appearance_default'] = 'Default';
-$string['appearance_default_desc'] = 'Default keeps the Dali Application value.';
+$string['appearance_default_desc'] = 'Default keeps the AI application value.';
 $string['appearance_light'] = 'Light';
 $string['appearance_dark'] = 'Dark';
 $string['appearance_theme'] = 'Theme';
@@ -62,9 +62,9 @@ $string['border_radius_square'] = 'Square';
 $string['border_radius_slight'] = 'Slightly rounded';
 $string['border_radius_rounded'] = 'Rounded';
 $string['avatar'] = 'Avatar';
-$string['avatar_desc'] = 'Optional PNG, JPEG, or WebP image up to 2 MB. Removing it restores the Dali Application avatar.';
+$string['avatar_desc'] = 'Optional PNG, JPEG, or WebP image up to 2 MB. Removing it restores the AI application avatar.';
 $string['persona_heading'] = 'Personality and speaking style';
-$string['persona_heading_desc'] = 'Optional private instructions applied after Dali core behavior and safety rules.';
+$string['persona_heading_desc'] = 'Optional private instructions applied after core behavior and safety rules.';
 $string['speaking_style'] = 'Speaking style';
 $string['speaking_style_desc'] = 'Select an optional tone. Default adds no Moodle style instruction.';
 $string['speaking_style_professional'] = 'Professional';
@@ -84,9 +84,9 @@ $string['widget_error'] = 'Sorry, there was an error connecting to the AI assist
 // Knowledge Base
 $string['knowledge_base'] = 'Knowledge Base';
 $string['global_knowledge_base'] = 'Global Knowledge Base';
-$string['knowledge_page_title'] = 'Dali AI Knowledge Base';
-$string['global_knowledge_page_title'] = 'Dali AI Global Knowledge Base';
-$string['knowledge_description'] = 'Add documents, links, and videos to provide context for the AI assistant in this course.';
+$string['knowledge_page_title'] = 'AI Knowledge Base';
+$string['global_knowledge_page_title'] = 'Global AI Knowledge Base';
+$string['knowledge_description'] = 'Add supported documents and media to provide context for the AI assistant in this course.';
 $string['global_knowledge_description'] = 'Manage global knowledge sources that are not attached to any Moodle course.';
 $string['knowledge_scope_info'] = 'Sources added here will only be available when using AI in the "{$a}" course.';
 $string['global_knowledge_scope_info'] = 'Sources on this page are global sources without a Moodle course ID. They can be used outside specific course scope.';
@@ -107,9 +107,12 @@ $string['no_videos'] = 'No YouTube videos added yet. Add video URLs for transcri
 $string['no_global_sources'] = 'No global knowledge sources yet.';
 $string['global_retry_started'] = 'Retry started. The global source is processing again.';
 $string['unsync_selected'] = 'Unsync selected';
-$string['confirm_unsync'] = 'Unsync selected Moodle files from retrieval? Original Moodle files will remain unchanged.';
+$string['confirm_unsync'] = 'Unsync selected sources from retrieval? Original Moodle files will remain unchanged.';
 $string['unsync_result'] = '{$a->completed} unsynced, {$a->failed} failed.';
 $string['unsynced_history'] = 'Unsynced History';
+$string['unsync_source'] = 'Unsync source';
+$string['confirm_unsync_single'] = 'Unsync this source from retrieval? Its metadata will remain in Unsynced History.';
+$string['source_type'] = 'Type';
 $string['wordpress_connections'] = 'WordPress Connections';
 $string['wordpress_connections_desc'] = 'Connect public or Application Password-protected WordPress sites. Credentials are stored only by Dali.';
 $string['wordpress_add_connection'] = 'Add WordPress Connection';
@@ -123,6 +126,11 @@ $string['wordpress_validate'] = 'Validate';
 $string['wordpress_action_success'] = 'WordPress connection updated.';
 $string['wordpress_action_failed'] = 'WordPress connection request failed.';
 $string['wordpress_posts'] = 'Discover posts';
+$string['wordpress_discovery_title'] = 'Add WordPress posts';
+$string['wordpress_discovery_desc'] = 'Browse and select posts from an enabled WordPress connection. Selected posts become Global Knowledge.';
+$string['wordpress_choose_connection'] = 'Choose a WordPress connection';
+$string['wordpress_browse_posts'] = 'Browse posts';
+$string['wordpress_no_posts'] = 'No posts match these filters.';
 $string['wordpress_taxonomy_id'] = 'Taxonomy ID';
 $string['wordpress_inclusion'] = 'Inclusion';
 $string['wordpress_automatic'] = 'Automatic';
@@ -148,7 +156,6 @@ $string['confirmdelete'] = 'Confirm delete';
 $string['wordpress_preview_sync'] = 'Preview sync changes';
 $string['wordpress_preview_title'] = 'Sync preview';
 $string['wordpress_preview_desc'] = 'Review the changes that will be applied before confirming the sync.';
-$string['wordpress_preview_add'] = '{$a} to add';
 $string['wordpress_preview_update'] = '{$a} to update';
 $string['wordpress_preview_remove'] = '{$a} to remove';
 $string['wordpress_preview_pending'] = '{$a} pending publication';
@@ -164,7 +171,7 @@ $string['wordpress_sync_now'] = 'Ingest now';
 
 // Activity Sync
 $string['activity_sync'] = 'Activity Content Sync';
-$string['activity_sync_desc'] = 'Automatically extract content from course activities (quizzes, assignments, pages, etc.) to use as AI knowledge.';
+$string['activity_sync_desc'] = 'Extract supported course activity content as AI knowledge. Quiz activities are excluded.';
 $string['sync_all_activities'] = 'Sync All Activities';
 $string['sync_activity'] = 'Sync Activity';
 $string['activity_synced'] = 'Activity content synced successfully.';
@@ -191,14 +198,14 @@ $string['sync_status_queued'] = 'Queued';
 $string['sync_status_processing'] = 'Processing';
 $string['sync_status_done'] = 'Done';
 $string['sync_status_failed'] = 'Failed';
-$string['task_sync_activity'] = 'Dali Widget: Sync Activity to Knowledge Base';
+$string['task_sync_activity'] = 'AI Assistant: Sync Activity to Knowledge Base';
 
 // Debug Mode
 $string['debug_mode'] = 'Debug Mode';
 $string['debug_mode_desc'] = 'Enable debug logging to troubleshoot API connections and widget issues. Debug info will appear in browser console (F12) and in a debug panel on the page.';
 
 // Debug Panel
-$string['debug_panel_title'] = 'Dali AI Debug Panel';
+$string['debug_panel_title'] = 'AI Assistant Debug Panel';
 $string['debug_api_url'] = 'API URL';
 $string['debug_api_key'] = 'API Key (first 10 chars)';
 $string['debug_response'] = 'API Response';

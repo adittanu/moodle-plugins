@@ -8,7 +8,7 @@ function report_dalireport_extend_navigation_course($navigation, $course, $conte
         return;
     }
     $navigation->add(
-        get_string('pluginname', 'report_dalireport'),
+        get_string('reporttitle', 'report_dalireport'),
         new moodle_url('/report/dalireport/index.php', ['courseid' => $course->id]),
         navigation_node::TYPE_SETTING,
         null,

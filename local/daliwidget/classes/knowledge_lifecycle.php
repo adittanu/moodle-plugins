@@ -4,7 +4,7 @@
 namespace local_daliwidget;
 
 /**
- * Manages Synced Moodle File removal and immutable Unsynced History.
+ * Manages knowledge source removal and immutable Unsynced History.
  *
  * @package    local_daliwidget
  * @copyright  2026 Dali AI
@@ -26,11 +26,9 @@ class knowledge_lifecycle {
         foreach ($sources as $source) {
             $sourcecourseid = (int) ($source['metadata']['course']['id'] ?? 0);
             $fileid = (int) ($source['metadata']['moodle_file_id'] ?? 0);
-            $isactivity = !empty($source['metadata']['activity']['id']);
             $validscope = $courseid === null ? $sourcecourseid === 0 : $sourcecourseid === $courseid;
-            if (!in_array(($source['type'] ?? ''), ['document', 'video', 'audio', 'scorm'], true)
-                    || $fileid <= 0 || !$validscope || $isactivity) {
-                $outcomes[] = ['id' => (int) ($source['id'] ?? 0), 'success' => false, 'error' => 'Not a Synced Moodle File in this scope'];
+            if (!$validscope || empty($source['id'])) {
+                $outcomes[] = ['id' => (int) ($source['id'] ?? 0), 'success' => false, 'error' => 'Source is not in this scope'];
                 continue;
             }
 

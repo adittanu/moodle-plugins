@@ -3,6 +3,12 @@
 defined('MOODLE_INTERNAL') || die();
 
 if ($hassiteconfig) {
+    $ADMIN->add('reports', new admin_externalpage(
+        'report_dalireport_view',
+        get_string('reporttitle', 'report_dalireport'),
+        new moodle_url('/report/dalireport/index.php'),
+        'report/dalireport:viewsite'
+    ));
     $settings = new admin_settingpage('report_dalireport', get_string('settings', 'report_dalireport'));
     $ADMIN->add('reports', $settings);
     $settings->add(new admin_setting_configtext(

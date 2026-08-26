@@ -22,7 +22,7 @@ if ($courseid) {
     require_login();
     $context = context_system::instance();
     require_capability('report/dalireport:viewsite', $context);
-    $heading = get_string('pluginname', 'report_dalireport');
+    $heading = get_string('reporttitle', 'report_dalireport');
 }
 
 $params = [
@@ -79,12 +79,12 @@ $sessions = $report['sessions'];
 $urlparams = array_filter(['courseid' => $courseid ?: null, 'filtercourseid' => $filtercourseid ?: null, 'from' => $from, 'to' => $to, 'role' => $role, 'status' => $status]);
 $PAGE->set_url(new moodle_url('/report/dalireport/index.php', $urlparams));
 $PAGE->set_context($context);
-$PAGE->set_title(get_string('pluginname', 'report_dalireport'));
+$PAGE->set_title(get_string('reporttitle', 'report_dalireport'));
 $PAGE->set_heading($heading);
 $PAGE->set_pagelayout('report');
 
 echo $OUTPUT->header();
-echo $OUTPUT->heading(get_string('pluginname', 'report_dalireport'));
+echo $OUTPUT->heading(get_string('reporttitle', 'report_dalireport'));
 echo html_writer::start_tag('form', ['method' => 'get', 'class' => 'row g-3 align-items-end mb-4']);
 if ($courseid) {
     echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'courseid', 'value' => $courseid]);
@@ -134,26 +134,50 @@ $tokens = $summary['tokenUsage'];
 echo $OUTPUT->heading(get_string('modelusage', 'report_dalireport'), 3);
 echo html_writer::div(get_string('tokensummary', 'report_dalireport', (object) ['total' => format_float($tokens['totalTokens'], 0), 'input' => format_float($tokens['inputTokens'], 0), 'output' => format_float($tokens['outputTokens'], 0), 'positive' => format_float($summary['positiveFeedback'], 0), 'negative' => format_float($summary['negativeFeedback'], 0)]), 'alert alert-info');
 
+$normalizetopic = static function(array $item): string {
+    $topic = trim((string) ($item['topic'] ?? ''));
+    $decoded = json_decode($topic, true);
+    if (is_array($decoded)) {
+        $topic = trim((string) ($decoded['topik'] ?? $decoded['topic'] ?? $decoded['name'] ?? ''));
+    }
+
+    return $topic !== '' ? $topic : get_string('unknown', 'core');
+};
+
 $renderbars = static function(string $title, array $items, string $valuekey, callable $label): void {
     global $OUTPUT;
     echo $OUTPUT->heading($title, 3);
     $max = max(array_column($items, $valuekey) ?: [1]);
     foreach ($items as $item) {
         $value = (int) $item[$valuekey];
+        $displaylabel = $label($item);
         echo html_writer::start_div('mb-3');
-        echo html_writer::div(s($label($item)) . html_writer::span((string) $value, 'float-end'), 'mb-1');
-        echo html_writer::div(html_writer::div('', 'progress-bar', ['style' => 'width:' . (($value / max($max, 1)) * 100) . '%']), 'progress');
+        echo html_writer::start_div('d-flex justify-content-between align-items-baseline mb-1', ['style' => 'gap:1rem;']);
+        echo html_writer::span(s($displaylabel), 'text-break');
+        echo html_writer::tag('strong', format_float($value, 0), [
+            'class' => 'flex-shrink-0', 'style' => 'font-variant-numeric:tabular-nums;',
+        ]);
+        echo html_writer::end_div();
+        $percent = ($value / max($max, 1)) * 100;
+        echo html_writer::div(html_writer::div('', 'progress-bar', [
+            'style' => 'width:' . $percent . '%', 'role' => 'progressbar',
+            'aria-valuenow' => $value, 'aria-valuemin' => 0, 'aria-valuemax' => $max,
+            'aria-label' => $displaylabel . ': ' . $value,
+        ]), 'progress');
         echo html_writer::end_div();
     }
 };
 $renderbars(get_string('dailyactivity', 'report_dalireport'), $report['activity'], 'messages', static fn(array $item): string => $item['date']);
 $renderbars(get_string('answerquality', 'report_dalireport'), $report['responseQuality'], 'total', static fn(array $item): string => get_string('status_' . $item['status'], 'report_dalireport'));
-$renderbars(get_string('toptopics', 'report_dalireport'), $report['topTopics'], 'sessions', static fn(array $item): string => $item['topic']);
+$renderbars(get_string('toptopics', 'report_dalireport'), $report['topTopics'], 'sessions', $normalizetopic);
 
 $table = new html_table();
 $table->head = [get_string('user'), get_string('course'), get_string('topic', 'report_dalireport'), get_string('responsestatus', 'report_dalireport'), get_string('conversation', 'report_dalireport'), get_string('messages', 'message'), get_string('lastaccess')];
 foreach ($sessions['data'] as $session) {
-    $table->data[] = [s($session['visitor']), s(($session['course'] ?: '-') . ' / ' . ($session['role'] ?: '-')), s($session['topic']), get_string('status_' . $session['response_status'], 'report_dalireport'), s($session['title']) . html_writer::div(s($session['last_message']), 'small text-muted'), (int) $session['messages_count'], s($session['updated_at'])];
+    $table->data[] = [s($session['visitor']), s(($session['course'] ?: '-') . ' / ' . ($session['role'] ?: '-')),
+        s($normalizetopic(['topic' => $session['topic']])), get_string('status_' . $session['response_status'], 'report_dalireport'),
+        s($session['title']) . html_writer::div(s($session['last_message']), 'small text-muted'),
+        (int) $session['messages_count'], s($session['updated_at'])];
 }
 echo html_writer::table($table);
 echo $OUTPUT->paging_bar((int) $sessions['total'], $page, (int) $sessions['per_page'], new moodle_url('/report/dalireport/index.php', $urlparams));

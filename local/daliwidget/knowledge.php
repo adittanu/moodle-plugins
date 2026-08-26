@@ -86,16 +86,6 @@ if ($action === 'sync_activity') {
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && confirm_sesskey()) {
     $action = optional_param('action', '', PARAM_ALPHA);
     
-    if ($action === 'add_url') {
-        $url = required_param('url', PARAM_URL);
-        $name = required_param('name', PARAM_TEXT);
-        $result = $apiClient->addUrlSource($url, $name, $courseMetadata);
-        if ($result['success'] ?? false) {
-            redirect($PAGE->url, get_string('source_added', 'local_daliwidget'), null, \core\output\notification::NOTIFY_SUCCESS);
-        } else {
-            redirect($PAGE->url, $result['error'] ?? 'Failed to add URL', null, \core\output\notification::NOTIFY_ERROR);
-        }
-    }
     
     if ($action === 'add_youtube') {
         $url = required_param('youtube_url', PARAM_URL);
@@ -149,15 +139,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && confirm_sesskey()) {
             $result['failed'] ? \core\output\notification::NOTIFY_WARNING : \core\output\notification::NOTIFY_SUCCESS);
     }
     
-    if ($action === 'delete') {
-        $sourceid = required_param('sourceid', PARAM_INT);
-        $result = $apiClient->deleteSource($sourceid);
-        if ($result['success'] ?? false) {
-            redirect($PAGE->url, get_string('source_deleted', 'local_daliwidget'), null, \core\output\notification::NOTIFY_SUCCESS);
-        } else {
-            redirect($PAGE->url, $result['error'] ?? 'Failed to delete source', null, \core\output\notification::NOTIFY_ERROR);
-        }
-    }
 }
 
 // Fetch sources from API
@@ -282,46 +263,29 @@ echo $OUTPUT->notification(
     \core\output\notification::NOTIFY_INFO
 );
 
-// Stats cards
-$totalDocs = count($documents) + count($textSources);
-echo html_writer::start_div('row mb-4');
-echo html_writer::start_div('col-md-4');
-echo html_writer::start_div('card');
-echo html_writer::start_div('card-body text-center');
-echo html_writer::tag('h3', $totalDocs, ['class' => 'text-primary mb-0']);
-echo html_writer::tag('small', get_string('documents', 'local_daliwidget'), ['class' => 'text-muted']);
-echo html_writer::end_div();
-echo html_writer::end_div();
+$knowledgeStyles = '
+.dali-kb-summary{display:flex;flex-wrap:wrap;gap:.5rem 1.5rem;padding:.85rem 1rem;margin-bottom:1.5rem;background:#f7f9fa;border:1px solid #dfe5e8;border-radius:.75rem}.dali-kb-summary strong{font-variant-numeric:tabular-nums;color:#111827}.dali-kb-card{border:1px solid #cbdedb!important;border-radius:.75rem!important;overflow:hidden}.dali-kb-card>.card-header{color:#0f4f4a;background:#f0fdfa!important;border-bottom-color:#cbdedb!important}.dali-kb-toolbar{padding:.75rem;background:#fff;border-bottom:1px solid #dfe5e8}.dali-kb-table{overflow-x:auto;scrollbar-color:#9ca3af transparent}.dali-kb-table table{min-width:760px}.dali-kb-table th{white-space:nowrap;font-size:.75rem;letter-spacing:.02em;color:#52606d;background:#f7f9fa}.dali-kb-table td{vertical-align:middle}.dali-kb-table tbody tr:hover{background:#f8fbfb}.dali-kb-table input[type="checkbox"]{width:1rem;height:1rem;accent-color:#0f766e}.dali-kb-table .btn:focus-visible,.dali-kb-table input:focus-visible{outline:3px solid rgba(15,118,110,.25);outline-offset:2px}@media(max-width:767.98px){.dali-kb-toolbar{align-items:stretch!important;flex-direction:column}.dali-kb-toolbar .btn{min-height:2.75rem}}
+';
+echo html_writer::tag('style', $knowledgeStyles);
+
+// Compact operational summary.
+$totalSources = count($allSources);
+$readySources = count(array_filter($allSources, static fn(array $source): bool => ($source['status'] ?? '') === 'ready'));
+$failedSources = count(array_filter($allSources, static fn(array $source): bool => ($source['status'] ?? '') === 'failed'));
+echo html_writer::start_div('dali-kb-summary', ['aria-label' => 'Knowledge source summary']);
+echo html_writer::tag('span', '<strong>' . $totalSources . '</strong> total sources');
+echo html_writer::tag('span', '<strong>' . $readySources . '</strong> ready');
+echo html_writer::tag('span', '<strong>' . $failedSources . '</strong> need attention');
 echo html_writer::end_div();
 
-echo html_writer::start_div('col-md-4');
-echo html_writer::start_div('card');
-echo html_writer::start_div('card-body text-center');
-echo html_writer::tag('h3', count($links), ['class' => 'text-success mb-0']);
-echo html_writer::tag('small', get_string('web_links', 'local_daliwidget'), ['class' => 'text-muted']);
-echo html_writer::end_div();
-echo html_writer::end_div();
-echo html_writer::end_div();
-
-echo html_writer::start_div('col-md-4');
-echo html_writer::start_div('card');
-echo html_writer::start_div('card-body text-center');
-$mediaCount = count($youtubeVideos) + count($videoFiles) + count($audioSources) + count($scormSources);
-echo html_writer::tag('h3', $mediaCount, ['class' => 'text-danger mb-0']);
-echo html_writer::tag('small', 'Media Sources', ['class' => 'text-muted']);
-echo html_writer::end_div();
-echo html_writer::end_div();
-echo html_writer::end_div();
-echo html_writer::end_div();
-
-// Activity Auto-Sync Section with teal color
-echo html_writer::start_div('card mb-4', ['style' => 'border-color: #14b8a6;']);
-echo html_writer::start_div('card-header d-flex justify-content-between align-items-center', ['style' => 'background-color: #14b8a6; color: white;']);
+// Activity content sync.
+echo html_writer::start_div('card mb-4 dali-kb-card');
+echo html_writer::start_div('card-header d-flex justify-content-between align-items-center');
 echo html_writer::tag('h5', '<i class="fa fa-sync-alt mr-2"></i>' . get_string('activity_sync', 'local_daliwidget'), ['class' => 'mb-0']);
 echo html_writer::end_div();
-echo html_writer::start_div('card-body');
-echo html_writer::tag('p', get_string('activity_sync_desc', 'local_daliwidget'), ['class' => 'text-muted mb-3']);
-echo html_writer::start_div('d-flex flex-wrap align-items-center gap-2 mb-3');
+echo html_writer::start_div('card-body p-0');
+echo html_writer::div(get_string('activity_sync_desc', 'local_daliwidget'), 'text-muted p-3 pb-0');
+echo html_writer::start_div('d-flex flex-wrap align-items-center gap-2 dali-kb-toolbar');
 echo html_writer::tag('button', '<i class="fa fa-sync-alt mr-1"></i>Sync Selected', [
     'type' => 'button',
     'class' => 'btn btn-sm btn-primary',
@@ -342,7 +306,7 @@ $activitiesbyid = [];
 $activitypreviews = [];
 foreach ($modinfo->get_cms() as $cm) {
     // Only show supported activity types
-    if ($cm->uservisible && in_array($cm->modname, ['page', 'book', 'assign', 'quiz', 'scorm', 'forum', 'lesson', 'folder', 'resource', 'url', 'label'])) {
+    if ($cm->uservisible && in_array($cm->modname, ['page', 'book', 'assign', 'scorm', 'forum', 'lesson', 'folder', 'resource', 'label'])) {
         $activities[] = $cm;
         $activitiesbyid[$cm->id] = $cm;
 
@@ -351,12 +315,7 @@ foreach ($modinfo->get_cms() as $cm) {
             'transport' => 'Text Extract',
         ];
 
-        if ($cm->modname === 'url') {
-            $preview = [
-                'category' => 'url',
-                'transport' => 'URL Fetch',
-            ];
-        } else if (in_array($cm->modname, ['page', 'book', 'assign', 'quiz', 'forum', 'lesson', 'folder', 'label'], true)) {
+        if (in_array($cm->modname, ['page', 'book', 'assign', 'forum', 'lesson', 'folder', 'label'], true)) {
             $preview = [
                 'category' => 'text',
                 'transport' => 'Text Extract',
@@ -460,6 +419,7 @@ foreach ($queuestatuses as $cmid => $row) {
 }
 
 // Activity table
+echo html_writer::start_div('dali-kb-table');
 echo html_writer::start_tag('table', ['class' => 'table table-sm table-hover mb-0']);
 echo html_writer::start_tag('thead', ['class' => 'thead-light']);
 echo html_writer::start_tag('tr');
@@ -481,7 +441,6 @@ foreach ($activities as $cm) {
     $icon = '';
     switch ($cm->modname) {
         case 'assign': $icon = '<i class="fa fa-clipboard text-info"></i>'; break;
-        case 'quiz': $icon = '<i class="fa fa-question-circle text-warning"></i>'; break;
         case 'scorm': $icon = '<i class="fa fa-archive text-warning"></i>'; break;
         case 'forum': $icon = '<i class="fa fa-comments text-primary"></i>'; break;
         case 'lesson': $icon = '<i class="fa fa-graduation-cap text-success"></i>'; break;
@@ -550,6 +509,7 @@ if (empty($activities)) {
 
 echo html_writer::end_tag('tbody');
 echo html_writer::end_tag('table');
+echo html_writer::end_div();
 
 echo html_writer::end_div(); // card-body
 echo html_writer::end_div(); // card
@@ -572,18 +532,22 @@ echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', '
 echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'unsync']);
 echo html_writer::end_tag('form');
 echo html_writer::start_div('card mt-4');
-echo html_writer::start_div('card-header d-flex justify-content-between align-items-center');
+echo html_writer::start_div('card-header d-flex justify-content-between align-items-center flex-wrap', ['style' => 'gap:.75rem;']);
 echo html_writer::tag('h5', 'Knowledge Sources', ['class' => 'mb-0']);
 echo html_writer::tag('button', get_string('unsync_selected', 'local_daliwidget'), [
-    'type' => 'submit', 'class' => 'btn btn-warning btn-sm', 'form' => 'bulk-unsync-course',
+    'type' => 'submit', 'class' => 'btn btn-outline-danger btn-sm', 'form' => 'bulk-unsync-course',
+    'id' => 'unsync-selected-btn', 'disabled' => true,
 ]);
 echo html_writer::end_div();
 
 echo html_writer::start_div('card-body p-0');
+echo html_writer::start_div('dali-kb-table');
 echo html_writer::start_tag('table', ['class' => 'table table-striped mb-0']);
 echo html_writer::start_tag('thead');
 echo html_writer::start_tag('tr');
-echo html_writer::tag('th', get_string('select'));
+echo html_writer::tag('th', html_writer::empty_tag('input', [
+    'type' => 'checkbox', 'id' => 'source-select-all', 'title' => get_string('selectall'),
+]));
 echo html_writer::tag('th', get_string('name'));
 echo html_writer::tag('th', 'Type');
 echo html_writer::tag('th', get_string('status'));
@@ -607,10 +571,10 @@ foreach ($allKnowledgeSources as $source) {
     ];
     $typeConfig = $typeconfigs[$source->type] ?? ['label' => 'YouTube', 'icon' => 'youtube', 'class' => 'text-danger'];
 
-    $moodlefileid = (int) ($source->metadata['moodle_file_id'] ?? 0);
-    echo html_writer::tag('td', $moodlefileid > 0
+    echo html_writer::tag('td', empty($source->is_placeholder)
         ? html_writer::checkbox('sourceids[]', $source->id, false, '', [
-            'value' => $source->id, 'form' => 'bulk-unsync-course',
+            'value' => $source->id, 'form' => 'bulk-unsync-course', 'class' => 'source-select',
+            'aria-label' => get_string('select') . ': ' . s($source->title),
         ])
         : '');
     echo html_writer::tag('td', '<i class="fa fa-' . $typeConfig['icon'] . ' ' . $typeConfig['class'] . ' mr-1"></i>' . s($source->title));
@@ -714,11 +678,18 @@ foreach ($allKnowledgeSources as $source) {
                 'style' => 'display:inline-flex;align-items:center;white-space:nowrap;',
             ]);
         }
-        $deleteurl = new moodle_url($PAGE->url, ['action' => 'delete', 'sourceid' => $source->id, 'sesskey' => sesskey()]);
-        echo html_writer::link($deleteurl, '<i class="fa fa-trash"></i>', [
-            'class' => 'btn btn-sm btn-outline-danger',
-            'onclick' => "return confirm('" . get_string('confirm_delete', 'local_daliwidget') . "');"
+        echo html_writer::start_tag('form', [
+            'method' => 'post',
+            'class' => 'm-0',
+            'onsubmit' => "return confirm('" . get_string('confirm_unsync_single', 'local_daliwidget') . "');",
         ]);
+        echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
+        echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'unsync']);
+        echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sourceids[]', 'value' => $source->id]);
+        echo html_writer::tag('button', '<i class="fa fa-unlink mr-1"></i>' . get_string('unsync_source', 'local_daliwidget'), [
+            'type' => 'submit', 'class' => 'btn btn-sm btn-outline-danger',
+        ]);
+        echo html_writer::end_tag('form');
         echo html_writer::end_div();
     } else {
         echo html_writer::tag('span', 'Waiting for sync...', ['class' => 'text-muted small']);
@@ -735,11 +706,12 @@ echo html_writer::end_tag('tbody');
 echo html_writer::end_tag('table');
 echo html_writer::end_div();
 echo html_writer::end_div();
+echo html_writer::end_div();
 if (knowledge_lifecycle::can_view_history()) {
     $history = knowledge_lifecycle::history($courseid);
     echo html_writer::tag('h3', get_string('unsynced_history', 'local_daliwidget'), ['class' => 'mt-4']);
     $table = new html_table();
-    $table->head = [get_string('name'), get_string('type'), get_string('status'), get_string('user'), get_string('date')];
+    $table->head = [get_string('name'), get_string('source_type', 'local_daliwidget'), get_string('status'), get_string('user'), get_string('date')];
     foreach ($history as $record) {
         $table->data[] = [s($record->title), s($record->sourcetype), s($record->lifecyclestatus),
             fullname($DB->get_record('user', ['id' => $record->userid], '*', MUST_EXIST)), userdate($record->timeunsynced)];
@@ -990,6 +962,29 @@ echo <<<JAVASCRIPT
         });
     }
 
+    const sourceSelectAll = document.getElementById('source-select-all');
+    const sourceCheckboxes = Array.from(document.querySelectorAll('.source-select'));
+    const unsyncSelectedBtn = document.getElementById('unsync-selected-btn');
+    function updateUnsyncSelection() {
+        const selectedCount = sourceCheckboxes.filter(cb => cb.checked).length;
+        if (unsyncSelectedBtn) {
+            unsyncSelectedBtn.disabled = selectedCount === 0;
+            unsyncSelectedBtn.textContent = selectedCount > 0 ? 'Unsync selected (' + selectedCount + ')' : 'Unsync selected';
+        }
+        if (sourceSelectAll) {
+            sourceSelectAll.checked = sourceCheckboxes.length > 0 && selectedCount === sourceCheckboxes.length;
+            sourceSelectAll.indeterminate = selectedCount > 0 && selectedCount < sourceCheckboxes.length;
+        }
+    }
+    if (sourceSelectAll) {
+        sourceSelectAll.addEventListener('change', function() {
+            sourceCheckboxes.forEach(cb => { cb.checked = this.checked; });
+            updateUnsyncSelection();
+        });
+    }
+    sourceCheckboxes.forEach(cb => cb.addEventListener('change', updateUnsyncSelection));
+    updateUnsyncSelection();
+
     const syncSelectedBtn = document.getElementById('sync-selected-btn');
     if (syncSelectedBtn) {
         syncSelectedBtn.addEventListener('click', function() {
@@ -1112,34 +1107,6 @@ echo <<<JAVASCRIPT
         });
     }
     
-    // Handle Delete buttons
-    document.querySelectorAll('a[href*="action=delete"]').forEach(btn => {
-        btn.addEventListener('click', function(e) {
-            e.preventDefault();
-            if (!confirm('Are you sure you want to delete this source?')) return;
-            
-            const url = new URL(this.href, location.origin);
-            const sourceid = url.searchParams.get('sourceid');
-            
-            setButtonLoading(this, true);
-            
-            fetch(ajaxUrl + '?action=delete&courseid=' + courseId + '&sourceid=' + sourceid + '&sesskey=' + sesskey)
-                .then(r => r.json())
-                .then(data => {
-                    setButtonLoading(this, false);
-                    if (data.success) {
-                        showNotification('Source deleted successfully!', 'success');
-                        this.closest('tr')?.remove();
-                    } else {
-                        showNotification('Delete failed: ' + (data.error || 'Unknown error'), 'error');
-                    }
-                })
-                .catch(err => {
-                    setButtonLoading(this, false);
-                    showNotification('Error: ' + err.message, 'error');
-                });
-        });
-    });
 
     document.querySelectorAll('[data-action="retry-source"]').forEach(btn => {
         btn.addEventListener('click', function(e) {

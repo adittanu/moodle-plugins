@@ -57,6 +57,18 @@ $is_global_source = static function(array $source): bool {
     return $courseid <= 0;
 };
 
+$wordpressconnections = array_values(array_filter(
+    $apiClient->getWordpressConnections()['data'] ?? [],
+    static fn(array $connection): bool => !empty($connection['enabled'])
+));
+$wordpressconnectionid = optional_param('wpconnection', 0, PARAM_INT);
+$activewordpressconnection = null;
+foreach ($wordpressconnections as $connection) {
+    if ((int) $connection['id'] === $wordpressconnectionid) {
+        $activewordpressconnection = $connection;
+        break;
+    }
+}
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && confirm_sesskey()) {
     $action = optional_param('action', '', PARAM_ALPHA);
 
@@ -70,15 +82,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && confirm_sesskey()) {
         redirect($PAGE->url, $result['error'] ?? 'Failed to add text source', null, \core\output\notification::NOTIFY_ERROR);
     }
 
-    if ($action === 'add_url') {
-        $url = required_param('url', PARAM_URL);
-        $name = required_param('name', PARAM_TEXT);
-        $result = $apiClient->addUrlSource($url, $name, $globalmetadata);
-        if ($result['success'] ?? false) {
-            redirect($PAGE->url, get_string('source_added', 'local_daliwidget'), null, \core\output\notification::NOTIFY_SUCCESS);
-        }
-        redirect($PAGE->url, $result['error'] ?? 'Failed to add URL source', null, \core\output\notification::NOTIFY_ERROR);
-    }
 
     if ($action === 'add_youtube') {
         $url = required_param('youtube_url', PARAM_URL);
@@ -127,13 +130,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && confirm_sesskey()) {
         redirect($PAGE->url, get_string('unsync_result', 'local_daliwidget', $result), null,
             $result['failed'] ? \core\output\notification::NOTIFY_WARNING : \core\output\notification::NOTIFY_SUCCESS);
     }
-    if ($action === 'delete') {
-        $sourceid = required_param('sourceid', PARAM_INT);
-        $result = $apiClient->deleteSource($sourceid);
-        if ($result['success'] ?? false) {
-            redirect($PAGE->url, get_string('source_deleted', 'local_daliwidget'), null, \core\output\notification::NOTIFY_SUCCESS);
+    if ($action === 'selectwordpress') {
+        $connectionid = required_param('wpconnection', PARAM_INT);
+        $allowedconnectionids = array_map(static fn(array $connection): int => (int) $connection['id'], $wordpressconnections);
+        if (!in_array($connectionid, $allowedconnectionids, true)) {
+            throw new moodle_exception('invalidparameter');
         }
-        redirect($PAGE->url, $result['error'] ?? 'Failed to delete source', null, \core\output\notification::NOTIFY_ERROR);
+        $selected = required_param('selected', PARAM_BOOL);
+        $result = $apiClient->selectWordpressPost(
+            $connectionid,
+            required_param('post', PARAM_INT),
+            $selected,
+            required_param('locale', PARAM_ALPHANUMEXT),
+            !$selected && required_param('confirmed', PARAM_BOOL)
+        );
+        $returnurl = new moodle_url($PAGE->url, ['wpconnection' => $connectionid]);
+        redirect($returnurl, ($result['success'] ?? false)
+            ? get_string('wordpress_selection_saved', 'local_daliwidget')
+            : ($result['error'] ?? get_string('wordpress_action_failed', 'local_daliwidget')));
     }
 
     if ($action === 'retry') {
@@ -196,7 +210,7 @@ echo html_writer::tag('p', get_string('global_knowledge_description', 'local_dal
 echo html_writer::end_div();
 echo html_writer::link(
     new moodle_url('/admin/settings.php', ['section' => 'local_daliwidget']),
-    get_string('pluginname', 'local_daliwidget') . ' Settings',
+    get_string('settings_heading', 'local_daliwidget'),
     ['class' => 'btn btn-outline-secondary']
 );
 echo html_writer::end_div();
@@ -205,6 +219,94 @@ echo $OUTPUT->notification(
     get_string('global_knowledge_scope_info', 'local_daliwidget'),
     \core\output\notification::NOTIFY_INFO
 );
+
+if ($wordpressconnections) {
+    echo html_writer::start_div('card mb-4');
+    echo html_writer::start_div('card-header d-flex justify-content-between align-items-center flex-wrap', ['style' => 'gap:.75rem;']);
+    echo html_writer::start_div();
+    echo html_writer::tag('h5', get_string('wordpress_discovery_title', 'local_daliwidget'), ['class' => 'mb-1']);
+    echo html_writer::tag('p', get_string('wordpress_discovery_desc', 'local_daliwidget'), ['class' => 'text-muted mb-0']);
+    echo html_writer::end_div();
+    echo html_writer::start_tag('form', ['method' => 'get', 'class' => 'form-inline']);
+    echo html_writer::select(array_column($wordpressconnections, 'name', 'id'), 'wpconnection',
+        $wordpressconnectionid ?: '', ['' => get_string('wordpress_choose_connection', 'local_daliwidget')],
+        ['class' => 'form-control mr-2', 'aria-label' => get_string('wordpress_choose_connection', 'local_daliwidget')]);
+    echo html_writer::tag('button', get_string('wordpress_browse_posts', 'local_daliwidget'), [
+        'type' => 'submit', 'class' => 'btn btn-primary',
+    ]);
+    echo html_writer::end_tag('form');
+    echo html_writer::end_div();
+
+    if ($activewordpressconnection) {
+        $wordpressfilters = [
+            'page' => max(1, optional_param('wppage', 1, PARAM_INT)),
+            'per_page' => 10,
+            'search' => optional_param('wpsearch', '', PARAM_TEXT),
+            'status' => optional_param('wpstatus', 'any', PARAM_ALPHA),
+            'taxonomy' => null,
+        ];
+        $wordpressresult = $apiClient->getWordpressPosts($wordpressconnectionid, $wordpressfilters);
+        $wordpressposts = $wordpressresult['data'] ?? [];
+        $wordpressmeta = $wordpressresult['meta'] ?? ['page' => 1, 'pages' => 1];
+        echo html_writer::start_div('card-body');
+        echo html_writer::start_tag('form', ['method' => 'get', 'class' => 'form-inline mb-3']);
+        echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'wpconnection', 'value' => $wordpressconnectionid]);
+        echo html_writer::empty_tag('input', ['name' => 'wpsearch', 'value' => $wordpressfilters['search'],
+            'placeholder' => get_string('search'), 'class' => 'form-control mr-2']);
+        echo html_writer::select(['any' => get_string('all'), 'publish' => 'Published', 'future' => 'Scheduled',
+            'draft' => 'Draft', 'pending' => 'Pending review', 'private' => 'Private'], 'wpstatus',
+            $wordpressfilters['status'], false, ['class' => 'form-control mr-2']);
+        echo html_writer::tag('button', get_string('filter'), ['class' => 'btn btn-outline-secondary']);
+        echo html_writer::end_tag('form');
+        echo html_writer::start_div('table-responsive');
+        echo html_writer::start_tag('table', ['class' => 'table table-striped mb-0']);
+        echo html_writer::tag('tr', html_writer::tag('th', get_string('name'))
+            . html_writer::tag('th', get_string('status'))
+            . html_writer::tag('th', get_string('wordpress_inclusion', 'local_daliwidget'))
+            . html_writer::tag('th', get_string('actions')));
+        foreach ($wordpressposts as $post) {
+            $reasons = array_filter([
+                $post['automatic'] ? get_string('wordpress_automatic', 'local_daliwidget') : null,
+                $post['manual'] ? get_string('wordpress_manual', 'local_daliwidget') : null,
+                $post['pending'] ? get_string('wordpress_pending', 'local_daliwidget') : null,
+            ]);
+            $form = html_writer::start_tag('form', ['method' => 'post', 'class' => 'd-inline']);
+            foreach (['sesskey' => sesskey(), 'action' => 'selectwordpress', 'wpconnection' => $wordpressconnectionid,
+                'post' => $post['id'], 'locale' => $post['locale'], 'selected' => $post['manual'] ? 0 : 1,
+                'confirmed' => $post['manual'] ? 1 : 0] as $name => $value) {
+                $form .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => $name, 'value' => $value]);
+            }
+            $form .= html_writer::tag('button', get_string($post['manual'] ? 'wordpress_cancel_selection' : 'wordpress_select',
+                'local_daliwidget'), ['class' => 'btn btn-sm ' . ($post['manual'] ? 'btn-outline-danger' : 'btn-primary'),
+                'onclick' => $post['manual'] ? "return confirm('" . get_string('wordpress_cancel_confirm', 'local_daliwidget') . "')" : null]);
+            $form .= html_writer::end_tag('form');
+            $title = $post['permalink'] ? html_writer::link($post['permalink'], s($post['title']), [
+                'target' => '_blank', 'rel' => 'noopener noreferrer']) : s($post['title']);
+            echo html_writer::tag('tr', html_writer::tag('td', $title) . html_writer::tag('td', s($post['status']))
+                . html_writer::tag('td', s(implode(', ', $reasons))) . html_writer::tag('td', $form));
+        }
+        if (!$wordpressposts) {
+            echo html_writer::tag('tr', html_writer::tag('td', get_string('wordpress_no_posts', 'local_daliwidget'), [
+                'colspan' => 4, 'class' => 'text-center text-muted py-4']));
+        }
+        echo html_writer::end_tag('table');
+        echo html_writer::end_div();
+        $paginationbase = ['wpconnection' => $wordpressconnectionid, 'wpsearch' => $wordpressfilters['search'],
+            'wpstatus' => $wordpressfilters['status']];
+        echo html_writer::start_div('mt-3');
+        if ($wordpressmeta['page'] > 1) {
+            echo html_writer::link(new moodle_url($PAGE->url, $paginationbase + ['wppage' => $wordpressmeta['page'] - 1]),
+                get_string('previous'), ['class' => 'btn btn-outline-secondary mr-2']);
+        }
+        if ($wordpressmeta['page'] < $wordpressmeta['pages']) {
+            echo html_writer::link(new moodle_url($PAGE->url, $paginationbase + ['wppage' => $wordpressmeta['page'] + 1]),
+                get_string('next'), ['class' => 'btn btn-outline-secondary']);
+        }
+        echo html_writer::end_div();
+        echo html_writer::end_div();
+    }
+    echo html_writer::end_div();
+}
 
 echo html_writer::start_tag('form', ['method' => 'post', 'id' => 'bulk-unsync-global',
     'onsubmit' => "return confirm('" . get_string('confirm_unsync', 'local_daliwidget') . "');"]);
@@ -298,12 +400,9 @@ foreach ($pagedsources as $sourcearr) {
     }
 
     echo html_writer::start_tag('tr');
-    $moodlefileid = (int) ($source->metadata['moodle_file_id'] ?? 0);
-    echo html_writer::tag('td', $moodlefileid > 0
-        ? html_writer::checkbox('sourceids[]', $source->id, false, '', [
-            'value' => $source->id, 'form' => 'bulk-unsync-global',
-        ])
-        : '');
+    echo html_writer::tag('td', html_writer::checkbox('sourceids[]', $source->id, false, '', [
+        'value' => $source->id, 'form' => 'bulk-unsync-global',
+    ]));
     echo html_writer::tag('td', '<i class="fa fa-' . $typeConfig['icon'] . ' ' . $typeConfig['class'] . ' mr-1"></i>' . s($source->title));
     echo html_writer::tag('td', html_writer::tag('span', $typeConfig['label'], ['class' => 'badge badge-light']));
 
@@ -340,11 +439,13 @@ foreach ($pagedsources as $sourcearr) {
         echo html_writer::tag('button', '<i class="fa fa-redo mr-1"></i>Retry', ['type' => 'submit', 'class' => 'btn btn-sm btn-outline-primary']);
         echo html_writer::end_tag('form');
     }
-    echo html_writer::start_tag('form', ['method' => 'post', 'class' => 'm-0', 'onsubmit' => "return confirm('" . get_string('confirm_delete', 'local_daliwidget') . "');"]);
+    echo html_writer::start_tag('form', ['method' => 'post', 'class' => 'm-0',
+        'onsubmit' => "return confirm('" . get_string('confirm_unsync_single', 'local_daliwidget') . "');"]);
     echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
-    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'delete']);
-    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sourceid', 'value' => $source->id]);
-    echo html_writer::tag('button', '<i class="fa fa-trash"></i>', ['type' => 'submit', 'class' => 'btn btn-sm btn-outline-danger']);
+    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'unsync']);
+    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sourceids[]', 'value' => $source->id]);
+    echo html_writer::tag('button', '<i class="fa fa-unlink"></i>', ['type' => 'submit',
+        'class' => 'btn btn-sm btn-outline-danger', 'title' => get_string('unsync_source', 'local_daliwidget')]);
     echo html_writer::end_tag('form');
     echo html_writer::end_div();
     echo html_writer::end_tag('td');
@@ -368,7 +469,7 @@ echo html_writer::end_div();
 $history = knowledge_lifecycle::history();
 echo html_writer::tag('h3', get_string('unsynced_history', 'local_daliwidget'), ['class' => 'mt-4']);
 $table = new html_table();
-$table->head = [get_string('name'), get_string('type'), get_string('status'), get_string('user'), get_string('date')];
+    $table->head = [get_string('name'), get_string('source_type', 'local_daliwidget'), get_string('status'), get_string('user'), get_string('date')];
 foreach ($history as $record) {
     $table->data[] = [s($record->title), s($record->sourcetype), s($record->lifecyclestatus),
         fullname($DB->get_record('user', ['id' => $record->userid], '*', MUST_EXIST)), userdate($record->timeunsynced)];
@@ -401,7 +502,6 @@ echo html_writer::tag('label', 'Source Type', ['for' => 'global-add-source-type'
 echo html_writer::select([
     'document' => 'Document',
     'text' => 'Custom Text',
-    'url' => 'Web URL',
     'youtube' => 'YouTube URL',
     'video' => 'Video File',
     'audio' => 'Audio File',
@@ -439,21 +539,6 @@ echo html_writer::tag('button', '<i class="fa fa-plus mr-1"></i>Add Custom Text'
 echo html_writer::end_tag('form');
 echo html_writer::end_div();
 
-echo html_writer::start_div('global-add-source-section d-none', ['data-source-section' => 'url']);
-echo html_writer::start_tag('form', ['method' => 'post']);
-echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
-echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'add_url']);
-echo html_writer::start_div('form-group');
-echo html_writer::tag('label', 'Name', ['for' => 'global_url_name', 'class' => 'form-label']);
-echo html_writer::empty_tag('input', ['type' => 'text', 'name' => 'name', 'id' => 'global_url_name', 'class' => 'form-control', 'required' => true]);
-echo html_writer::end_div();
-echo html_writer::start_div('form-group');
-echo html_writer::tag('label', 'URL', ['for' => 'global_url', 'class' => 'form-label']);
-echo html_writer::empty_tag('input', ['type' => 'url', 'name' => 'url', 'id' => 'global_url', 'class' => 'form-control', 'required' => true]);
-echo html_writer::end_div();
-echo html_writer::tag('button', '<i class="fa fa-plus mr-1"></i>Add URL Source', ['type' => 'submit', 'class' => 'btn btn-primary mt-3']);
-echo html_writer::end_tag('form');
-echo html_writer::end_div();
 
 echo html_writer::start_div('global-add-source-section d-none', ['data-source-section' => 'youtube']);
 echo html_writer::start_tag('form', ['method' => 'post']);

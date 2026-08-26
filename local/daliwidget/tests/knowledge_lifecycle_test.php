@@ -41,21 +41,31 @@ class knowledge_lifecycle_test extends \advanced_testcase {
         $this->assertSame('failed', end($history)->lifecyclestatus);
     }
 
-    public function test_only_uploaded_moodle_files_in_active_course_are_accepted(): void {
+    public function test_all_source_types_in_active_scope_are_recorded(): void {
+        global $DB;
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course();
         $user = $this->getDataGenerator()->create_user();
-        $this->setUser($user);
         $sources = [
-            $this->source(1, 'valid', $course->id, 10, 'queued'),
-            $this->source(2, 'other course', $course->id + 1, 11, 'ready'),
-            ['id' => 3, 'ulid' => 'text', 'type' => 'text', 'title' => 'text', 'status' => 'ready', 'metadata' => ['course' => ['id' => $course->id]]],
+            $this->source(1, 'file', $course->id, 10, 'ready'),
+            ['id' => 2, 'ulid' => 'text', 'type' => 'text', 'title' => 'text', 'status' => 'ready',
+                'metadata' => ['course' => ['id' => $course->id]]],
+            ['id' => 3, 'ulid' => 'youtube', 'type' => 'youtube', 'title' => 'video', 'status' => 'failed',
+                'metadata' => ['course' => ['id' => $course->id]]],
+            ['id' => 4, 'ulid' => 'other', 'type' => 'text', 'title' => 'other', 'status' => 'ready',
+                'metadata' => ['course' => ['id' => $course->id + 1]]],
         ];
 
-        $result = knowledge_lifecycle::unsync($sources, $course->id, $user->id, static fn(): array => ['success' => true]);
+        $result = knowledge_lifecycle::unsync(
+            $sources,
+            $course->id,
+            $user->id,
+            static fn(): array => ['success' => true]
+        );
 
-        $this->assertSame(1, $result['completed']);
-        $this->assertSame(2, $result['failed']);
+        $this->assertSame(3, $result['completed']);
+        $this->assertSame(1, $result['failed']);
+        $this->assertCount(3, $DB->get_records('local_daliwidget_unsynced'));
     }
 
     public function test_history_filters_by_course(): void {

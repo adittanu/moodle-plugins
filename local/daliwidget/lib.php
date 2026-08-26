@@ -72,21 +72,6 @@ function local_daliwidget_extend_navigation_course($navigation, $course, $contex
     }
 }
 
-/**
- * Add WordPress post discovery for managers.
- *
- * @param settings_navigation $settingsnav Settings navigation.
- * @param context $context Current context.
- */
-function local_daliwidget_extend_settings_navigation($settingsnav, $context) {
-    if (has_capability('local/daliwidget:manageglobalwordpress', context_system::instance())) {
-        $settingsnav->add(
-            get_string('wordpress_posts', 'local_daliwidget'),
-            new moodle_url('/local/daliwidget/wordpress_posts.php'),
-            navigation_node::TYPE_SETTING
-        );
-    }
-}
 
 /**
  * Whether the widget may render for the current user under the access mode.
@@ -463,7 +448,7 @@ function local_daliwidget_before_footer() {
         // Add debug panel to page
         var panelHtml = '<div id="dali-debug-panel" style="position:fixed;bottom:10px;left:10px;width:450px;max-height:350px;background:#1a1a2e;color:#0f0;font-family:monospace;font-size:11px;z-index:99999;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.5);overflow:hidden;">' +
             '<div style="background:#16213e;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #0f0;">' +
-            '<strong>Dali AI Debug Panel</strong>' +
+            '<strong>AI Assistant Debug Panel</strong>' +
             '<button onclick="window.daliDebug.testBackend()" style="background:transparent;border:1px solid #0f0;color:#0f0;padding:2px 8px;cursor:pointer;border-radius:4px;margin:0 4px;font-size:10px;">Test</button>' +
             '<button onclick="document.getElementById(\'dali-debug-panel\').style.display=\'none\'" style="background:transparent;border:1px solid #0f0;color:#0f0;padding:2px 8px;cursor:pointer;border-radius:4px;">X</button>' +
             '</div>' +
