@@ -18,6 +18,7 @@ class knowledge_lifecycle_test extends \advanced_testcase {
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course();
         $user = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($user->id, $course->id, 'editingteacher');
         $this->setUser($user);
         $context = \context_course::instance($course->id);
         $fs = get_file_storage();
@@ -28,8 +29,8 @@ class knowledge_lifecycle_test extends \advanced_testcase {
             $this->source(2, 'two', $course->id, $second->get_id(), 'processing'),
         ];
 
-        $result = knowledge_lifecycle::unsync($sources, $course->id, $user->id, static fn(int $id): array =>
-            $id === 1 ? ['success' => true] : ['success' => false, 'error' => 'remote failed']);
+        $result = knowledge_lifecycle::unsync($sources, $course->id, static fn(int $id): array =>
+            $id === 1 ? ['success' => true] : ['success' => false, 'error' => 'remote failed'], sesskey());
 
         $this->assertSame(1, $result['completed']);
         $this->assertSame(1, $result['failed']);
@@ -46,6 +47,8 @@ class knowledge_lifecycle_test extends \advanced_testcase {
         $this->resetAfterTest();
         $course = $this->getDataGenerator()->create_course();
         $user = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($user->id, $course->id, 'editingteacher');
+        $this->setUser($user);
         $sources = [
             $this->source(1, 'file', $course->id, 10, 'ready'),
             ['id' => 2, 'ulid' => 'text', 'type' => 'text', 'title' => 'text', 'status' => 'ready',
@@ -59,13 +62,53 @@ class knowledge_lifecycle_test extends \advanced_testcase {
         $result = knowledge_lifecycle::unsync(
             $sources,
             $course->id,
-            $user->id,
-            static fn(): array => ['success' => true]
+            static fn(): array => ['success' => true],
+            sesskey()
         );
 
-        $this->assertSame(3, $result['completed']);
-        $this->assertSame(1, $result['failed']);
-        $this->assertCount(3, $DB->get_records('local_daliwidget_unsynced'));
+        $this->assertSame(1, $result['completed']);
+        $this->assertSame(3, $result['failed']);
+        $this->assertCount(1, $DB->get_records('local_daliwidget_unsynced'));
+    }
+
+    public function test_processing_file_is_cancelled_before_ready(): void {
+        global $DB;
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $editor = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($editor->id, $course->id, 'editingteacher');
+        $this->setUser($editor);
+
+        $result = knowledge_lifecycle::unsync(
+            [$this->source(1, 'queued', $course->id, 10, 'processing')],
+            $course->id,
+            static fn(): array => ['success' => true],
+            sesskey()
+        );
+
+        $this->assertSame(1, $result['completed']);
+        $this->assertSame('cancelled_before_ready', $DB->get_record('local_daliwidget_unsynced', [])->lifecyclestatus);
+    }
+
+    public function test_unsync_requires_valid_sesskey(): void {
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $editor = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($editor->id, $course->id, 'editingteacher');
+        $this->setUser($editor);
+        $this->expectException(\moodle_exception::class);
+
+        knowledge_lifecycle::unsync([], $course->id, static fn(): array => ['success' => true], 'invalid');
+    }
+
+    public function test_unsync_requires_course_editor_capability(): void {
+        $this->resetAfterTest();
+        $course = $this->getDataGenerator()->create_course();
+        $user = $this->getDataGenerator()->create_user();
+        $this->setUser($user);
+        $this->expectException(\required_capability_exception::class);
+
+        knowledge_lifecycle::unsync([], $course->id, static fn(): array => ['success' => true], sesskey());
     }
 
     public function test_history_filters_by_course(): void {

@@ -16,19 +16,25 @@ class knowledge_lifecycle {
      *
      * @param array $sources Selected API source records.
      * @param int|null $courseid Active course, or null for Global Knowledge.
-     * @param int $userid User performing the action.
      * @param callable $remove Retrieval removal callback receiving the source ID.
+     * @param string $sesskey Moodle session key.
      * @return array Aggregate and per-item outcomes.
      */
-    public static function unsync(array $sources, ?int $courseid, int $userid, callable $remove): array {
-        global $DB;
+    public static function unsync(array $sources, ?int $courseid, callable $remove, string $sesskey): array {
+        global $DB, $USER;
+        if (!confirm_sesskey($sesskey)) {
+            throw new \moodle_exception('invalidsesskey');
+        }
+        $context = $courseid === null ? \context_system::instance() : \context_course::instance($courseid);
+        require_capability($courseid === null ? 'moodle/site:config' : 'moodle/course:update', $context);
         $outcomes = [];
         foreach ($sources as $source) {
             $sourcecourseid = (int) ($source['metadata']['course']['id'] ?? 0);
             $fileid = (int) ($source['metadata']['moodle_file_id'] ?? 0);
             $validscope = $courseid === null ? $sourcecourseid === 0 : $sourcecourseid === $courseid;
-            if (!$validscope || empty($source['id'])) {
-                $outcomes[] = ['id' => (int) ($source['id'] ?? 0), 'success' => false, 'error' => 'Source is not in this scope'];
+            if (!$validscope || $fileid <= 0 || empty($source['id'])) {
+                $outcomes[] = ['id' => (int) ($source['id'] ?? 0), 'success' => false,
+                    'error' => 'Source is not an uploaded Moodle file in this scope'];
                 continue;
             }
 
@@ -53,7 +59,7 @@ class knowledge_lifecycle {
                 'lifecyclestatus' => $lifecycle,
                 'timesynced' => self::timestamp($source['created_at'] ?? null),
                 'timeunsynced' => time(),
-                'userid' => $userid,
+                'userid' => $USER->id,
             ]);
             $outcomes[] = ['id' => (int) $source['id'], 'success' => $success, 'error' => $result['error'] ?? null];
         }

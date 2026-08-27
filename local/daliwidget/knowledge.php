@@ -86,8 +86,9 @@ if ($action === 'sync_activity') {
     );
 }
 
-// Handle form submissions (POST requests)
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && confirm_sesskey()) {
+// Handle form submissions (POST requests).
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    require_sesskey();
     $action = optional_param('action', '', PARAM_ALPHA);
     
     
@@ -149,8 +150,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && confirm_sesskey()) {
         $result = knowledge_lifecycle::unsync(
             $selected,
             $courseid,
-            $USER->id,
-            static fn(int $sourceid): array => $apiClient->deleteSource($sourceid)
+            static fn(int $sourceid): array => $apiClient->deleteSource($sourceid),
+            sesskey()
         );
         redirect($PAGE->url, get_string('unsync_result', 'local_daliwidget', $result), null,
             $result['failed'] ? \core\output\notification::NOTIFY_WARNING : \core\output\notification::NOTIFY_SUCCESS);
@@ -596,7 +597,8 @@ foreach ($allKnowledgeSources as $source) {
     ];
     $typeConfig = $typeconfigs[$source->type] ?? ['label' => 'YouTube', 'icon' => 'youtube', 'class' => 'text-danger'];
 
-    echo html_writer::tag('td', empty($source->is_placeholder)
+    $canunsync = empty($source->is_placeholder) && !empty($source->metadata['moodle_file_id']);
+    echo html_writer::tag('td', $canunsync
         ? html_writer::checkbox('sourceids[]', $source->id, false, '', [
             'value' => $source->id, 'form' => 'bulk-unsync-course', 'class' => 'source-select',
             'aria-label' => get_string('select') . ': ' . s($source->title),
@@ -705,18 +707,20 @@ foreach ($allKnowledgeSources as $source) {
                 'style' => 'display:inline-flex;align-items:center;white-space:nowrap;',
             ]);
         }
-        echo html_writer::start_tag('form', [
-            'method' => 'post',
-            'class' => 'm-0',
-            'onsubmit' => "return confirm('" . get_string('confirm_unsync_single', 'local_daliwidget') . "');",
-        ]);
-        echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
-        echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'unsync']);
-        echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sourceids[]', 'value' => $source->id]);
-        echo html_writer::tag('button', '<i class="fa fa-unlink mr-1"></i>' . get_string('unsync_source', 'local_daliwidget'), [
-            'type' => 'submit', 'class' => 'btn btn-sm btn-outline-danger',
-        ]);
-        echo html_writer::end_tag('form');
+        if ($canunsync) {
+            echo html_writer::start_tag('form', [
+                'method' => 'post',
+                'class' => 'm-0',
+                'onsubmit' => "return confirm('" . get_string('confirm_unsync_single', 'local_daliwidget') . "');",
+            ]);
+            echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
+            echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'unsync']);
+            echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sourceids[]', 'value' => $source->id]);
+            echo html_writer::tag('button', '<i class="fa fa-unlink mr-1"></i>' . get_string('unsync_source', 'local_daliwidget'), [
+                'type' => 'submit', 'class' => 'btn btn-sm btn-outline-danger',
+            ]);
+            echo html_writer::end_tag('form');
+        }
         echo html_writer::end_div();
     } else {
         echo html_writer::tag('span', 'Waiting for sync...', ['class' => 'text-muted small']);
