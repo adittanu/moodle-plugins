@@ -77,7 +77,8 @@ try {
         case 'addyoutube':
             $url = required_param('url', PARAM_URL);
             $courseMetadata = api_client::buildMoodleMetadata($course);
-            $result = $apiClient->addYoutubeSource($url, null, $courseMetadata);
+            $result = $apiClient->addYoutubeSource($url, null, $courseMetadata,
+                optional_param('additional_text', '', PARAM_RAW_TRIMMED));
             echo json_encode($result);
             break;
             

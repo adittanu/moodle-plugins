@@ -62,10 +62,11 @@ class api_client {
     /**
      * Prefix apostrophe to values that spreadsheet apps could interpret as formulas.
      *
-     * @param string $value Cell value.
+     * @param string|null $value Cell value.
      * @return string Neutralized value.
      */
-    public static function neutralize_csv_value(string $value): string {
+    public static function neutralize_csv_value(?string $value): string {
+        $value ??= '';
         if ($value !== '' && in_array($value[0], ['=', '+', '-', '@'], true)) {
             return "\t" . $value;
         }

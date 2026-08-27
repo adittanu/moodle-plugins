@@ -21,6 +21,7 @@ class api_client_test extends \advanced_testcase {
         $this->assertSame("\t@SUM", api_client::neutralize_csv_value('@SUM'));
         $this->assertSame('safe value', api_client::neutralize_csv_value('safe value'));
         $this->assertSame('', api_client::neutralize_csv_value(''));
+        $this->assertSame('', api_client::neutralize_csv_value(null));
         // Already-prefixed values get double-prefixed (idempotent-safe).
         $this->assertSame("\t\t=SUM(A1)", api_client::neutralize_csv_value("\t=SUM(A1)"));
     }

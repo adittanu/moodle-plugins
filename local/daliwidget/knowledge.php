@@ -57,6 +57,10 @@ $PAGE->navbar->add(get_string('knowledge_base', 'local_daliwidget'));
 // Initialize API client
 $apiClient = new api_client();
 $courseMetadata = api_client::buildMoodleMetadata($course);
+$wordpressconnections = array_values(array_filter(
+    $apiClient->getWordpressConnections()['data'] ?? [],
+    static fn(array $connection): bool => !empty($connection['enabled']) && !empty($connection['validated_at'])
+));
 
 // Handle sync_activity action (GET request from link)
 $action = optional_param('action', '', PARAM_ALPHA);
@@ -89,12 +93,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && confirm_sesskey()) {
     
     if ($action === 'add_youtube') {
         $url = required_param('youtube_url', PARAM_URL);
-        $result = $apiClient->addYoutubeSource($url, null, $courseMetadata);
+        $result = $apiClient->addYoutubeSource($url, null, $courseMetadata, optional_param('additional_text', '', PARAM_RAW_TRIMMED));
         if ($result['success'] ?? false) {
             redirect($PAGE->url, get_string('source_added', 'local_daliwidget'), null, \core\output\notification::NOTIFY_SUCCESS);
         } else {
             redirect($PAGE->url, $result['error'] ?? 'Failed to add YouTube video', null, \core\output\notification::NOTIFY_ERROR);
         }
+    }
+
+    if ($action === 'add_wordpress_url') {
+        $connectionid = required_param('wordpress_connection', PARAM_INT);
+        $allowedids = array_map(static fn(array $connection): int => (int) $connection['id'], $wordpressconnections);
+        if (!in_array($connectionid, $allowedids, true)) {
+            throw new moodle_exception('invalidparameter');
+        }
+        $result = $apiClient->ingestWordpressUrl($connectionid, required_param('wordpress_url', PARAM_URL), $courseMetadata);
+        redirect($PAGE->url, ($result['success'] ?? false) ? get_string('source_added', 'local_daliwidget') :
+            ($result['error'] ?? get_string('wordpress_action_failed', 'local_daliwidget')), null,
+            ($result['success'] ?? false) ? \core\output\notification::NOTIFY_SUCCESS : \core\output\notification::NOTIFY_ERROR);
     }
     
     if ($action === 'upload') {
@@ -117,7 +133,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && confirm_sesskey()) {
                 'filename' => clean_param($_FILES[$fileField]['name'], PARAM_FILE),
             ], $_FILES[$fileField]['tmp_name']);
             $metadata = array_merge($courseMetadata, ['moodle_file_id' => $storedfile->get_id()]);
-            $result = $apiClient->uploadDocument($_FILES[$fileField], null, $metadata, $sourceType);
+            $result = $apiClient->uploadDocument($_FILES[$fileField], null, $metadata, $sourceType,
+                $sourceType === 'video' ? optional_param('additional_text', '', PARAM_RAW_TRIMMED) : null);
             if ($result['success'] ?? false) {
                 redirect($PAGE->url, get_string('source_added', 'local_daliwidget'), null, \core\output\notification::NOTIFY_SUCCESS);
             }
@@ -585,7 +602,9 @@ foreach ($allKnowledgeSources as $source) {
             'aria-label' => get_string('select') . ': ' . s($source->title),
         ])
         : '');
-    echo html_writer::tag('td', '<i class="fa fa-' . $typeConfig['icon'] . ' ' . $typeConfig['class'] . ' mr-1"></i>' . s($source->title));
+    $isvideochild = ($source->metadata['relation'] ?? '') === 'video_additional_text';
+    $titlehtml = '<i class="fa fa-' . $typeConfig['icon'] . ' ' . $typeConfig['class'] . ' mr-1"></i>' . s($source->title);
+    echo html_writer::tag('td', $titlehtml, ['class' => $isvideochild ? 'pl-5' : '']);
     echo html_writer::tag('td', html_writer::tag('span', $typeConfig['label'], ['class' => 'badge badge-light']));
 
     $statusclasses = [
@@ -755,6 +774,7 @@ echo html_writer::select([
     'document' => 'Document',
     'text' => 'Custom Text',
     'youtube' => 'YouTube URL',
+    'wordpress' => get_string('wordpress_url_source', 'local_daliwidget'),
     'video' => 'Video File',
     'audio' => 'Audio File',
     'scorm' => 'SCORM Package',
@@ -791,12 +811,28 @@ echo html_writer::tag('button', '<i class="fa fa-plus mr-1"></i>Add Custom Text'
 echo html_writer::end_tag('form');
 echo html_writer::end_div();
 
+if ($wordpressconnections) {
+    echo html_writer::start_div('add-source-section d-none', ['data-source-section' => 'wordpress']);
+    echo html_writer::start_tag('form', ['method' => 'post']);
+    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
+    echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'add_wordpress_url']);
+    echo html_writer::select(array_column($wordpressconnections, 'name', 'id'), 'wordpress_connection', '',
+        ['' => get_string('wordpress_choose_connection', 'local_daliwidget')], ['class' => 'form-control mb-3', 'required' => true]);
+    echo html_writer::empty_tag('input', ['type' => 'url', 'name' => 'wordpress_url', 'class' => 'form-control',
+        'placeholder' => 'https://example.com/article/', 'required' => true]);
+    echo html_writer::tag('button', get_string('wordpress_ingest_url', 'local_daliwidget'), ['type' => 'submit', 'class' => 'btn btn-primary mt-3']);
+    echo html_writer::end_tag('form');
+    echo html_writer::end_div();
+}
+
 echo html_writer::start_div('add-source-section d-none', ['data-source-section' => 'youtube']);
 echo html_writer::start_tag('form', ['method' => 'post', 'id' => 'youtube-form']);
 echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
 echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'add_youtube']);
 echo html_writer::tag('label', 'YouTube URL', ['for' => 'youtube_url', 'class' => 'form-label']);
 echo html_writer::empty_tag('input', ['type' => 'url', 'name' => 'youtube_url', 'id' => 'youtube_url', 'class' => 'form-control', 'placeholder' => 'https://youtube.com/watch?v=...', 'required' => true]);
+echo html_writer::tag('label', get_string('video_additional_text', 'local_daliwidget'), ['for' => 'youtube_additional_text', 'class' => 'form-label mt-3']);
+echo html_writer::tag('textarea', '', ['name' => 'additional_text', 'id' => 'youtube_additional_text', 'class' => 'form-control', 'rows' => 5]);
 echo html_writer::tag('button', '<i class="fa fa-plus mr-1"></i>Add YouTube Video', ['type' => 'submit', 'class' => 'btn btn-danger mt-3']);
 echo html_writer::end_tag('form');
 echo html_writer::end_div();
@@ -809,10 +845,17 @@ foreach ([
     echo html_writer::start_div('add-source-section d-none', ['data-source-section' => $modalType]);
     echo html_writer::start_tag('form', ['method' => 'post', 'enctype' => 'multipart/form-data']);
     echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'sesskey', 'value' => sesskey()]);
+$wordpressconnectionjson = json_encode(array_map(static fn(array $connection): array => [
+    'id' => (int) $connection['id'], 'site_url' => (string) $connection['site_url'],
+], $wordpressconnections), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
     echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'action', 'value' => 'upload']);
     echo html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'source_type', 'value' => $modalType]);
     echo html_writer::tag('p', 'Upload a ' . $config['label'] . ' to the knowledge base.', ['class' => 'text-muted']);
     echo html_writer::empty_tag('input', ['type' => 'file', 'name' => 'source_file', 'class' => 'form-control mb-3', 'accept' => $config['accept'], 'required' => true]);
+    if ($modalType === 'video') {
+        echo html_writer::tag('label', get_string('video_additional_text', 'local_daliwidget'), ['class' => 'form-label']);
+        echo html_writer::tag('textarea', '', ['name' => 'additional_text', 'class' => 'form-control mb-3', 'rows' => 5]);
+    }
     echo html_writer::tag('button', '<i class="fa fa-upload mr-1"></i>' . $config['button'], ['type' => 'submit', 'class' => 'btn ' . $config['class']]);
     echo html_writer::end_tag('form');
     echo html_writer::end_div();
@@ -1028,6 +1071,18 @@ echo <<<JAVASCRIPT
         }
     }
 
+    const wordpressConnections = {$wordpressconnectionjson};
+    document.querySelectorAll('input[name="wordpress_url"]').forEach(input => input.addEventListener('change', function() {
+        try {
+            const origin = new URL(this.value).origin;
+            const matches = wordpressConnections.filter(connection => new URL(connection.site_url).origin === origin);
+            if (matches.length === 1) {
+                this.form.querySelector('select[name="wordpress_connection"]').value = matches[0].id;
+            }
+        } catch (e) {
+            // Native URL validation reports malformed input.
+        }
+    }));
     const sourceTypeSelect = document.getElementById('add-source-type');
     function updateAddSourceSections() {
         const selected = sourceTypeSelect ? sourceTypeSelect.value : 'document';
@@ -1097,7 +1152,8 @@ echo <<<JAVASCRIPT
             
             setButtonLoading(submitBtn, true);
             
-            fetch(ajaxUrl + '?action=addyoutube&courseid=' + courseId + '&url=' + encodeURIComponent(url) + '&sesskey=' + sesskey)
+            const additionalText = (formData.get('additional_text') || '').toString().trim();
+            fetch(ajaxUrl + '?action=addyoutube&courseid=' + courseId + '&url=' + encodeURIComponent(url) + '&additional_text=' + encodeURIComponent(additionalText) + '&sesskey=' + sesskey)
                 .then(r => r.json())
                 .then(data => {
                     setButtonLoading(submitBtn, false);

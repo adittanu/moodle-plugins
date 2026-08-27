@@ -287,6 +287,13 @@ class api_client {
         );
     }
 
+    public function ingestWordpressUrl(int $connectionid, string $url, array $metadata = []): array {
+        return $this->request('POST', "/api/v1/wordpress/connections/{$connectionid}/ingest-url", [
+            'url' => $url,
+            'metadata' => $metadata,
+        ]);
+    }
+
     /**
      * Get all knowledge sources.
      *
@@ -414,16 +421,21 @@ class api_client {
      * @param array $metadata Additional metadata
      * @return array
      */
-    public function addYoutubeSource(string $url, ?string $title = null, array $metadata = []): array {
+    public function addYoutubeSource(
+        string $url,
+        ?string $title = null,
+        array $metadata = [],
+        ?string $additionaltext = null
+    ): array {
         if (empty($metadata['transport'])) {
             $metadata['transport'] = 'remote_url';
         }
-        $data = [
-            'url' => $url,
-            'metadata' => $metadata,
-        ];
+        $data = ['url' => $url, 'metadata' => $metadata];
         if ($title) {
             $data['title'] = $title;
+        }
+        if (trim((string) $additionaltext) !== '') {
+            $data['additional_text'] = trim($additionaltext);
         }
         return $this->request('POST', '/api/v1/knowledge/sources/youtube', $data);
     }
@@ -437,29 +449,28 @@ class api_client {
      * @param string $sourceType Source type (document|video|audio|scorm)
      * @return array
      */
-    public function uploadDocument(array $file, ?string $title = null, array $metadata = [], string $sourceType = 'document'): array {
+    public function uploadDocument(
+        array $file,
+        ?string $title = null,
+        array $metadata = [],
+        string $sourceType = 'document',
+        ?string $additionaltext = null
+    ): array {
         $maxbytes = $this->get_max_upload_bytes();
         $filesize = $this->get_file_size($file);
-
         if ($filesize > 0 && $filesize > $maxbytes) {
-            return [
-                'success' => false,
-                'error' => 'File too large (' . $this->format_bytes($filesize) . '). Max allowed is ' .
-                    $this->format_bytes($maxbytes) . '.',
-                'http_code' => 413,
-            ];
+            return ['success' => false, 'error' => 'File too large (' . $this->format_bytes($filesize) . '). Max allowed is ' .
+                $this->format_bytes($maxbytes) . '.', 'http_code' => 413];
         }
-
         if (empty($metadata['transport'])) {
             $metadata['transport'] = 'binary_upload';
         }
-
-        $data = [
-            'metadata' => $metadata,
-            'source_type' => $sourceType,
-        ];
+        $data = ['metadata' => $metadata, 'source_type' => $sourceType];
         if ($title) {
             $data['title'] = $title;
+        }
+        if ($sourceType === 'video' && trim((string) $additionaltext) !== '') {
+            $data['additional_text'] = trim($additionaltext);
         }
         return $this->request('POST', '/api/v1/knowledge/sources/document', $data, ['file' => $file]);
     }

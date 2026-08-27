@@ -167,6 +167,9 @@ $string['wordpress_preview_label_remove'] = 'remove';
 $string['wordpress_preview_label_pending'] = 'pending';
 $string['wordpress_preview_label_unchanged'] = 'unchanged';
 $string['wordpress_sync_now'] = 'Ingest now';
+$string['wordpress_url_source'] = 'WordPress URL';
+$string['wordpress_ingest_url'] = 'Ingest WordPress URL';
+$string['video_additional_text'] = 'Additional text (optional)';
 
 
 // Activity Sync

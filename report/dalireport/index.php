@@ -34,19 +34,18 @@ $params = [
     'per_page' => 20,
     'page' => $page + 1,
 ];
-$report = (new \report_dalireport\api_client())->get_report($params);
-
 if ($download) {
-    $table = new flexible_table('report-dalireport-export');
-    $table->define_columns(['date', 'user', 'role', 'course', 'activity', 'agent', 'topic', 'status', 'question', 'messages', 'response']);
-    $table->define_headers([
+    require_once($CFG->libdir . '/csvlib.class.php');
+
+    $csv = new csv_export_writer();
+    $csv->set_filename('AI-report-' . $from . '-to-' . $to);
+    $csv->add_data([
         get_string('date'), get_string('user'), get_string('role'), get_string('course'), get_string('activity'),
         get_string('agent', 'report_dalireport'), get_string('topic', 'report_dalireport'),
         get_string('responsestatus', 'report_dalireport'), get_string('initialquestion', 'report_dalireport'),
         get_string('messages', 'message'), get_string('lastresponse', 'report_dalireport'),
     ]);
-    $table->is_downloading('csv', 'dali-report-' . $from . '-' . $to);
-    $table->setup();
+
     $dlparams = $params;
     $dlparams['per_page'] = 100;
     $dlpage = 1;
@@ -54,7 +53,7 @@ if ($download) {
         $dlparams['page'] = $dlpage;
         $dlreport = (new \report_dalireport\api_client())->get_report($dlparams);
         foreach ($dlreport['sessions']['data'] as $session) {
-            $table->add_data([
+            $csv->add_data([
                 $session['updated_at'],
                 \report_dalireport\api_client::neutralize_csv_value($session['visitor']),
                 $session['role'],
@@ -70,9 +69,12 @@ if ($download) {
         }
         $dlpage++;
     } while ($dlpage <= (int) $dlreport['sessions']['last_page']);
-    $table->finish_output();
+
+    $csv->download_file();
     exit;
 }
+
+$report = (new \report_dalireport\api_client())->get_report($params);
 
 $sessions = $report['sessions'];
 
