@@ -24,6 +24,25 @@
 
 defined('MOODLE_INTERNAL') || die();
 
+/**
+ * Resolve the canonical Knowledge Access Mode without overwriting an existing choice.
+ *
+ * @param mixed $canonicalmode Current canonical value, or false when absent.
+ * @param mixed $strictcoursemode Legacy checkbox value, or false when absent.
+ * @return string
+ */
+function local_daliwidget_migrated_knowledge_access_mode($canonicalmode, $strictcoursemode): string {
+    if (in_array($canonicalmode, ['course_scoped', 'site_wide'], true)) {
+        return $canonicalmode;
+    }
+
+    if ($strictcoursemode === '0' || $strictcoursemode === 0) {
+        return 'site_wide';
+    }
+
+    return 'course_scoped';
+}
+
 function xmldb_local_daliwidget_upgrade($oldversion) {
     global $DB;
     $dbman = $DB->get_manager();
@@ -52,7 +71,10 @@ function xmldb_local_daliwidget_upgrade($oldversion) {
     }
 
     if ($oldversion < 2026082200) {
-        set_config('knowledge_access_mode', 'course_scoped', 'local_daliwidget');
+        set_config('knowledge_access_mode', local_daliwidget_migrated_knowledge_access_mode(
+            get_config('local_daliwidget', 'knowledge_access_mode'),
+            get_config('local_daliwidget', 'strict_course_mode')
+        ), 'local_daliwidget');
         unset_config('strict_course_mode', 'local_daliwidget');
 
         upgrade_plugin_savepoint(true, 2026082200, 'local', 'daliwidget');
@@ -83,6 +105,15 @@ function xmldb_local_daliwidget_upgrade($oldversion) {
     if ($oldversion < 2026082602) {
         set_config('answer_source_policy', 'knowledge_only', 'local_daliwidget');
         upgrade_plugin_savepoint(true, 2026082602, 'local', 'daliwidget');
+    }
+
+    if ($oldversion < 2026082700) {
+        set_config('knowledge_access_mode', local_daliwidget_migrated_knowledge_access_mode(
+            get_config('local_daliwidget', 'knowledge_access_mode'),
+            get_config('local_daliwidget', 'strict_course_mode')
+        ), 'local_daliwidget');
+        unset_config('strict_course_mode', 'local_daliwidget');
+        upgrade_plugin_savepoint(true, 2026082700, 'local', 'daliwidget');
     }
 
     return true;
