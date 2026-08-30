@@ -78,9 +78,54 @@ define([], function() {
         return window.quizaccessWebcamguardFaceApiReady;
     };
 
+    var detectorOptions = function() {
+        return new window.faceapi.TinyFaceDetectorOptions({inputSize: 160, scoreThreshold: 0.2});
+    };
+
     var getDescriptor = function(input) {
-        var opts = new window.faceapi.TinyFaceDetectorOptions({inputSize: 160, scoreThreshold: 0.2});
-        return window.faceapi.detectSingleFace(input, opts).withFaceLandmarks().withFaceDescriptor();
+        return window.faceapi.detectSingleFace(input, detectorOptions()).withFaceLandmarks().withFaceDescriptor();
+    };
+
+    var frameBrightness = function(video, box) {
+        var canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(box.width));
+        canvas.height = Math.max(1, Math.round(box.height));
+        var context = canvas.getContext('2d', {willReadFrequently: true});
+        context.drawImage(video, box.x, box.y, box.width, box.height, 0, 0, canvas.width, canvas.height);
+        var pixels = context.getImageData(0, 0, canvas.width, canvas.height).data;
+        var total = 0;
+        for (var i = 0; i < pixels.length; i += 16) {
+            total += (pixels[i] + pixels[i + 1] + pixels[i + 2]) / 3;
+        }
+        return total / Math.max(1, pixels.length / 16);
+    };
+
+    var qualityMessage = function(config, video, result, faceCount) {
+        if (faceCount !== 1) {
+            return faceCount > 1 ? config.strings.qualitymultiple : config.strings.qualitynoface;
+        }
+        var box = result.detection.box;
+        if (box.width < video.videoWidth * 0.25) {
+            return config.strings.qualitytoosmall;
+        }
+        var landmarks = result.landmarks.positions;
+        var eyeMidpoint = (landmarks[36].x + landmarks[45].x) / 2;
+        if (Math.abs(landmarks[30].x - eyeMidpoint) > box.width * 0.12) {
+            return config.strings.qualitypose;
+        }
+        if (frameBrightness(video, box) < 45) {
+            return config.strings.qualitydark;
+        }
+        return '';
+    };
+
+    var getCameraDescriptor = function(config, video) {
+        return window.faceapi.detectAllFaces(video, detectorOptions()).withFaceLandmarks().withFaceDescriptors()
+            .then(function(results) {
+                var result = results.length === 1 ? results[0] : null;
+                var message = qualityMessage(config, video, result, results.length);
+                return {result: message ? null : result, message: message};
+            });
     };
 
     var euclidean = function(a, b) {
@@ -168,22 +213,22 @@ define([], function() {
             if (!state.running || state.inFlight || state.locked) { return; }
             state.inFlight = true;
 
-            getDescriptor(video).then(function(current) {
+            getCameraDescriptor(config, video).then(function(camera) {
                 state.inFlight = false;
                 if (!state.running) { return; }
 
-                if (!current) {
+                if (!camera.result) {
                     state.consecutiveMatches = 0;
                     setFaceState('searching');
                     updateGauge(0, 'searching');
-                    setSimilarityStatus(config.strings.identitysearching, 'searching');
-                    setStatus(statusEl, config.strings.identitysearching, 'alert alert-info');
+                    setSimilarityStatus(camera.message, 'searching');
+                    setStatus(statusEl, camera.message, 'alert alert-info');
                     setIdentityResult(config, 'searching', null, '');
                     if (config.identity.mode === 'block') { setReadyValue(config, '0'); }
                     return;
                 }
 
-                var dist = euclidean(reference.descriptor, current.descriptor);
+                var dist = euclidean(reference.descriptor, camera.result.descriptor);
                 var pct = distToPercent(dist);
                 var matched = dist <= config.identity.threshold;
 
