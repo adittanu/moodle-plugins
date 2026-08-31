@@ -1,80 +1,54 @@
 # Moodle Plugins
 
-Repository public untuk plugin Moodle custom.
+Kumpulan 11 component Moodle custom, didokumentasikan sebagai sembilan produk.
 
-## Plugin
+## Component
 
-| Plugin | Type |
-|---|---|
-| [`local/siteframe`](local/siteframe/) | Local |
-| [`blocks/siteframe`](blocks/siteframe/) | Block |
-| [`mod/siteframe`](mod/siteframe/) | Activity |
-| [`local/daliwidget`](local/daliwidget/) | Local |
-| [`local/aiquizgen`](local/aiquizgen/) | Local |
-| [`local/aigrading`](local/aigrading/) | Local |
-| [`local/ailessonplan`](local/ailessonplan/) | Local |
-| [`local/quiz_stats_cache`](local/quiz_stats_cache/) | Local |
-| [`mod/quiz/report/lightstats`](mod/quiz/report/lightstats/) | Quiz report |
-| [`mod/quiz/accessrule/webcamguard`](mod/quiz/accessrule/webcamguard/) | Quiz access rule |
+| Produk | Component | Path |
+|---|---|---|
+| Dali AI Widget | `local_daliwidget` | [`local/daliwidget`](local/daliwidget/) |
+| SiteFrame | `local_siteframe` | [`local/siteframe`](local/siteframe/) |
+| SiteFrame Block | `block_siteframe` | [`blocks/siteframe`](blocks/siteframe/) |
+| SiteFrame Activity | `mod_siteframe` | [`mod/siteframe`](mod/siteframe/) |
+| AI Quiz Generator | `local_aiquizgen` | [`local/aiquizgen`](local/aiquizgen/) |
+| AI Grading | `local_aigrading` | [`local/aigrading`](local/aigrading/) |
+| AI Lesson Plan | `local_ailessonplan` | [`local/ailessonplan`](local/ailessonplan/) |
+| Quiz Statistics Cache | `local_quiz_stats_cache` | [`local/quiz_stats_cache`](local/quiz_stats_cache/) |
+| Light Statistics | `quiz_lightstats` | [`mod/quiz/report/lightstats`](mod/quiz/report/lightstats/) |
+| Webcam Guard | `quizaccess_webcamguard` | [`mod/quiz/accessrule/webcamguard`](mod/quiz/accessrule/webcamguard/) |
+| DALI Report | `report_dalireport` | [`report/dalireport`](report/dalireport/) |
 
-## Instalasi / Update
-
-```bash
-git clone https://github.com/adittanu/moodle-plugins.git
-cd moodle-plugins
-git pull --ff-only origin main
-```
-
-Copy folder plugin yang diperlukan ke direktori Moodle sesuai path plugin. Setelah update, buka `/admin/` atau jalankan upgrade CLI Moodle.
+`mod/quiz/accessrule/webcamguard_bak` adalah backup duplikat, bukan component tambahan atau target dokumentasi.
 
 ## Dokumentasi
 
-Semua dokumentasi repository disimpan di [`docs/guides/`](docs/guides/):
+| Produk | Markdown | PDF |
+|---|---|---|
+| Dali AI Widget | [Baca](docs/guides/daliwidget/README.md) | [Unduh](docs/guides/daliwidget/manual.pdf) |
+| SiteFrame | [Baca](docs/guides/siteframe/README.md) | [Unduh](docs/guides/siteframe/manual.pdf) |
+| AI Quiz Generator | [Baca](docs/guides/aiquizgen/README.md) | [Unduh](docs/guides/aiquizgen/manual.pdf) |
+| AI Lesson Plan | [Baca](docs/guides/ailessonplan/README.md) | [Unduh](docs/guides/ailessonplan/manual.pdf) |
+| AI Grading | [Baca](docs/guides/aigrading/README.md) | [Unduh](docs/guides/aigrading/manual.pdf) |
+| Quiz Statistics Cache | [Baca](docs/guides/quiz-stats-cache/README.md) | [Unduh](docs/guides/quiz-stats-cache/manual.pdf) |
+| Light Statistics | [Baca](docs/guides/lightstats/README.md) | [Unduh](docs/guides/lightstats/manual.pdf) |
+| Webcam Guard | [Baca](docs/guides/webcamguard/README.md) | [Unduh](docs/guides/webcamguard/manual.pdf) |
+| DALI Report | [Baca](docs/guides/dalireport/README.md) | [Unduh](docs/guides/dalireport/manual.pdf) |
 
-- [SiteFrame](docs/guides/siteframe/GUIDE_SITEFRAME.md)
-- [Dali AI Widget](docs/guides/daliwidget/GUIDE_DALIWIDGET.md)
-- [AI Quiz Generator](docs/guides/aiquizgen/GUIDE_AIQUIZGEN.md)
-- [AI Grading](docs/guides/aigrading/GUIDE_AIGRADING.md)
-- [AI Lesson Plan](docs/guides/ailessonplan/GUIDE_AILESSONPLAN.md)
-- [Quiz Statistics Cache](docs/guides/quiz-stats-cache/GUIDE_QUIZ_STATS_CACHE.md)
-- [Light Statistics](docs/guides/lightstats/GUIDE_LIGHTSTATS.md)
-- [Webcam Guard](docs/guides/webcamguard/)
+Bangun ulang semua PDF:
 
-## Prompt Instalasi untuk AI
-
-Salin prompt berikut, lalu ganti nilai `MOODLE_PATH`:
-
-```text
-Install atau update plugin Moodle dari repository https://github.com/adittanu/moodle-plugins.git ke server ini.
-
-Target Moodle:
-MOODLE_PATH=/var/www/moodle
-
-Instruksi:
-1. Periksa apakah target plugin sudah ada dan tampilkan versi saat ini.
-2. Clone repository jika belum ada; gunakan `git pull --ff-only origin main` jika sudah ada.
-3. Salin hanya plugin yang diminta ke `MOODLE_PATH`, tanpa menghapus plugin Moodle lain:
-   - Untuk local plugin: `local/<nama-plugin>`
-   - Untuk block plugin: `blocks/<nama-plugin>`
-   - Untuk mod plugin: `mod/<nama-plugin>`
-   - Untuk quiz access rule: `mod/quiz/accessrule/<nama-plugin>`
-4. Pertahankan ownership dan permission sesuai plugin Moodle lain di direktori target.
-5. Jalankan upgrade Moodle non-interaktif jika `version.php` berubah:
-   `php MOODLE_PATH/admin/cli/upgrade.php --non-interactive`
-6. Purge cache:
-   `php MOODLE_PATH/admin/cli/purge_caches.php`
-7. Verifikasi plugin terpasang, versi plugin, dan tidak ada error PHP.
-8. Jangan mengubah database, config.php, plugin lain, atau menghapus file tanpa instruksi eksplisit.
-9. Jika butuh sudo, minta akses atau tampilkan command yang perlu dijalankan; jangan menebak password.
-
-Plugin yang diminta: <CONTOH: mod/quiz/accessrule/webcamguard>
-
-Laporkan command yang dijalankan, file yang berubah, versi sebelum/sesudah, dan error jika ada.
+```bash
+python moodle-plugins/docs/generate_guides.py
 ```
 
-Ganti:
+Atau satu produk: `python moodle-plugins/docs/generate_guides.py <slug>`.
 
-- `MOODLE_PATH` dengan path root Moodle, yaitu folder yang berisi `config.php`.
-- `<CONTOH: mod/quiz/accessrule/webcamguard>` dengan path plugin yang ingin dipasang.
+## Instalasi / update
 
-Dokumentasi khusus plugin juga boleh tetap berada di folder plugin bila dibutuhkan Moodle saat distribusi.
+Salin hanya direktori component yang diperlukan ke path sama di `<Moodle dirroot>`. Jalankan:
+
+```bash
+php <Moodle dirroot>/admin/cli/upgrade.php --non-interactive
+php <Moodle dirroot>/admin/cli/purge_caches.php
+```
+
+Baca panduan produk untuk dependency, worker, HTTPS, dan konfigurasi khusus. Jangan menyalin `webcamguard_bak`.
