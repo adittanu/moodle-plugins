@@ -218,6 +218,7 @@ class attempt_detail {
         $imagestyle = 'display: block; width: 100%; aspect-ratio: 4 / 3; height: auto; ' .
             'background: #f8f9fa; border-bottom: 4px solid ' . $state['color'] . ';';
         $imagestyle .= $compact ? ' object-fit: cover;' : ' object-fit: contain;';
+        $imageclass = $compact ? '' : 'quizaccess-webcamguard-evidence-media';
 
         if (!empty($event->hassnapshot)) {
             $filename = self::get_snapshot_filename($contextid, $event->id);
@@ -227,6 +228,7 @@ class attempt_detail {
                 return \html_writer::empty_tag('img', [
                     'src' => $url,
                     'alt' => get_string('snapshot', 'quizaccess_webcamguard'),
+                    'class' => $imageclass,
                     'style' => $imagestyle,
                 ]);
             }
@@ -234,7 +236,7 @@ class attempt_detail {
 
         if (!empty($event->snapshotfailed)) {
             return \html_writer::div(get_string('event_snapshot_failed', 'quizaccess_webcamguard'),
-                'alert alert-warning mb-0 text-center', [
+                'alert alert-warning mb-0 text-center ' . $imageclass, [
                     'style' => 'aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; ' .
                         'border-radius: 0; border-left: 0; border-right: 0; border-top: 0; border-bottom: 4px solid ' .
                         $state['color'] . ';',
@@ -242,7 +244,7 @@ class attempt_detail {
         }
 
         return \html_writer::div(get_string('nosnapshot', 'quizaccess_webcamguard'),
-            'text-muted p-3 text-center', [
+            'text-muted p-3 text-center ' . $imageclass, [
                 'style' => 'aspect-ratio: 4 / 3; display: flex; align-items: center; justify-content: center; ' .
                     'background: #f8f9fa; border-bottom: 4px solid ' . $state['color'] . ';',
             ]);
@@ -259,8 +261,9 @@ class attempt_detail {
      * @return string
      */
     protected static function render_event_modal($event, $contextid, array $state, $duration, $modalid) {
+        $displaytype = self::effective_eventtype($event);
+        $summary = self::event_admin_summary($event, $displaytype);
         $metadata = self::render_metadata($event->metadata);
-        $metadata = $metadata === '' ? '-' : $metadata;
 
         $output = \html_writer::start_div('modal fade', [
             'id' => $modalid,
@@ -270,37 +273,66 @@ class attempt_detail {
         ]);
         $output .= \html_writer::start_div('modal-dialog modal-lg', ['role' => 'document']);
         $output .= \html_writer::start_div('modal-content');
-
-        $displaytype = self::effective_eventtype($event);
         $output .= \html_writer::start_div('modal-header');
-        $output .= \html_writer::tag('h5', self::event_name($displaytype), ['class' => 'modal-title']);
+        $output .= \html_writer::tag('h5', get_string('evidencedetail', 'quizaccess_webcamguard'),
+            ['class' => 'modal-title']);
         $output .= \html_writer::tag('button',
-            \html_writer::span('&times;', '', ['aria-hidden' => 'true']),
-            [
-                'type' => 'button',
-                'class' => 'close',
-                'data-dismiss' => 'modal',
+            \html_writer::span('&times;', '', ['aria-hidden' => 'true']), [
+                'type' => 'button', 'class' => 'close', 'data-dismiss' => 'modal',
                 'aria-label' => get_string('close', 'moodle'),
             ]);
         $output .= \html_writer::end_div();
 
-        $output .= \html_writer::start_div('modal-body');
+        $output .= \html_writer::start_div('modal-body p-0');
         $output .= self::render_snapshot($event, $contextid, $state);
-        $output .= \html_writer::start_div('mt-3');
-        $output .= self::render_detail_row(get_string('eventtype', 'quizaccess_webcamguard'),
-            self::event_name($displaytype));
-        $output .= self::render_detail_row(get_string('status', 'moodle'), $state['label']);
-        $output .= self::render_detail_row(get_string('time', 'quizaccess_webcamguard'), userdate($event->timecreated));
-        $output .= self::render_detail_row(get_string('duration', 'quizaccess_webcamguard'), $duration);
-        $output .= self::render_detail_row(get_string('metadata', 'quizaccess_webcamguard'), $metadata, true);
-        $output .= \html_writer::end_div();
+        $output .= \html_writer::start_div('quizaccess-webcamguard-evidence-content');
+        $output .= \html_writer::start_div('quizaccess-webcamguard-evidence-summary');
+        $output .= \html_writer::span($state['label'], 'badge badge-' . $state['badge']);
+        $output .= \html_writer::tag('h4', self::event_name($displaytype),
+            ['class' => 'quizaccess-webcamguard-evidence-title']);
+        $output .= \html_writer::tag('p', $summary, ['class' => 'quizaccess-webcamguard-evidence-explanation']);
         $output .= \html_writer::end_div();
 
-        $output .= \html_writer::end_div();
-        $output .= \html_writer::end_div();
+        $output .= \html_writer::start_div('quizaccess-webcamguard-evidence-facts');
+        $output .= self::render_evidence_fact(get_string('time', 'quizaccess_webcamguard'),
+            userdate($event->timecreated));
+        if ($duration !== '-') {
+            $output .= self::render_evidence_fact(get_string('duration', 'quizaccess_webcamguard'), $duration);
+        }
         $output .= \html_writer::end_div();
 
+        if ($metadata !== '') {
+            $output .= \html_writer::start_tag('details', ['class' => 'quizaccess-webcamguard-technical-details']);
+            $output .= \html_writer::tag('summary', get_string('technicaldetails', 'quizaccess_webcamguard'));
+            $output .= \html_writer::div($metadata, 'quizaccess-webcamguard-technical-content');
+            $output .= \html_writer::end_tag('details');
+        }
+        $output .= \html_writer::div(get_string('evidencenotdecision', 'quizaccess_webcamguard'),
+            'quizaccess-webcamguard-evidence-note');
+        $output .= \html_writer::end_div();
+        $output .= \html_writer::end_div();
+        $output .= \html_writer::end_div();
+        $output .= \html_writer::end_div();
+        $output .= \html_writer::end_div();
         return $output;
+    }
+
+    protected static function render_evidence_fact($label, $value) {
+        $output = \html_writer::start_div('quizaccess-webcamguard-evidence-fact');
+        $output .= \html_writer::div(s($label), 'quizaccess-webcamguard-evidence-fact-label');
+        $output .= \html_writer::div(s($value), 'quizaccess-webcamguard-evidence-fact-value');
+        $output .= \html_writer::end_div();
+        return $output;
+    }
+
+    protected static function event_admin_summary($event, $displaytype) {
+        $key = 'evidence_' . $displaytype;
+        if (get_string_manager()->string_exists($key, 'quizaccess_webcamguard')) {
+            return get_string($key, 'quizaccess_webcamguard');
+        }
+        return $event->severity === 'info'
+            ? get_string('evidence_normal', 'quizaccess_webcamguard')
+            : get_string('evidence_review', 'quizaccess_webcamguard');
     }
 
     /**

@@ -1,33 +1,14 @@
-# Webcam Guard quiz access rule
+# Webcam Guard
 
-`quizaccess_webcamguard` adds webcam consent, browser-side monitoring, evidence logging, and teacher review pages to Moodle Quiz.
+`quizaccess_webcamguard` v0.9.2 — consent webcam, monitoring browser-side, evidence, live monitoring opsional, dan review untuk Moodle Quiz 4.1+.
 
-## Install
+## Instalasi ringkas
 
-Place this directory at:
+Salin direktori ini ke `<Moodle dirroot>/mod/quiz/accessrule/webcamguard`, jalankan upgrade Moodle, lalu gunakan HTTPS. Evidence dibersihkan scheduled task sesuai retention.
 
-```txt
-mod/quiz/accessrule/webcamguard
-```
+## Dokumentasi
 
-Then run Moodle upgrade or open **Site administration → Notifications**.
+- [Panduan Markdown](../../../../docs/guides/webcamguard/README.md)
+- [Panduan PDF](../../../../docs/guides/webcamguard/manual.pdf)
 
-## Usage
-
-1. Edit a quiz.
-2. Enable **Webcam Guard** in quiz settings.
-3. Configure thresholds and optional interval snapshots.
-4. Students must pass the webcam preflight check before starting.
-5. Teachers can open the Webcam Guard report from the quiz restriction description link.
-
-## Evidence behavior
-
-- No continuous video recording.
-- Snapshots are captured on violations when enabled.
-- Interval snapshots are off by default.
-- Evidence is deleted after 30 days by the scheduled cleanup task.
-- Attempt outcomes are not changed automatically; teachers review evidence manually.
-
-## Browser note
-
-The monitor loads a local MediaPipe Face Detection bundle from `mediapipe/face_detection` as the primary detector. If MediaPipe fails to load, it falls back to the browser-native `FaceDetector` API when available. If no detector is available, the plugin still logs camera, tab/window blur, and interval snapshot evidence, and records a `monitoring_error` event so teachers know face-count detection was limited in that browser.
+Lisensi: GNU GPL v3 atau lebih baru.

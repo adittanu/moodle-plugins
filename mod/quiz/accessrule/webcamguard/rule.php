@@ -46,6 +46,9 @@ class quizaccess_webcamguard extends quizaccess_webcamguard_base {
 
     /** @var array Allowed interval snapshot values. */
     const ALLOWED_INTERVALS = [0, 60, 120, 300];
+    /** @var array Allowed live selection refresh intervals in seconds. */
+    const ALLOWED_SELECTION_INTERVALS = [30, 60, 180, 300, 600];
+
 
     /** @var int Minimum threshold in seconds. */
     const MIN_THRESHOLD = 1;
@@ -174,6 +177,19 @@ class quizaccess_webcamguard extends quizaccess_webcamguard_base {
         $mform->addHelpButton('webcamguard_liveenabled', 'liveenabled', 'quizaccess_webcamguard');
         $mform->setDefault('webcamguard_liveenabled', 0);
         $mform->hideIf('webcamguard_liveenabled', 'webcamguard_enabled', 'notchecked');
+        $selectionintervals = [
+            30 => get_string('selectioninterval30', 'quizaccess_webcamguard'),
+            60 => get_string('selectioninterval60', 'quizaccess_webcamguard'),
+            180 => get_string('selectioninterval180', 'quizaccess_webcamguard'),
+            300 => get_string('selectioninterval300', 'quizaccess_webcamguard'),
+            600 => get_string('selectioninterval600', 'quizaccess_webcamguard'),
+        ];
+        $mform->addElement('select', 'webcamguard_selectioninterval',
+            get_string('selectioninterval', 'quizaccess_webcamguard'), $selectionintervals);
+        $mform->addHelpButton('webcamguard_selectioninterval', 'selectioninterval', 'quizaccess_webcamguard');
+        $mform->setDefault('webcamguard_selectioninterval', 60);
+        $mform->hideIf('webcamguard_selectioninterval', 'webcamguard_liveenabled', 'notchecked');
+
 
         $mform->addElement('advcheckbox', 'webcamguard_identityenabled',
             get_string('identityenabled', 'quizaccess_webcamguard'));
@@ -223,6 +239,12 @@ class quizaccess_webcamguard extends quizaccess_webcamguard_base {
         if (!in_array((int)$data['webcamguard_intervalseconds'], self::ALLOWED_INTERVALS, true)) {
             $errors['webcamguard_intervalseconds'] = get_string('invalidinterval', 'quizaccess_webcamguard');
         }
+        if (!in_array((int)($data['webcamguard_selectioninterval'] ?? 60),
+                self::ALLOWED_SELECTION_INTERVALS, true)) {
+            $errors['webcamguard_selectioninterval'] = get_string('invalidselectioninterval',
+                'quizaccess_webcamguard');
+        }
+
 
         foreach (['nofacethreshold', 'multifacethreshold', 'blurthreshold'] as $field) {
             $name = 'webcamguard_' . $field;
@@ -275,6 +297,9 @@ class quizaccess_webcamguard extends quizaccess_webcamguard_base {
                 && in_array($quiz->webcamguard_identitymode, self::ALLOWED_IDENTITY_MODES, true)
                     ? $quiz->webcamguard_identitymode : 'flag',
             'liveenabled' => empty($quiz->webcamguard_liveenabled) ? 0 : 1,
+            'selectioninterval' => isset($quiz->webcamguard_selectioninterval)
+                && in_array((int)$quiz->webcamguard_selectioninterval, self::ALLOWED_SELECTION_INTERVALS, true)
+                    ? (int)$quiz->webcamguard_selectioninterval : 60,
             'devicemode' => isset($quiz->webcamguard_devicemode)
                 && in_array($quiz->webcamguard_devicemode, ['any', 'mobile', 'desktop'], true)
                     ? $quiz->webcamguard_devicemode : 'any',
@@ -317,7 +342,8 @@ class quizaccess_webcamguard extends quizaccess_webcamguard_base {
                 'wg.identityenabled AS webcamguard_identityenabled, ' .
                 'wg.identitythreshold AS webcamguard_identitythreshold, ' .
                 'wg.identitymode AS webcamguard_identitymode, ' .
-                'wg.liveenabled AS webcamguard_liveenabled, wg.devicemode AS webcamguard_devicemode',
+                'wg.liveenabled AS webcamguard_liveenabled, ' .
+                'wg.selectioninterval AS webcamguard_selectioninterval, wg.devicemode AS webcamguard_devicemode',
             'LEFT JOIN {quizaccess_wg_config} wg ON wg.quizid = quiz.id',
             [],
         ];
@@ -374,56 +400,54 @@ class quizaccess_webcamguard extends quizaccess_webcamguard_base {
         $hasprofilepicture = !empty($USER->picture);
         $profileediturl = (new moodle_url('/user/edit.php', ['id' => $USER->id]))->out(false);
 
-        $mform->addElement('header', 'webcamguardpreflightheader', get_string('preflightheader', 'quizaccess_webcamguard'));
-        $mform->addElement('static', 'webcamguardmessage', '', self::render_preflight_warning());
-
-        if ($identityenabled && !$hasprofilepicture) {
-            $mform->addElement('static', 'webcamguardprofilewarning', '',
-                self::render_profile_picture_required($profileediturl, $identitymode));
-        }
-
-        $mform->addElement('advcheckbox', self::FIELD_CONSENT, '', get_string('consentlabel', 'quizaccess_webcamguard'));
+        $mform->addElement('hidden', self::FIELD_CONSENT, 0);
+        $mform->setType(self::FIELD_CONSENT, PARAM_BOOL);
         $mform->addElement('hidden', self::FIELD_READY, 0);
+        $mform->setType(self::FIELD_READY, PARAM_BOOL);
         $mform->addElement('hidden', 'webcamguarddevicevalid', 0);
         $mform->setType('webcamguarddevicevalid', PARAM_BOOL);
-        $mform->addElement('static', 'webcamguarddevicelabel', '',
-            html_writer::div('', 'alert alert-info', ['id' => 'quizaccess-webcamguard-device-label']));
-        $mform->setType(self::FIELD_READY, PARAM_BOOL);
         $mform->addElement('hidden', self::FIELD_IDENTITY_STATUS, '');
         $mform->setType(self::FIELD_IDENTITY_STATUS, PARAM_ALPHANUMEXT);
         $mform->addElement('hidden', self::FIELD_IDENTITY_DISTANCE, '');
         $mform->setType(self::FIELD_IDENTITY_DISTANCE, PARAM_FLOAT);
         $mform->addElement('hidden', self::FIELD_IDENTITY_MESSAGE, '');
         $mform->setType(self::FIELD_IDENTITY_MESSAGE, PARAM_TEXT);
-        $buttonattributes = [
-            'id' => 'quizaccess-webcamguard-startcheck',
-            'class' => 'wcg-check-btn',
-            'data-webcamguard-action' => 'startcheck',
-        ];
-        $mform->addElement('button', 'webcamguardstartcheck', get_string('startcheck', 'quizaccess_webcamguard'),
-            $buttonattributes);
 
-        $html = html_writer::start_div('wcg-camera-card', ['id' => 'quizaccess-webcamguard-preflight']);
-        // Camera wrap with face-state data attribute for glow border.
+        $html = html_writer::start_div('wcg-workspace', ['id' => 'quizaccess-webcamguard-preflight']);
+        $html .= html_writer::start_div('wcg-workspace-head');
+        $html .= html_writer::tag('h2', get_string('preflightheader', 'quizaccess_webcamguard'));
+        $html .= html_writer::tag('p', get_string('description', 'quizaccess_webcamguard'));
+        $html .= html_writer::end_div();
         $html .= html_writer::start_div('wcg-camera-wrap', ['id' => 'wcg-camera-wrap', 'data-face-state' => 'idle']);
         $html .= html_writer::tag('video', '', [
-            'id' => 'quizaccess-webcamguard-video',
-            'autoplay' => 'autoplay',
-            'playsinline' => 'playsinline',
-            'muted' => 'muted',
-            'style' => 'display:none;',
+            'id' => 'quizaccess-webcamguard-video', 'autoplay' => 'autoplay', 'playsinline' => 'playsinline',
+            'muted' => 'muted', 'style' => 'display:none;',
         ]);
-        $html .= html_writer::div(
-            html_writer::tag('i', '&#128247;') .
-            html_writer::tag('span', get_string('cameraplaceholder', 'quizaccess_webcamguard')),
-            'wcg-camera-placeholder', ['id' => 'wcg-camera-placeholder']
-        );
-        $html .= html_writer::end_div(); // .wcg-camera-wrap
+        $html .= html_writer::div(html_writer::tag('span', 'Camera', ['class' => 'wcg-camera-mark']) .
+            html_writer::tag('span', get_string('cameraplaceholder', 'quizaccess_webcamguard')), 'wcg-camera-placeholder',
+            ['id' => 'wcg-camera-placeholder']);
+        $html .= html_writer::end_div();
         $html .= html_writer::tag('canvas', '', ['id' => 'quizaccess-webcamguard-canvas', 'style' => 'display:none;']);
         $html .= self::render_similarity_gauge($this->get_identity_reference_url());
-        $html .= html_writer::div('', '', ['id' => 'quizaccess-webcamguard-status']);
-        $html .= html_writer::end_div(); // .wcg-camera-card
-        $mform->addElement('static', 'webcamguardcheckpreview', '', $html);
+        $html .= html_writer::div('', '', ['id' => 'quizaccess-webcamguard-status', 'role' => 'status']);
+        $html .= html_writer::tag('button', get_string('startcheck', 'quizaccess_webcamguard'), [
+            'id' => 'quizaccess-webcamguard-startcheck', 'class' => 'wcg-check-btn',
+            'data-webcamguard-action' => 'startcheck', 'type' => 'button',
+        ]);
+        $html .= html_writer::div('', 'wcg-device-status', ['id' => 'quizaccess-webcamguard-device-label']);
+        $html .= html_writer::start_div('wcg-consent');
+        $html .= html_writer::tag('input', '', ['type' => 'checkbox', 'id' => 'quizaccess-webcamguard-consent']);
+        $html .= html_writer::tag('label', get_string('consentlabel', 'quizaccess_webcamguard'),
+            ['for' => 'quizaccess-webcamguard-consent']);
+        $html .= html_writer::end_div();
+        $html .= self::render_preflight_warning();
+        $html .= html_writer::end_div();
+        $mform->addElement('static', 'webcamguardworkspace', '', $html);
+
+        if ($identityenabled && !$hasprofilepicture) {
+            $mform->addElement('static', 'webcamguardprofilewarning', '',
+                self::render_profile_picture_required($profileediturl, $identitymode));
+        }
 
         $PAGE->requires->js_call_amd('quizaccess_webcamguard/preflight', 'init', [[
             'readyFieldId' => 'id_' . self::FIELD_READY,
@@ -522,41 +546,34 @@ class quizaccess_webcamguard extends quizaccess_webcamguard_base {
     /**
      * Render a circular gauge similarity indicator.
      *
+     * @param string $referenceurl Profile image URL.
      * @return string
      */
     protected static function render_similarity_gauge($referenceurl = '') {
-        // SVG circle: radius 26, circumference = 2*pi*26 = 163.36
         $output = html_writer::start_div('wcg-similarity-panel', [
             'id' => 'quizaccess-webcamguard-similarity-bar',
+            'style' => 'display:flex;align-items:center;gap:0.8rem;width:100%;margin-top:0.65rem;padding:0.7rem 0.8rem;',
         ]);
-        // Profile picture thumbnail.
         if (!empty($referenceurl)) {
             $output .= html_writer::img($referenceurl, get_string('similaritylabel', 'quizaccess_webcamguard'), [
-                'id' => 'wcg-reference-img',
                 'class' => 'wcg-reference-img',
+                'style' => 'display:block;width:44px;height:44px;flex:0 0 44px;border-radius:50%;object-fit:cover;',
             ]);
         }
-        $output .= '<div class="wcg-gauge" id="wcg-gauge">'
-            . '<svg viewBox="0 0 64 64">'
-            . '<circle class="wcg-gauge-bg" cx="32" cy="32" r="26"></circle>'
+        $output .= '<div class="wcg-gauge" style="position:relative;width:56px;height:56px;flex:0 0 56px">'
+            . '<svg viewBox="0 0 64 64" width="56" height="56" style="display:block;width:56px;height:56px;transform:rotate(-90deg)">'
+            . '<circle class="wcg-gauge-bg" cx="32" cy="32" r="26" fill="none" stroke="#dfe6f0" stroke-width="6"></circle>'
             . '<circle class="wcg-gauge-fill" id="quizaccess-webcamguard-similarity-fill" cx="32" cy="32" r="26"'
-            . ' stroke-dasharray="163.36" stroke-dashoffset="163.36"'
-            . ' data-state="searching"></circle>'
-            . '</svg>'
-            . '<div class="wcg-gauge-value" id="quizaccess-webcamguard-similarity-value">0%</div>'
-            . '</div>';
-        $output .= html_writer::start_div('wcg-similarity-info');
-        $output .= html_writer::div(
-            get_string('similaritylabel', 'quizaccess_webcamguard'),
-            'wcg-similarity-label'
-        );
-        $output .= html_writer::div(
-            get_string('identitysearching', 'quizaccess_webcamguard'),
-            'wcg-similarity-status',
-            ['id' => 'wcg-similarity-status', 'data-state' => 'searching']
-        );
-        $output .= html_writer::end_div(); // .wcg-similarity-info
-        $output .= html_writer::end_div(); // .wcg-similarity-panel
+            . ' fill="none" stroke="#2563eb" stroke-width="6" stroke-linecap="round"'
+            . ' stroke-dasharray="163.36" stroke-dashoffset="163.36" data-state="searching"></circle>'
+            . '</svg><div class="wcg-gauge-value" id="quizaccess-webcamguard-similarity-value"'
+            . ' style="position:absolute;inset:0;display:grid;place-items:center;font-weight:700">0%</div></div>';
+        $output .= html_writer::start_div('wcg-similarity-info', ['style' => 'min-width:0;flex:1 1 auto']);
+        $output .= html_writer::div(get_string('similaritylabel', 'quizaccess_webcamguard'), 'wcg-similarity-label');
+        $output .= html_writer::div(get_string('identitysearching', 'quizaccess_webcamguard'),
+            'wcg-similarity-status', ['id' => 'wcg-similarity-status', 'data-state' => 'searching']);
+        $output .= html_writer::end_div();
+        $output .= html_writer::end_div();
         return $output;
     }
 
@@ -599,8 +616,8 @@ class quizaccess_webcamguard extends quizaccess_webcamguard_base {
             get_string('preflightrulecamera', 'quizaccess_webcamguard'),
         ];
 
-        $output = html_writer::start_div('wcg-warning-card');
-        $output .= html_writer::tag('h5', get_string('preflightwarningtitle', 'quizaccess_webcamguard'));
+        $output = html_writer::start_tag('details', ['class' => 'wcg-rules']);
+        $output .= html_writer::tag('summary', get_string('preflightwarningtitle', 'quizaccess_webcamguard'));
         $output .= html_writer::tag('p', get_string('preflightmessage', 'quizaccess_webcamguard'));
         $output .= html_writer::start_tag('ul');
         foreach ($items as $item) {
@@ -608,9 +625,9 @@ class quizaccess_webcamguard extends quizaccess_webcamguard_base {
         }
         $output .= html_writer::end_tag('ul');
         $output .= html_writer::tag('p', get_string('preflightwarningfooter', 'quizaccess_webcamguard'), [
-            'style' => 'font-weight:600;margin:0;font-size:0.82rem;',
+            'class' => 'wcg-rules-note',
         ]);
-        $output .= html_writer::end_div();
+        $output .= html_writer::end_tag('details');
 
         return $output;
     }

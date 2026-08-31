@@ -13,8 +13,7 @@ define(['core/ajax', 'require'], function(ajax, require) {
         stream: null,
         pollTimer: null,
         stopping: false,
-        currentRoom: '',
-        statusNode: null
+        currentRoom: ''
     };
 
     var call = function(methodname, args) {
@@ -40,26 +39,6 @@ define(['core/ajax', 'require'], function(ajax, require) {
         });
     };
 
-    var setStatus = function(config, text) {
-        if (!state.statusNode) {
-            state.statusNode = document.createElement('div');
-            state.statusNode.style.position = 'fixed';
-            state.statusNode.style.left = '12px';
-            state.statusNode.style.bottom = '12px';
-            state.statusNode.style.zIndex = '9999';
-            state.statusNode.style.padding = '8px 10px';
-            state.statusNode.style.borderRadius = '6px';
-            state.statusNode.style.background = 'rgba(25, 31, 38, 0.92)';
-            state.statusNode.style.color = '#fff';
-            state.statusNode.style.fontSize = '13px';
-            state.statusNode.style.boxShadow = '0 6px 18px rgba(0, 0, 0, 0.18)';
-            state.statusNode.hidden = true;
-            document.body.appendChild(state.statusNode);
-        }
-
-        state.statusNode.textContent = text;
-        state.statusNode.hidden = !text;
-    };
 
     var loadLiveKit = function(scriptUrl) {
         if (window.LivekitClient && window.LivekitClient.Room) {
@@ -99,7 +78,6 @@ define(['core/ajax', 'require'], function(ajax, require) {
         window.setTimeout(function() {
             state.stopping = false;
         }, 1000);
-        setStatus(config, text || '');
         if (logtype) {
             logEvent(config, logtype, {});
         }
@@ -111,7 +89,6 @@ define(['core/ajax', 'require'], function(ajax, require) {
         }
 
         disconnect(config, '', null);
-        setStatus(config, config.strings.starting);
 
         return loadLiveKit(config.scriptUrl).then(function(LK) {
             var room = new LK.Room({
@@ -124,7 +101,6 @@ define(['core/ajax', 'require'], function(ajax, require) {
                     logEvent(config, 'live_disconnected', {
                         room: state.currentRoom
                     });
-                    setStatus(config, config.strings.stopped);
                 }
                 state.room = null;
                 stopLocalTracks();
@@ -152,14 +128,13 @@ define(['core/ajax', 'require'], function(ajax, require) {
                     name: 'webcamguard-live'
                 });
             }).then(function() {
-                setStatus(config, config.strings.live);
                 return logEvent(config, 'live_started', {
                     room: live.roomname,
                     expiresAt: live.expiresat
                 });
             });
         }).catch(function(error) {
-            disconnect(config, config.strings.failed, null);
+            disconnect(config, '', null);
             return logEvent(config, 'live_failed', {
                 room: live.roomname,
                 message: error && error.message ? error.message : String(error)
@@ -168,22 +143,59 @@ define(['core/ajax', 'require'], function(ajax, require) {
     };
 
     var showWarning = function(config, message) {
+        var previous = document.querySelector('[data-region="webcamguard-teacher-message"]');
+        if (previous) {
+            previous.remove();
+        }
+
         var overlay = document.createElement('div');
-        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);';
-        var box = document.createElement('div');
-        box.style.cssText = 'background:#fff;border:4px solid #0d6efd;border-radius:12px;padding:32px 24px;max-width:min(600px,90vw);text-align:center;box-shadow:0 8px 32px rgba(0,0,0,0.3);';
-        box.innerHTML = '<div style="font-size:24px;font-weight:800;color:#0d6efd;margin-bottom:12px;">' +
-            (config.strings.warningFromTeacher || 'Info from trainer') + '</div>' +
-            '<div style="font-size:18px;color:#1f2937;line-height:1.5;">' +
-            message.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</div>' +
-            '<div style="margin-top:20px;font-size:13px;color:#6b7280;">Click anywhere to dismiss</div>';
-        overlay.appendChild(box);
-        overlay.addEventListener('click', function() {
+        overlay.dataset.region = 'webcamguard-teacher-message';
+        overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(15,23,42,.58);padding:24px;';
+
+        var dialog = document.createElement('section');
+        dialog.setAttribute('role', 'alertdialog');
+        dialog.setAttribute('aria-modal', 'true');
+        dialog.setAttribute('aria-labelledby', 'webcamguard-teacher-message-title');
+        dialog.setAttribute('aria-describedby', 'webcamguard-teacher-message-body');
+        dialog.style.cssText = 'width:min(440px,100%);overflow:hidden;background:#fff;border:1px solid #dfe3e8;border-radius:14px;box-shadow:0 20px 48px rgba(15,23,42,.24);';
+
+        var header = document.createElement('div');
+        header.style.cssText = 'padding:20px 24px 12px;';
+        header.innerHTML = '<div style="margin-bottom:6px;color:#667085;font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;">Webcam Guard</div>' +
+            '<h2 id="webcamguard-teacher-message-title" style="margin:0;color:#1d2939;font-size:20px;font-weight:650;line-height:1.3;">Pesan dari pengajar</h2>';
+
+        var body = document.createElement('p');
+        body.id = 'webcamguard-teacher-message-body';
+        body.style.cssText = 'margin:0;padding:4px 24px 22px;color:#344054;font-size:16px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;';
+        body.textContent = message;
+
+        var footer = document.createElement('div');
+        footer.style.cssText = 'display:flex;justify-content:flex-end;padding:14px 24px;background:#f8fafc;border-top:1px solid #eaecf0;';
+        var dismiss = document.createElement('button');
+        dismiss.type = 'button';
+        dismiss.className = 'btn btn-primary';
+        dismiss.textContent = 'Mengerti';
+        footer.appendChild(dismiss);
+
+        dialog.appendChild(header);
+        dialog.appendChild(body);
+        dialog.appendChild(footer);
+        overlay.appendChild(dialog);
+
+        var onKeydown = function(event) {
+            if (event.key === 'Escape') {
+                close();
+            }
+        };
+        var close = function() {
+            document.removeEventListener('keydown', onKeydown);
             overlay.remove();
-        });
+        };
+        dismiss.addEventListener('click', close);
+        document.addEventListener('keydown', onKeydown);
         document.body.appendChild(overlay);
-        // Auto-dismiss after 30 seconds.
-        setTimeout(function() { if (overlay.parentNode) overlay.remove(); }, 30000);
+        dismiss.focus();
+        setTimeout(close, 30000);
     };
 
     var poll = function(config) {

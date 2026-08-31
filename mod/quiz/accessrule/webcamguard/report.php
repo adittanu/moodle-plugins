@@ -16,6 +16,7 @@ require_once(__DIR__ . '/locallib.php');
 $cmid = required_param('cmid', PARAM_INT);
 $status = optional_param('status', '', PARAM_ALPHANUMEXT);
 $page = optional_param('page', 0, PARAM_INT);
+$downloadcsv = optional_param('downloadcsv', 0, PARAM_BOOL);
 $perpage = 20;
 
 $cm = get_coursemodule_from_id('quiz', $cmid, 0, false, MUST_EXIST);
@@ -124,6 +125,43 @@ foreach ($rows as $row) {
     }
 }
 
+if ($downloadcsv) {
+    $exportrows = $DB->get_records_sql($sql, $params);
+    $filename = clean_filename('webcam-guard-report-' . $quiz->id . '-' . date('Y-m-d') . '.csv');
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('X-Content-Type-Options: nosniff');
+    $stream = fopen('php://output', 'w');
+    fputs($stream, "\xEF\xBB\xBF");
+    fputcsv($stream, [
+        get_string('student', 'quizaccess_webcamguard'),
+        get_string('attempt', 'quizaccess_webcamguard'),
+        get_string('status', 'quizaccess_webcamguard'),
+        get_string('eventcount', 'quizaccess_webcamguard'),
+        get_string('violationcount', 'quizaccess_webcamguard'),
+        get_string('riskscore', 'quizaccess_webcamguard'),
+        get_string('topviolationtype', 'quizaccess_webcamguard'),
+    ]);
+    foreach ($exportrows as $row) {
+        $top = isset($topbyattempt[$row->attemptid]) ? $topbyattempt[$row->attemptid] : null;
+        $values = [
+            fullname($row),
+            (int)$row->attempt,
+            get_string($row->status, 'quizaccess_webcamguard'),
+            (int)$row->eventcount,
+            (int)$row->violationcount,
+            (int)$row->riskscore,
+            $top ? quizaccess_webcamguard_live_event_name($top->eventtype) : '-',
+        ];
+        fputcsv($stream, array_map(function($value) {
+            $value = (string)$value;
+            return preg_match('/^[=+\\-@]/', $value) ? "'" . $value : $value;
+        }, $values));
+    }
+    fclose($stream);
+    exit;
+}
+
 $summaryparams = ['quizid' => $quiz->id];
 $summarystatussql = '';
 if ($status !== '') {
@@ -177,6 +215,15 @@ $form .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'cmid', 
 $form .= html_writer::label(get_string('status', 'quizaccess_webcamguard'), 'id_status', false, ['class' => 'mr-2']);
 $form .= html_writer::select($options, 'status', $status, false, ['id' => 'id_status']);
 $form .= html_writer::empty_tag('input', ['type' => 'submit', 'class' => 'btn btn-secondary ml-2', 'value' => get_string('filter')]);
+$exportparams = ['cmid' => $cmid, 'downloadcsv' => 1];
+if ($status !== '') {
+    $exportparams['status'] = $status;
+}
+$exporturl = new moodle_url('/mod/quiz/accessrule/webcamguard/report.php', $exportparams);
+$form .= html_writer::link($exporturl, get_string('exportcsv', 'quizaccess_webcamguard'), [
+    'class' => 'btn btn-outline-secondary ml-2',
+    'title' => get_string('exportcsv_help', 'quizaccess_webcamguard'),
+]);
 $form .= html_writer::end_tag('form');
 
 require_once(__DIR__ . '/classes/output/report_page.php');
@@ -194,6 +241,8 @@ if ($liveenabled) {
         'scriptUrl' => $CFG->wwwroot . '/mod/quiz/accessrule/webcamguard/livekit/livekit-client.umd.js',
         'emptyImageUrl' => $CFG->wwwroot . '/mod/quiz/accessrule/webcamguard/pix/live-monitor-empty.png',
         'limit' => 20,
+        'selectionIntervalSeconds' => !empty($webcamguardconfig->selectioninterval)
+            ? (int)$webcamguardconfig->selectioninterval : 60,
         'candidates' => $livecandidates,
         'strings' => [
             'idle' => get_string('livestatusidle', 'quizaccess_webcamguard'),

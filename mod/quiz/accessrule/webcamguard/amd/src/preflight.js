@@ -151,22 +151,13 @@ define([], function() {
         var fill = document.getElementById('quizaccess-webcamguard-similarity-fill');
         var valueEl = document.getElementById('quizaccess-webcamguard-similarity-value');
         var statusEl = document.getElementById('wcg-similarity-status');
-
         if (fill) {
-            fill.setAttribute('stroke-dasharray', GAUGE_CIRCUMFERENCE);
             var offset = GAUGE_CIRCUMFERENCE - (GAUGE_CIRCUMFERENCE * percent / 100);
-            fill.setAttribute('stroke-dashoffset', offset);
             fill.style.strokeDashoffset = offset;
             fill.setAttribute('data-state', state);
-            var colors = {matched: '#22c55e', mismatch: '#ef4444', searching: '#6366f1'};
-            fill.style.stroke = colors[state] || '#6366f1';
         }
-        if (valueEl) {
-            valueEl.textContent = Math.round(percent) + '%';
-        }
-        if (statusEl) {
-            statusEl.setAttribute('data-state', state);
-        }
+        if (valueEl) { valueEl.textContent = Math.round(percent) + '%'; }
+        if (statusEl) { statusEl.setAttribute('data-state', state); }
     };
 
     var setSimilarityStatus = function(text, state) {
@@ -423,28 +414,36 @@ define([], function() {
     var ensureLayout = function() {
         var form = document.getElementById('mod_quiz_preflight_form');
         if (!form || form.dataset.wcgLayout === '1') { return; }
-
         var fieldset = form.querySelector('fieldset[id*="webcamguardpreflightheader"]') || form.querySelector('fieldset');
+        form.classList.add('full-width-labels');
         if (!fieldset) { return; }
         var container = fieldset.querySelector('.fcontainer') || fieldset;
         container.classList.add('wcg-grid');
-
         var areaMap = {
             webcamguardmessage: 'warning',
             webcamguardprofilewarning: 'profile',
             webcamguardconsent: 'consent',
+            webcamguarddevicelabel: 'device',
             webcamguardcheckpreview: 'camera',
-            webcamguardstartcheck: 'startcheck',
+            webcamguardstartcheck: 'startcheck'
         };
         Array.prototype.forEach.call(container.children, function(child) {
-            var id = child.id || '';
-            var m = id.match(/^fitem_id_(.+)$/);
-            var key = m ? m[1] : null;
-            if (key && areaMap[key]) {
-                child.setAttribute('data-wcg-area', areaMap[key]);
+            var match = (child.id || '').match(/^fitem_id_(.+)$/);
+            if (match && areaMap[match[1]]) {
+                child.setAttribute('data-wcg-area', areaMap[match[1]]);
             }
         });
         form.dataset.wcgLayout = '1';
+    };
+    var bindWorkspaceConsent = function(config) {
+        var formField = getField(config.consentFieldId, config.consentFieldName);
+        var workspaceField = document.getElementById('quizaccess-webcamguard-consent');
+        if (!formField || !workspaceField || workspaceField.dataset.wcgBound) { return; }
+        workspaceField.checked = formField.value === '1';
+        workspaceField.dataset.wcgBound = '1';
+        workspaceField.addEventListener('change', function() {
+            formField.value = workspaceField.checked ? '1' : '0';
+        });
     };
 
     // ─── Button detection ──────────────────────────────────────────────
@@ -467,9 +466,9 @@ define([], function() {
 
     var init = function(config) {
         setDeviceValidity(config);
-        window.addEventListener('resize', function() { setDeviceValidity(config); });
         var tryBind = function() {
             ensureLayout();
+            bindWorkspaceConsent(config);
             var button = findButton(config);
             if (button && !button.dataset.wcgBound) {
                 button.dataset.wcgBound = '1';

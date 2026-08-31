@@ -67,6 +67,16 @@ class report_page {
 
         $output .= \html_writer::start_div('modal-body');
         $output .= \html_writer::start_div('quizaccess-webcamguard-livecontrols');
+        $output .= \html_writer::label(get_string('livesearch', 'quizaccess_webcamguard'),
+            'quizaccess-webcamguard-live-search', false, ['class' => 'sr-only']);
+        $output .= \html_writer::tag('input', '', [
+            'type' => 'search',
+            'id' => 'quizaccess-webcamguard-live-search',
+            'class' => 'form-control',
+            'placeholder' => get_string('livesearchplaceholder', 'quizaccess_webcamguard'),
+            'data-region' => 'webcamguard-live-search',
+            'autocomplete' => 'off',
+        ]);
         $output .= \html_writer::label(get_string('livemonitormode', 'quizaccess_webcamguard'),
             'quizaccess-webcamguard-live-filter', false, ['class' => 'sr-only']);
         $output .= \html_writer::select([
@@ -129,18 +139,24 @@ class report_page {
         $output .= \html_writer::start_div('quizaccess-webcamguard-livepagination', [
             'data-region' => 'webcamguard-live-pagination',
         ]);
-        $output .= \html_writer::tag('button', '←', [
+        $output .= \html_writer::tag('button', '&lsaquo;', [
             'type' => 'button',
-            'class' => 'btn btn-sm btn-outline-secondary',
+            'class' => 'btn btn-outline-secondary quizaccess-webcamguard-pagebutton',
             'data-action' => 'webcamguard-live-prev',
-            'style' => 'padding:0 6px;',
+            'aria-label' => get_string('previous'),
         ]);
-        $output .= ' <span data-region="webcamguard-live-range">0</span>/<span data-region="webcamguard-live-total">0</span> ';
-        $output .= \html_writer::tag('button', '→', [
+        $output .= \html_writer::start_tag('span', ['class' => 'quizaccess-webcamguard-pageinfo']);
+        $output .= \html_writer::span(get_string('livepage', 'quizaccess_webcamguard'),
+            'quizaccess-webcamguard-pagelabel');
+        $output .= ' <strong data-region="webcamguard-live-page">1</strong>';
+        $output .= ' <span class="text-muted">' . get_string('livepageof', 'quizaccess_webcamguard') . '</span> ';
+        $output .= '<strong data-region="webcamguard-live-pages">1</strong>';
+        $output .= \html_writer::end_tag('span');
+        $output .= \html_writer::tag('button', '&rsaquo;', [
             'type' => 'button',
-            'class' => 'btn btn-sm btn-outline-secondary',
+            'class' => 'btn btn-outline-secondary quizaccess-webcamguard-pagebutton',
             'data-action' => 'webcamguard-live-next',
-            'style' => 'padding:0 6px;',
+            'aria-label' => get_string('next'),
         ]);
         $output .= \html_writer::end_div();
         $output .= \html_writer::end_div();
@@ -236,6 +252,39 @@ class report_page {
     border-radius: 50%;
     animation: quizaccess-webcamguard-spin .7s linear infinite;
     z-index: 2;
+}
+.quizaccess-webcamguard-livepagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    min-height: 64px;
+    padding: 14px 0 4px;
+}
+.quizaccess-webcamguard-pagebutton {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 8px;
+    font-size: 24px;
+    line-height: 1;
+}
+.quizaccess-webcamguard-pagebutton:disabled {
+    color: #98a2b3;
+    background: #f2f4f7;
+    border-color: #eaecf0;
+    opacity: 1;
+}
+.quizaccess-webcamguard-pageinfo {
+    min-width: 116px;
+    color: #344054;
+    text-align: center;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+}
+.quizaccess-webcamguard-pagelabel {
+    margin-right: 3px;
+    color: #667085;
 }
 @keyframes quizaccess-webcamguard-spin {
     to { transform: rotate(360deg); }

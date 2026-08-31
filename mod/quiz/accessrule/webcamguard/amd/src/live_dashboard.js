@@ -15,12 +15,14 @@ define(["core/ajax", "require"], function (ajax, require) {
 		livekit: null,
 		pollTimer: null,
 		candidateTimer: null,
+		selectionTimer: null,
 		pollInflight: false,
 		pollVisible: false,
 		lastSeenViolationId: {},
 		consecutiveFailures: 0,
 		livePage: 0,
 		livePerPage: 20,
+		searchQuery: "",
 	};
 
 	var POLL_INTERVAL_MS = 4000;
@@ -248,6 +250,21 @@ define(["core/ajax", "require"], function (ajax, require) {
 							candidate.lastViolationEventId || 0;
 					}
 				});
+				var mode = root.querySelector('[data-region="webcamguard-live-filter"]').value;
+				var limit = Math.max(1, config.limit || 20);
+				var filtered = pickCandidates(mode, 9999);
+				var maxPage = Math.max(0, Math.ceil(filtered.length / limit) - 1);
+				state.livePage = Math.min(state.livePage, maxPage);
+				var desired = filtered.slice(state.livePage * limit, (state.livePage + 1) * limit);
+				var currentIds = state.selected.map(function (item) { return Number(item.attemptid); }).join(",");
+				var desiredIds = desired.map(function (item) { return Number(item.attemptid); }).join(",");
+				if (currentIds !== desiredIds) {
+					stopAll(config, root).then(function () {
+						render(config, root);
+						startSelection(config, root);
+					});
+					return;
+				}
 
 				// Auto-reorder tiles by risk score (highest first).
 				var grid = root.querySelector('[data-region="webcamguard-live-grid"]');
@@ -331,7 +348,6 @@ define(["core/ajax", "require"], function (ajax, require) {
 
 				if (changed) {
 					render(config, root);
-					// Auto-start any newly appeared candidates.
 					state.selected.forEach(function (candidate) {
 						if (!candidate.liveChecked) {
 							startCandidate(config, root, candidate);
@@ -360,6 +376,12 @@ define(["core/ajax", "require"], function (ajax, require) {
 		state.candidateTimer = window.setInterval(function () {
 			pollCandidates(config, root);
 		}, 5000);
+		state.selectionTimer = window.setInterval(function () {
+			stopAll(config, root).then(function () {
+				render(config, root);
+				startSelection(config, root);
+			});
+		}, Math.max(30, Number(config.selectionIntervalSeconds) || 60) * 1000);
 		// Kick off an immediate refresh so the first frame is fresh.
 		window.setTimeout(function () {
 			pollStats(config, root);
@@ -377,10 +399,20 @@ define(["core/ajax", "require"], function (ajax, require) {
 			window.clearInterval(state.candidateTimer);
 			state.candidateTimer = null;
 		}
+		if (state.selectionTimer) {
+			window.clearInterval(state.selectionTimer);
+			state.selectionTimer = null;
+		}
 	};
 
 	var pickCandidates = function (mode, limit) {
 		var picked = state.candidates.slice();
+		if (state.searchQuery) {
+			picked = picked.filter(function (candidate) {
+				var haystack = ((candidate.fullname || "") + " " + (candidate.email || "")).toLocaleLowerCase();
+				return haystack.indexOf(state.searchQuery) !== -1;
+			});
+		}
 
 		if (mode === "random") {
 			return shuffle(picked).slice(0, limit);
@@ -485,17 +517,20 @@ define(["core/ajax", "require"], function (ajax, require) {
 		// Update pagination info.
 		var pagination = root.querySelector('[data-region="webcamguard-live-pagination"]');
 		if (pagination) {
-			var rangeEl = pagination.querySelector('[data-region="webcamguard-live-range"]');
-			var totalEl = pagination.querySelector('[data-region="webcamguard-live-total"]');
+			pagination.style.display = total > 0 ? "flex" : "none";
+			var pageEl = pagination.querySelector('[data-region="webcamguard-live-page"]');
+			var pagesEl = pagination.querySelector('[data-region="webcamguard-live-pages"]');
 			var prev = pagination.querySelector('[data-action="webcamguard-live-prev"]');
 			var next = pagination.querySelector('[data-action="webcamguard-live-next"]');
-			if (rangeEl) rangeEl.textContent = state.selected.length;
-			if (totalEl) totalEl.textContent = total;
+			if (pageEl) pageEl.textContent = state.livePage + 1;
+			if (pagesEl) pagesEl.textContent = pages;
 			if (prev) {
-				prev.style.display = state.livePage > 0 ? "" : "none";
+				prev.style.display = "";
+				prev.disabled = state.livePage === 0;
 			}
 			if (next) {
-				next.style.display = state.livePage < pages - 1 ? "" : "none";
+				next.style.display = "";
+				next.disabled = state.livePage >= pages - 1;
 			}
 		}
 
@@ -544,6 +579,8 @@ define(["core/ajax", "require"], function (ajax, require) {
 						(candidate.lastEventTime && (Date.now() / 1000 - candidate.lastEventTime) < 60 ? 'Online' : 'Offline') +
 					'</span>',
 					"</div>",
+					'<div class="text-muted" style="font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="' +
+						escapeHtml(candidate.email || "") + '">' + escapeHtml(candidate.email || "") + '</div>',
 					'<div class="quizaccess-webcamguard-livemeta">',
 					'<span class="badge ' +
 						badgeClass(candidate) +
@@ -733,6 +770,17 @@ define(["core/ajax", "require"], function (ajax, require) {
 			// Re-auto-start when modal is shown again (closed & re-opened).
 			// Handled in the jQuery shown.bs.modal block below.
 
+			var search = root.querySelector('[data-region="webcamguard-live-search"]');
+			if (search) {
+				search.addEventListener("input", function () {
+					state.searchQuery = search.value.trim().toLocaleLowerCase();
+					state.livePage = 0;
+					stopAll(config, root).then(function () {
+						render(config, root);
+						startSelection(config, root);
+					});
+				});
+			}
 			var filter = root.querySelector(
 				'[data-region="webcamguard-live-filter"]',
 			);
@@ -748,6 +796,7 @@ define(["core/ajax", "require"], function (ajax, require) {
 
 			if (filter) {
 				filter.addEventListener("change", function () {
+					state.livePage = 0;
 					stopAll(config, root).then(function () {
 						render(config, root);
 						window.setTimeout(function () {

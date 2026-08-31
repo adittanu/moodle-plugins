@@ -35,32 +35,24 @@ function quizaccess_webcamguard_get_live_candidates($quiz, $cmid) {
     global $DB;
 
     $cutoff = time() - 120;
-    $hiddentypes = ['heartbeat', 'live_started', 'live_disconnected', 'live_requested', 'live_stopped', 'warning_sent'];
-    [$eventtypesql, $eventtypeparams] = $DB->get_in_or_equal($hiddentypes, SQL_PARAMS_NAMED, 'evtype', false, false);
+    $heartbeattype = 'heartbeat';
     $namefields = get_all_user_name_fields(true, 'u');
     $attempts = $DB->get_records_sql(
         "SELECT qa.id AS attemptid, qa.userid, qa.attempt, qa.timestart, qa.timemodified,
-                $namefields
+                u.email, $namefields
            FROM {quiz_attempts} qa
            JOIN {user} u ON u.id = qa.userid
           WHERE qa.quiz = :quizid
             AND qa.state = :state
-            AND (
-                qa.timemodified >= :cutoff1
-                OR qa.timestart >= :cutoff2
-                OR EXISTS (
-                    SELECT 1 FROM {quizaccess_wg_events} e
-                     WHERE e.attemptid = qa.id
-                       AND e.eventtype {$eventtypesql}
-                       AND e.timecreated >= :cutoff3
-                )
+            AND EXISTS (
+                SELECT 1 FROM {quizaccess_wg_events} e
+                 WHERE e.attemptid = qa.id
+                   AND e.eventtype = :heartbeattype
+                   AND e.timecreated >= :cutoff
             )
        ORDER BY qa.timemodified DESC, qa.id DESC",
-        array_merge(
-            ['quizid' => $quiz->id, 'state' => 'inprogress',
-             'cutoff1' => $cutoff, 'cutoff2' => $cutoff, 'cutoff3' => $cutoff],
-            $eventtypeparams
-        )
+        ['quizid' => $quiz->id, 'state' => 'inprogress',
+         'heartbeattype' => $heartbeattype, 'cutoff' => $cutoff]
     );
 
     if (!$attempts) {
@@ -152,6 +144,7 @@ function quizaccess_webcamguard_get_live_candidates($quiz, $cmid) {
             'userid' => (int)$attempt->userid,
             'attempt' => (int)$attempt->attempt,
             'fullname' => fullname($attempt),
+            'email' => $attempt->email,
             'eventCount' => (int)$attemptstats['eventcount'],
             'violationCount' => (int)$attemptstats['violationcount'],
             'riskScore' => (int)$attemptstats['riskscore'],
