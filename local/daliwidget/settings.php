@@ -50,9 +50,9 @@ if (!class_exists('local_daliwidget_admin_setting_persona_text')) {
     /** Private plain-text instruction with a strict maximum length. */
     class local_daliwidget_admin_setting_persona_text extends admin_setting_configtextarea {
         public function validate($data) {
-            return core_text::strlen(trim((string) $data)) <= 2000
+            return core_text::strlen(trim((string) $data)) <= 10000
                 ? true
-                : get_string('appearance_too_long', 'local_daliwidget', 2000);
+                : get_string('appearance_too_long', 'local_daliwidget', 10000);
         }
     }
 }

@@ -73,7 +73,7 @@ $string['speaking_style_casual'] = 'Casual';
 $string['speaking_style_concise'] = 'Concise';
 $string['speaking_style_tutor'] = 'Tutor/Socratic';
 $string['custom_instruction'] = 'Custom instruction';
-$string['custom_instruction_desc'] = 'Optional, up to 2,000 characters. Sent to an AI service. Do not include passwords, API keys, personal data, or institutional secrets.';
+$string['custom_instruction_desc'] = 'Optional, up to 10,000 characters. Sent to an AI service. Do not include passwords, API keys, personal data, or institutional secrets.';
 
 
 // Widget

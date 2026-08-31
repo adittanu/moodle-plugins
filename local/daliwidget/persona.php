@@ -31,7 +31,7 @@ if (!fetch_auth_helper::validate($userid, $expires, $signature)) {
 $style = (string) (get_config('local_daliwidget', 'speaking_style') ?: 'default');
 $instruction = trim((string) get_config('local_daliwidget', 'custom_instruction'));
 if (!in_array($style, ['default', 'professional', 'friendly', 'casual', 'concise', 'tutor'], true)
-        || core_text::strlen($instruction) > 2000) {
+        || core_text::strlen($instruction) > 10000) {
     http_response_code(422);
     echo json_encode(['success' => false, 'error' => 'Invalid persona configuration.']);
     exit;
