@@ -37,6 +37,8 @@ class report_page {
             'class' => 'btn btn-primary',
             'data-toggle' => 'modal',
             'data-target' => '#quizaccess-webcamguard-live-dashboard',
+            'data-bs-toggle' => 'modal',
+            'data-bs-target' => '#quizaccess-webcamguard-live-dashboard',
         ]);
         $output .= \html_writer::end_div();
 
@@ -61,6 +63,7 @@ class report_page {
                 'type' => 'button',
                 'class' => 'close',
                 'data-dismiss' => 'modal',
+                'data-bs-dismiss' => 'modal',
                 'aria-label' => get_string('closebuttontitle'),
             ]);
         $output .= \html_writer::end_div();
@@ -166,6 +169,7 @@ class report_page {
             'type' => 'button',
             'class' => 'btn btn-secondary',
             'data-dismiss' => 'modal',
+            'data-bs-dismiss' => 'modal',
         ]);
         $output .= \html_writer::end_div();
 

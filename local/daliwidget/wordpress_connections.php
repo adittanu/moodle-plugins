@@ -74,7 +74,9 @@ foreach ($connections as $connection) {
     $deleteBtn = html_writer::link(
         $PAGE->url . '#delete-' . $connection['id'],
         get_string('delete'),
-        ['class' => 'btn btn-sm btn-link text-danger', 'data-toggle' => 'collapse', 'data-target' => '#delete-confirm-' . $connection['id']]
+        ['class' => 'btn btn-sm btn-link text-danger',
+            'data-toggle' => 'collapse', 'data-target' => '#delete-confirm-' . $connection['id'],
+            'data-bs-toggle' => 'collapse', 'data-bs-target' => '#delete-confirm-' . $connection['id']]
     );
 
     $impact = '';

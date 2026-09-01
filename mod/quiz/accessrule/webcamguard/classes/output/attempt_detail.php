@@ -280,7 +280,7 @@ class attempt_detail {
             ['class' => 'modal-title']);
         $output .= \html_writer::tag('button',
             \html_writer::span('&times;', '', ['aria-hidden' => 'true']), [
-                'type' => 'button', 'class' => 'close', 'data-dismiss' => 'modal',
+                'type' => 'button', 'class' => 'close', 'data-dismiss' => 'modal', 'data-bs-dismiss' => 'modal',
                 'aria-label' => get_string('close', 'moodle'),
             ]);
         $output .= \html_writer::end_div();
