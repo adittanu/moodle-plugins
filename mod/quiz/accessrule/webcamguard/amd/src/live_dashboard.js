@@ -106,7 +106,10 @@ define(["core/ajax", "require"], function (ajax, require) {
 		if (a.liveChecked !== b.liveChecked) {
 			return a.liveChecked ? 1 : -1;
 		}
-		return b.lastEventTime - a.lastEventTime;
+		if (b.lastEventTime !== a.lastEventTime) {
+			return b.lastEventTime - a.lastEventTime;
+		}
+		return Number(a.attemptid) - Number(b.attemptid);
 	};
 
 	var applyStatsToCandidate = function (candidate, fresh) {
@@ -250,37 +253,6 @@ define(["core/ajax", "require"], function (ajax, require) {
 							candidate.lastViolationEventId || 0;
 					}
 				});
-				var mode = root.querySelector('[data-region="webcamguard-live-filter"]').value;
-				var limit = Math.max(1, config.limit || 20);
-				var filtered = pickCandidates(mode, 9999);
-				var maxPage = Math.max(0, Math.ceil(filtered.length / limit) - 1);
-				state.livePage = Math.min(state.livePage, maxPage);
-				var desired = filtered.slice(state.livePage * limit, (state.livePage + 1) * limit);
-				var currentIds = state.selected.map(function (item) { return Number(item.attemptid); }).join(",");
-				var desiredIds = desired.map(function (item) { return Number(item.attemptid); }).join(",");
-				if (currentIds !== desiredIds) {
-					stopAll(config, root).then(function () {
-						render(config, root);
-						startSelection(config, root);
-					});
-					return;
-				}
-
-				// Auto-reorder tiles by risk score (highest first).
-				var grid = root.querySelector('[data-region="webcamguard-live-grid"]');
-				if (grid) {
-					state.selected.sort(function (a, b) {
-						if (b.riskScore !== a.riskScore) return b.riskScore - a.riskScore;
-						if (b.violationCount !== a.violationCount) return b.violationCount - a.violationCount;
-						return b.lastEventTime - a.lastEventTime;
-					});
-					state.selected.forEach(function (candidate) {
-						var tile = grid.querySelector('[data-tile-for="' + candidate.attemptid + '"]');
-						if (tile) {
-							grid.appendChild(tile);
-						}
-					});
-				}
 				state.consecutiveFailures = 0;
 				var countRegion = root.querySelector('[data-region="webcamguard-live-count"]');
 				if (countRegion && countRegion.dataset.pollError) {
