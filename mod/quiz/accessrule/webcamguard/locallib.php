@@ -36,7 +36,7 @@ function quizaccess_webcamguard_get_live_candidates($quiz, $cmid) {
 
     $cutoff = time() - 120;
     $heartbeattype = 'heartbeat';
-    $namefields = get_all_user_name_fields(true, 'u');
+    $namefields = \core_user\fields::for_name()->get_sql('u', false, '', '', false)->selects;
     $attempts = $DB->get_records_sql(
         "SELECT qa.id AS attemptid, qa.userid, qa.attempt, qa.timestart, qa.timemodified,
                 u.email, $namefields

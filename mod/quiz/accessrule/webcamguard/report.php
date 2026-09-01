@@ -50,7 +50,7 @@ if ($status !== '') {
 }
 
 // Risk score SQL below uses weights matching quizaccess_webcamguard::EVENT_WEIGHTS.
-$namefields = get_all_user_name_fields(true, 'u');
+$namefields = \core_user\fields::for_name()->get_sql('u', false, '', '', false)->selects;
 $fromwhere = "FROM {quizaccess_wg_reviews} r
           JOIN {quiz_attempts} qa ON qa.id = r.attemptid
           JOIN {user} u ON u.id = r.userid
