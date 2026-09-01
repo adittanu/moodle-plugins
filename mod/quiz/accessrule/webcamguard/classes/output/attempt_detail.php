@@ -166,6 +166,8 @@ class attempt_detail {
                 'class' => 'quizaccess-webcamguard-eventcard',
                 'data-toggle' => 'modal',
                 'data-target' => '#' . $modalid,
+                'data-bs-toggle' => 'modal',
+                'data-bs-target' => '#' . $modalid,
                 'aria-label' => get_string('viewdetails', 'quizaccess_webcamguard') . ': ' .
                     self::event_name($displaytype),
             ]);
