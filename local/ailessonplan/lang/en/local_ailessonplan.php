@@ -163,3 +163,4 @@ $string['mod_choice'] = 'Choice placeholder';
 $string['mod_feedback'] = 'Feedback placeholder';
 $string['mod_glossary'] = 'Glossary placeholder';
 $string['mod_wiki'] = 'Wiki placeholder';
+$string['plannotfound'] = 'This lesson plan no longer exists.';

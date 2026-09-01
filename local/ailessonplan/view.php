@@ -18,7 +18,15 @@ $id = required_param('id', PARAM_INT);
 $download = optional_param('download', 0, PARAM_BOOL);
 $action = optional_param('action', '', PARAM_ALPHA);
 
-$record = $DB->get_record('local_ailessonplan', ['id' => $id], '*', MUST_EXIST);
+$record = $DB->get_record('local_ailessonplan', ['id' => $id], '*', IGNORE_MISSING);
+if (!$record) {
+    $courseid = optional_param('courseid', 0, PARAM_INT);
+    if ($courseid > 0) {
+        redirect(new moodle_url('/local/ailessonplan/index.php', ['courseid' => $courseid]),
+            get_string('plannotfound', 'local_ailessonplan'), null, \core\output\notification::NOTIFY_ERROR);
+    }
+    throw new moodle_exception('plannotfound', 'local_ailessonplan');
+}
 $course = $DB->get_record('course', ['id' => $record->courseid], '*', MUST_EXIST);
 $context = context_course::instance($course->id);
 
