@@ -25,6 +25,12 @@ if (class_exists(\mod_quiz\local\access_rule_base::class)) {
     class_alias(\quiz_access_rule_base::class, 'quizaccess_webcamguard_base');
 }
 
+if (class_exists(\mod_quiz\form\preflight_check_form::class)) {
+    class_alias(\mod_quiz\form\preflight_check_form::class, 'quizaccess_webcamguard_preflight_form');
+} else {
+    class_alias(\mod_quiz_preflight_check_form::class, 'quizaccess_webcamguard_preflight_form');
+}
+
 /**
  * Quiz access rule that requires webcam monitoring and logs evidence for teacher review.
  */
@@ -386,11 +392,11 @@ class quizaccess_webcamguard extends quizaccess_webcamguard_base {
     /**
      * Add consent and webcam readiness fields to the preflight form.
      *
-     * @param mod_quiz_preflight_check_form $quizform Preflight form.
+     * @param quizaccess_webcamguard_preflight_form $quizform Preflight form.
      * @param MoodleQuickForm $mform MForm.
      * @param int|null $attemptid Attempt id.
      */
-    public function add_preflight_check_form_fields(mod_quiz_preflight_check_form $quizform,
+    public function add_preflight_check_form_fields(quizaccess_webcamguard_preflight_form $quizform,
             MoodleQuickForm $mform, $attemptid) {
         global $CFG, $PAGE, $USER;
 
