@@ -424,11 +424,6 @@ if ($mform->is_cancelled()) {
     }
 
     echo $OUTPUT->header();
-    echo $OUTPUT->heading(get_string('generating', 'local_aiquizgen'));
-
-    echo html_writer::start_div('alert alert-info');
-    echo html_writer::tag('p', get_string('generating', 'local_aiquizgen'));
-    echo html_writer::end_div();
 
     try {
         $pdfcontent = '';
@@ -479,9 +474,6 @@ if ($mform->is_cancelled()) {
         }
         // Handle uploaded PDF file
         else if (!empty($data->pdffile)) {
-            echo html_writer::start_div('alert alert-info');
-            echo html_writer::tag('p', get_string('extractingpdf', 'local_aiquizgen'));
-            echo html_writer::end_div();
 
             $fs = get_file_storage();
 

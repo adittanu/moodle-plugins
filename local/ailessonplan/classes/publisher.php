@@ -94,6 +94,8 @@ class publisher {
                 'name' => $title,
             ];
             if (trim((string)($section->summary ?? '')) !== trim($summary) || trim((string)($section->name ?? '')) !== trim($title)) {
+                // Moodle 5.1 resolves updates through cached section_info objects.
+                get_fast_modinfo($course, 0, true);
                 course_update_section($course, $section, $update);
                 $sectionsupdated++;
             }
@@ -171,6 +173,8 @@ class publisher {
             'name' => $title,
         ];
         if (trim((string)($section->summary ?? '')) !== trim($summary) || trim((string)($section->name ?? '')) !== trim($title)) {
+            // Moodle 5.1 resolves updates through cached section_info objects.
+            get_fast_modinfo($course, 0, true);
             course_update_section($course, $section, $update);
             $sectionsupdated++;
         }
