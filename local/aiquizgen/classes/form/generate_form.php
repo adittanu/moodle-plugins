@@ -151,42 +151,8 @@ class generate_form extends \moodleform {
         $mform->addHelpButton('language', 'language', 'local_aiquizgen');
 
         if (isset($customdata['courseid'])) {
-            global $DB;
             $courseid = (int)$customdata['courseid'];
-
-            $coursecontext = \context_course::instance($courseid);
-            $pathids = array_filter(array_map('intval', explode('/', trim((string)$coursecontext->path, '/'))));
-
-            if (empty($pathids)) {
-                $pathids = [$coursecontext->id, \context_system::instance()->id];
-            }
-
-            list($incontexts, $contextparams) = $DB->get_in_or_equal($pathids, SQL_PARAMS_NAMED, 'ctx');
-
-            $sql = "SELECT qc.id, qc.name, qc.contextid
-                      FROM {question_categories} qc
-                      JOIN {context} ctx ON ctx.id = qc.contextid
-                     WHERE qc.contextid $incontexts
-                       AND ctx.contextlevel IN (:systemlevel, :coursecatlevel, :courselevel)
-                  ORDER BY ctx.contextlevel DESC, qc.name ASC";
-
-            $params = $contextparams + [
-                'systemlevel' => CONTEXT_SYSTEM,
-                'coursecatlevel' => CONTEXT_COURSECAT,
-                'courselevel' => CONTEXT_COURSE,
-            ];
-
-            $allcategories = $DB->get_records_sql($sql, $params);
-
-            $categoryoptions = [];
-            foreach ($allcategories as $cat) {
-                $name = trim((string)$cat->name);
-                if ($name === '') {
-                    continue;
-                }
-                $categorykey = $cat->id . ',' . $cat->contextid;
-                $categoryoptions[$categorykey] = format_string($name);
-            }
+            $categoryoptions = $this->get_question_category_options($courseid);
 
             if (empty($categoryoptions)) {
                 $categoryoptions[''] = get_string('nocategories', 'local_aiquizgen');
@@ -195,17 +161,12 @@ class generate_form extends \moodleform {
             $mform->addElement('select', 'category', get_string('category', 'local_aiquizgen'), $categoryoptions);
             $mform->addHelpButton('category', 'category', 'local_aiquizgen');
 
-            if (count($categoryoptions) > 0 && !array_key_exists('', $categoryoptions)) {
+            if (!array_key_exists('', $categoryoptions)) {
                 $mform->addRule('category', null, 'required', null, 'client');
-                $defaultcategory = array_key_first($categoryoptions);
-                if ($defaultcategory !== null) {
-                    $mform->setDefault('category', $defaultcategory);
-                }
+                $mform->setDefault('category', array_key_first($categoryoptions));
             }
 
-            // Auto-select category if provided in URL.
-            if (isset($customdata['categoryid']) && !empty($customdata['categoryid'])
-                && array_key_exists($customdata['categoryid'], $categoryoptions)) {
+            if (!empty($customdata['categoryid']) && array_key_exists($customdata['categoryid'], $categoryoptions)) {
                 $mform->setDefault('category', $customdata['categoryid']);
             }
         }
@@ -265,6 +226,57 @@ class generate_form extends \moodleform {
         });
         ";
         $PAGE->requires->js_init_code($js);
+    }
+
+    /**
+     * Return writable question categories for the course across Moodle 4.x and 5.x.
+     *
+     * @param int $courseid Course ID.
+     * @return array<string, string>
+     */
+    protected function get_question_category_options(int $courseid): array {
+        global $DB;
+
+        if (class_exists(\core_question\local\bank\question_bank_helper::class)
+                && method_exists(\core_question\local\bank\question_bank_helper::class,
+                    'get_activity_instances_with_shareable_questions')) {
+            $banks = \core_question\local\bank\question_bank_helper::get_activity_instances_with_shareable_questions(
+                [$courseid], [], ['moodle/question:add'], true
+            );
+            $options = [];
+            foreach ($banks as $bank) {
+                foreach ($bank->questioncategories as $category) {
+                    $options[$category->id . ',' . $category->contextid] =
+                        format_string($bank->name) . ' / ' . format_string($category->name);
+                }
+            }
+            return $options;
+        }
+
+        $coursecontext = \context_course::instance($courseid);
+        $pathids = array_filter(array_map('intval', explode('/', trim((string)$coursecontext->path, '/'))));
+        if (empty($pathids)) {
+            $pathids = [$coursecontext->id, \context_system::instance()->id];
+        }
+        [$incontexts, $params] = $DB->get_in_or_equal($pathids, SQL_PARAMS_NAMED, 'ctx');
+        $params += [
+            'systemlevel' => CONTEXT_SYSTEM,
+            'coursecatlevel' => CONTEXT_COURSECAT,
+            'courselevel' => CONTEXT_COURSE,
+        ];
+        $categories = $DB->get_records_sql("SELECT qc.id, qc.name, qc.contextid
+                                              FROM {question_categories} qc
+                                              JOIN {context} ctx ON ctx.id = qc.contextid
+                                             WHERE qc.contextid $incontexts
+                                               AND ctx.contextlevel IN (:systemlevel, :coursecatlevel, :courselevel)
+                                          ORDER BY ctx.contextlevel DESC, qc.name ASC", $params);
+        $options = [];
+        foreach ($categories as $category) {
+            if (trim((string)$category->name) !== '') {
+                $options[$category->id . ',' . $category->contextid] = format_string($category->name);
+            }
+        }
+        return $options;
     }
 
     /**
