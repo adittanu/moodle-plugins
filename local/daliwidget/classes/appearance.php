@@ -6,11 +6,11 @@ namespace local_daliwidget;
 /** Validated public widget appearance overrides. */
 class appearance {
     /** @return array<string, string> */
-    public static function overrides(): array {
+    public static function overrides(?\stdClass $user = null): array {
         $overrides = [];
         $values = [
             'botName' => self::text('assistant_name', 60),
-            'welcomeMessage' => self::text('welcome_message', 500),
+            'welcomeMessage' => self::welcome_message($user),
             'accentColor' => self::color(),
             'theme' => self::choice('theme', ['light', 'dark']),
             'borderRadius' => self::choice('border_radius', ['sharp', 'rounded', 'pill']),
@@ -34,6 +34,18 @@ class appearance {
         $value = trim((string) get_config('local_daliwidget', $name));
         return $value !== '' && \core_text::strlen($value) <= $maxlength ? $value : null;
     }
+    private static function welcome_message(?\stdClass $user): ?string {
+        $message = self::text('welcome_message', 500);
+        if ($message === null || $user === null) {
+            return $message;
+        }
+
+        return strtr($message, [
+            '{fullname}' => fullname($user),
+            '{firstname}' => $user->firstname ?? '',
+        ]);
+    }
+
 
     private static function color(): ?string {
         $value = trim((string) get_config('local_daliwidget', 'accent_color'));

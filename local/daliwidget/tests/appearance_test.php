@@ -30,6 +30,14 @@ class appearance_test extends \advanced_testcase {
         ], appearance::overrides());
     }
 
+    public function test_welcome_message_replaces_current_user_placeholders(): void {
+        $this->resetAfterTest();
+        $user = $this->getDataGenerator()->create_user(['firstname' => 'Ada', 'lastname' => 'Lovelace']);
+        set_config('welcome_message', 'Hello {firstname} ({fullname})', 'local_daliwidget');
+
+        $this->assertSame('Hello Ada (Ada Lovelace)', appearance::overrides($user)['welcomeMessage']);
+    }
+
     public function test_empty_malformed_and_unsupported_values_are_omitted_independently(): void {
         $this->resetAfterTest();
         set_config('assistant_name', str_repeat('x', 61), 'local_daliwidget');

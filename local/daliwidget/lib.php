@@ -155,7 +155,7 @@ function local_daliwidget_before_footer() {
             ],
             'knowledge_access_mode' => $knowledgeaccessmode,
             'answer_source_policy' => $answersourcepolicy,
-            'appearance' => \local_daliwidget\appearance::overrides(),
+            'appearance' => \local_daliwidget\appearance::overrides($USER),
             'debug_mode' => !empty($debugmode),
         ];
 

@@ -105,7 +105,7 @@ class before_footer_callback {
             ],
             'knowledge_access_mode' => $knowledgeaccessmode,
             'answer_source_policy' => $answersourcepolicy,
-            'appearance' => \local_daliwidget\appearance::overrides(),
+            'appearance' => \local_daliwidget\appearance::overrides($USER),
         ];
 
         // Add course context if on a course page
