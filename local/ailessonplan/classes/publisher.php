@@ -454,6 +454,7 @@ class publisher {
      * @return array{status:string, cmid:int}
      */
     private static function create_or_update_activity(\stdClass $course, int $sectionnum, string $activityid, array $activity): array {
+        global $DB;
         $existing = self::find_existing_activity($course, $activityid);
         if ($existing) {
             self::update_activity_record($existing, $activity, $activityid);
@@ -466,6 +467,8 @@ class publisher {
             self::move_existing_activity_to_section($course, (int)$created->coursemodule, $sectionnum);
             return ['status' => 'created', 'cmid' => (int)$created->coursemodule];
         } catch (\Throwable $e) {
+            // add_moduleinfo() owns a delegated transaction. Clear a failed transaction before creating the fallback.
+            $DB->force_transaction_rollback();
             $fallback = [
                 'mod' => 'label',
                 'title' => self::activity_title($activity),
