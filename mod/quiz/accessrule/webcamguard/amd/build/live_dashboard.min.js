@@ -12,9 +12,11 @@ define(["core/ajax", "require"], function (ajax, require) {
 		candidates: [],
 		selected: [],
 		rooms: {},
+		starting: {},
 		livekit: null,
 		pollTimer: null,
 		candidateTimer: null,
+		selectionTimer: null,
 		pollInflight: false,
 		pollVisible: false,
 		lastSeenViolationId: {},
@@ -347,6 +349,9 @@ define(["core/ajax", "require"], function (ajax, require) {
 		state.candidateTimer = window.setInterval(function () {
 			pollCandidates(config, root);
 		}, 5000);
+		state.selectionTimer = window.setInterval(function () {
+			startSelection(config, root);
+		}, Math.max(30, Number(config.selectionIntervalSeconds) || 60) * 1000);
 		// Kick off an immediate refresh so the first frame is fresh.
 		window.setTimeout(function () {
 			pollStats(config, root);
@@ -363,6 +368,10 @@ define(["core/ajax", "require"], function (ajax, require) {
 		if (state.candidateTimer) {
 			window.clearInterval(state.candidateTimer);
 			state.candidateTimer = null;
+		}
+		if (state.selectionTimer) {
+			window.clearInterval(state.selectionTimer);
+			state.selectionTimer = null;
 		}
 	};
 
@@ -592,10 +601,18 @@ define(["core/ajax", "require"], function (ajax, require) {
 	};
 
 	var startCandidate = function (config, root, candidate) {
+		var attemptid = candidate.attemptid;
+		if (state.rooms[attemptid]) {
+			return Promise.resolve(state.rooms[attemptid].room);
+		}
+		if (state.starting[attemptid]) {
+			return state.starting[attemptid];
+		}
+
 		setTileStatus(root, candidate.attemptid, config.strings.starting);
 		setLoading(root, candidate.attemptid, true);
 
-		return requestLive(config, candidate, "start")
+		var startPromise = requestLive(config, candidate, "start")
 			.then(function (live) {
 				if (!live || !live.active) {
 					setTileStatus(root, candidate.attemptid, config.strings.failed);
@@ -604,6 +621,15 @@ define(["core/ajax", "require"], function (ajax, require) {
 				}
 
 				return loadLiveKit(config.scriptUrl).then(function (LK) {
+					var stillSelected = state.selected.some(function (selected) {
+						return Number(selected.attemptid) === Number(candidate.attemptid);
+					});
+					if (!state.pollVisible || !stillSelected) {
+						return requestLive(config, candidate, "stop").catch(function () {
+							return null;
+						});
+					}
+
 					var room = new LK.Room({
 						adaptiveStream: true,
 						dynacast: true,
@@ -643,6 +669,12 @@ define(["core/ajax", "require"], function (ajax, require) {
 				setTileStatus(root, candidate.attemptid, message);
 				setLoading(root, candidate.attemptid, false);
 			});
+
+		state.starting[attemptid] = startPromise;
+		return startPromise.then(function (result) {
+			delete state.starting[attemptid];
+			return result;
+		});
 	};
 
 	var stopCandidate = function (config, root, attemptid) {
@@ -690,10 +722,15 @@ define(["core/ajax", "require"], function (ajax, require) {
 	};
 
 	var startSelection = function (config, root) {
-		stopAll(config, root).then(function () {
-			state.selected.forEach(function (candidate) {
-				startCandidate(config, root, candidate);
-			});
+		var selectedids = {};
+		state.selected.forEach(function (candidate) {
+			selectedids[Number(candidate.attemptid)] = true;
+			startCandidate(config, root, candidate);
+		});
+		Object.keys(state.rooms).forEach(function (attemptid) {
+			if (!selectedids[Number(attemptid)]) {
+				stopCandidate(config, root, Number(attemptid));
+			}
 		});
 	};
 
@@ -721,15 +758,7 @@ define(["core/ajax", "require"], function (ajax, require) {
 
 			render(config, root);
 
-			// Auto-start live monitoring for all candidates.
-			if (state.candidates.length) {
-				window.setTimeout(function () {
-					startSelection(config, root);
-				}, 500);
-			}
-
-			// Re-auto-start when modal is shown again (closed & re-opened).
-			// Handled in the jQuery shown.bs.modal block below.
+			// LiveKit rooms start only after the modal is visible.
 
 			var search = root.querySelector('[data-region="webcamguard-live-search"]');
 			if (search) {
@@ -928,8 +957,22 @@ define(["core/ajax", "require"], function (ajax, require) {
 					startPolling(config, root);
 				}
 			} else {
-				// No jQuery — poll while the dashboard root is in the DOM.
-				startPolling(config, root);
+				var isModal = root.classList && root.classList.contains("modal");
+				if (isModal) {
+					root.addEventListener("shown.bs.modal", function () {
+						startPolling(config, root);
+						window.setTimeout(function () {
+							startSelection(config, root);
+						}, 500);
+					});
+					root.addEventListener("hidden.bs.modal", function () {
+						stopPolling();
+						stopAll(config, root);
+					});
+				} else {
+					startPolling(config, root);
+					startSelection(config, root);
+				}
 			}
 		},
 	};

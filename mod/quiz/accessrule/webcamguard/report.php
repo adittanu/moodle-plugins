@@ -15,6 +15,8 @@ require_once(__DIR__ . '/locallib.php');
 
 $cmid = required_param('cmid', PARAM_INT);
 $status = optional_param('status', '', PARAM_ALPHANUMEXT);
+$violation = optional_param('violation', '', PARAM_ALPHANUMEXT);
+$search = trim(optional_param('search', '', PARAM_NOTAGS));
 $page = optional_param('page', 0, PARAM_INT);
 $downloadcsv = optional_param('downloadcsv', 0, PARAM_BOOL);
 $perpage = 20;
@@ -31,10 +33,22 @@ $allowedstatuses = ['', 'pending', 'cleared', 'suspicious'];
 if (!in_array($status, $allowedstatuses, true)) {
     $status = '';
 }
+$allowedviolations = ['', 'no_face', 'multiple_faces', 'window_blur', 'camera_stopped', 'camera_error',
+    'identity_check'];
+if (!in_array($violation, $allowedviolations, true)) {
+    $violation = '';
+}
+$search = core_text::substr($search, 0, 100);
 
 $urlparams = ['cmid' => $cmid];
 if ($status !== '') {
     $urlparams['status'] = $status;
+}
+if ($violation !== '') {
+    $urlparams['violation'] = $violation;
+}
+if ($search !== '') {
+    $urlparams['search'] = $search;
 }
 $url = new moodle_url('/mod/quiz/accessrule/webcamguard/report.php', $urlparams);
 $PAGE->set_url($url);
@@ -43,10 +57,38 @@ $PAGE->set_title(get_string('reporttitle', 'quizaccess_webcamguard'));
 $PAGE->set_heading(format_string($quiz->name));
 
 $params = ['quizid' => $quiz->id, 'evquizid' => $quiz->id];
+$filterparams = ['quizid' => $quiz->id];
 $statussql = '';
 if ($status !== '') {
     $statussql = ' AND r.status = :status';
     $params['status'] = $status;
+    $filterparams['status'] = $status;
+}
+$filtersql = $statussql;
+if ($search !== '') {
+    $fullname = $DB->sql_concat('u.firstname', "' '", 'u.lastname');
+    $filtersql .= ' AND (' . $DB->sql_like('u.firstname', ':searchfirstname', false) .
+        ' OR ' . $DB->sql_like('u.lastname', ':searchlastname', false) .
+        ' OR ' . $DB->sql_like($fullname, ':searchfullname', false) . ')';
+    $searchvalue = '%' . $DB->sql_like_escape($search) . '%';
+    $params['searchfirstname'] = $searchvalue;
+    $params['searchlastname'] = $searchvalue;
+    $params['searchfullname'] = $searchvalue;
+    $filterparams['searchfirstname'] = $searchvalue;
+    $filterparams['searchlastname'] = $searchvalue;
+    $filterparams['searchfullname'] = $searchvalue;
+}
+if ($violation !== '') {
+    $filtersql .= " AND EXISTS (
+        SELECT 1
+          FROM {quizaccess_wg_events} vf
+         WHERE vf.attemptid = r.attemptid
+           AND vf.quizid = r.quizid
+           AND vf.severity = 'violation'
+           AND vf.eventtype = :violationtype
+    )";
+    $params['violationtype'] = $violation;
+    $filterparams['violationtype'] = $violation;
 }
 
 // Risk score SQL below uses weights matching quizaccess_webcamguard::EVENT_WEIGHTS.
@@ -74,7 +116,7 @@ $fromwhere = "FROM {quizaccess_wg_reviews} r
                    AND eventtype <> 'heartbeat'
               GROUP BY attemptid
                ) ev ON ev.attemptid = r.attemptid
-         WHERE r.quizid = :quizid $statussql";
+         WHERE r.quizid = :quizid $filtersql";
 
 $countsql = "SELECT COUNT(1) $fromwhere";
 $totalcount = $DB->count_records_sql($countsql, $params);
@@ -85,15 +127,10 @@ $sql = "SELECT r.id, r.attemptid, r.quizid, r.userid, r.status, qa.attempt,
                COALESCE(ev.violationcount, 0) AS violationcount,
                COALESCE(ev.riskscore, 0) AS riskscore
           $fromwhere
-      ORDER BY r.timemodified DESC";
+      ORDER BY violationcount DESC, riskscore DESC, r.timemodified DESC";
 $rows = $DB->get_records_sql($sql, $params, $page * $perpage, $perpage);
 
-$attemptviolationparams = ['quizid' => $quiz->id];
-$attemptviolationstatussql = '';
-if ($status !== '') {
-    $attemptviolationstatussql = ' AND r.status = :status';
-    $attemptviolationparams['status'] = $status;
-}
+$attemptviolationparams = $filterparams;
 
 $attemptviolationtypes = $DB->get_records_sql(
     "SELECT " . $DB->sql_concat('e.attemptid', "'-'", 'e.eventtype') . " AS uniqid,
@@ -101,10 +138,11 @@ $attemptviolationtypes = $DB->get_records_sql(
             e.eventtype,
             COUNT(1) AS violationcount
        FROM {quizaccess_wg_reviews} r
+       JOIN {user} u ON u.id = r.userid
        JOIN {quizaccess_wg_events} e ON e.attemptid = r.attemptid AND e.quizid = r.quizid
       WHERE r.quizid = :quizid
         AND e.severity = 'violation'
-            $attemptviolationstatussql
+            $filtersql
    GROUP BY e.attemptid, e.eventtype
    ORDER BY e.attemptid ASC, violationcount DESC, e.eventtype ASC",
     $attemptviolationparams
@@ -162,32 +200,29 @@ if ($downloadcsv) {
     exit;
 }
 
-$summaryparams = ['quizid' => $quiz->id];
-$summarystatussql = '';
-if ($status !== '') {
-    $summarystatussql = ' AND r.status = :status';
-    $summaryparams['status'] = $status;
-}
+$summaryparams = $filterparams;
 
 $summary = $DB->get_record_sql(
     "SELECT COUNT(e.id) AS eventcount,
             SUM(CASE WHEN e.severity = 'violation' THEN 1 ELSE 0 END) AS violationcount,
             COUNT(DISTINCT CASE WHEN e.severity = 'violation' THEN e.attemptid ELSE NULL END) AS violatedattempts
        FROM {quizaccess_wg_reviews} r
+       JOIN {user} u ON u.id = r.userid
   LEFT JOIN {quizaccess_wg_events} e ON e.attemptid = r.attemptid AND e.quizid = r.quizid
       WHERE r.quizid = :quizid
         AND (e.eventtype IS NULL OR e.eventtype <> 'heartbeat')
-            $summarystatussql",
+            $filtersql",
     $summaryparams
 );
 
 $violationtypes = $DB->get_records_sql(
     "SELECT e.eventtype, COUNT(1) AS violationcount
        FROM {quizaccess_wg_reviews} r
+       JOIN {user} u ON u.id = r.userid
        JOIN {quizaccess_wg_events} e ON e.attemptid = r.attemptid AND e.quizid = r.quizid
       WHERE r.quizid = :quizid
         AND e.severity = 'violation'
-            $summarystatussql
+            $filtersql
    GROUP BY e.eventtype
    ORDER BY violationcount DESC, e.eventtype ASC",
     $summaryparams
@@ -209,19 +244,54 @@ $options = [
     'cleared' => get_string('cleared', 'quizaccess_webcamguard'),
     'suspicious' => get_string('suspicious', 'quizaccess_webcamguard'),
 ];
+$violationoptions = ['' => get_string('allviolations', 'quizaccess_webcamguard')];
+foreach (array_slice($allowedviolations, 1) as $eventtype) {
+    $violationoptions[$eventtype] = get_string('event_' . $eventtype, 'quizaccess_webcamguard');
+}
 
-$form = html_writer::start_tag('form', ['method' => 'get', 'class' => 'mb-3']);
+$form = html_writer::start_tag('form', ['method' => 'get', 'class' => 'mb-3 d-flex flex-wrap align-items-end']);
 $form .= html_writer::empty_tag('input', ['type' => 'hidden', 'name' => 'cmid', 'value' => $cmid]);
-$form .= html_writer::label(get_string('status', 'quizaccess_webcamguard'), 'id_status', false, ['class' => 'mr-2']);
-$form .= html_writer::select($options, 'status', $status, false, ['id' => 'id_status']);
-$form .= html_writer::empty_tag('input', ['type' => 'submit', 'class' => 'btn btn-secondary ml-2', 'value' => get_string('filter')]);
+$form .= html_writer::start_div('mr-2 mb-2');
+$form .= html_writer::label(get_string('searchstudent', 'quizaccess_webcamguard'), 'id_search', false,
+    ['class' => 'd-block mb-1']);
+$form .= html_writer::empty_tag('input', [
+    'type' => 'search',
+    'name' => 'search',
+    'id' => 'id_search',
+    'class' => 'form-control',
+    'value' => $search,
+    'placeholder' => get_string('searchstudentplaceholder', 'quizaccess_webcamguard'),
+]);
+$form .= html_writer::end_div();
+$form .= html_writer::start_div('mr-2 mb-2');
+$form .= html_writer::label(get_string('status', 'quizaccess_webcamguard'), 'id_status', false,
+    ['class' => 'd-block mb-1']);
+$form .= html_writer::select($options, 'status', $status, false, ['id' => 'id_status', 'class' => 'custom-select']);
+$form .= html_writer::end_div();
+$form .= html_writer::start_div('mr-2 mb-2');
+$form .= html_writer::label(get_string('filterviolation', 'quizaccess_webcamguard'), 'id_violation', false,
+    ['class' => 'd-block mb-1']);
+$form .= html_writer::select($violationoptions, 'violation', $violation, false,
+    ['id' => 'id_violation', 'class' => 'custom-select']);
+$form .= html_writer::end_div();
+$form .= html_writer::empty_tag('input', [
+    'type' => 'submit',
+    'class' => 'btn btn-secondary mr-2 mb-2',
+    'value' => get_string('filter'),
+]);
 $exportparams = ['cmid' => $cmid, 'downloadcsv' => 1];
 if ($status !== '') {
     $exportparams['status'] = $status;
 }
+if ($violation !== '') {
+    $exportparams['violation'] = $violation;
+}
+if ($search !== '') {
+    $exportparams['search'] = $search;
+}
 $exporturl = new moodle_url('/mod/quiz/accessrule/webcamguard/report.php', $exportparams);
 $form .= html_writer::link($exporturl, get_string('exportcsv', 'quizaccess_webcamguard'), [
-    'class' => 'btn btn-outline-secondary ml-2',
+    'class' => 'btn btn-outline-secondary mb-2',
     'title' => get_string('exportcsv_help', 'quizaccess_webcamguard'),
 ]);
 $form .= html_writer::end_tag('form');
