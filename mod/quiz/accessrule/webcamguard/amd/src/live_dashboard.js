@@ -13,6 +13,9 @@ define(["core/ajax", "require"], function (ajax, require) {
 		selected: [],
 		rooms: {},
 		starting: {},
+		stopping: {},
+		monitoring: false,
+		candidateInflight: false,
 		livekit: null,
 		pollTimer: null,
 		candidateTimer: null,
@@ -277,13 +280,17 @@ define(["core/ajax", "require"], function (ajax, require) {
 	};
 
 	var pollCandidates = function (config, root) {
+		if (!state.pollVisible || state.candidateInflight) {
+			return;
+		}
+		state.candidateInflight = true;
 		call("quizaccess_webcamguard_poll_live_candidates", {
 			courseid: config.courseid,
 			cmid: config.cmid,
 			quizid: config.quizid,
 		})
 			.then(function (response) {
-				if (!response || !response.candidates) {
+				if (!state.pollVisible || !response || !response.candidates) {
 					return;
 				}
 				var serverIds = {};
@@ -320,12 +327,8 @@ define(["core/ajax", "require"], function (ajax, require) {
 				});
 
 				if (changed) {
-					render(config, root);
-					state.selected.forEach(function (candidate) {
-						if (!candidate.liveChecked) {
-							startCandidate(config, root, candidate);
-						}
-					});
+					render(config, root, true);
+					startSelection(config, root);
 				}
 				// Update badge on the Live Monitor button.
 				var badge = document.querySelector('[data-region="webcamguard-live-badge"]');
@@ -337,6 +340,8 @@ define(["core/ajax", "require"], function (ajax, require) {
 			})
 			.catch(function () {
 				// Swallow.
+			}).then(function () {
+				state.candidateInflight = false;
 			});
 	};
 
@@ -460,7 +465,7 @@ define(["core/ajax", "require"], function (ajax, require) {
 		return root.querySelector('[data-video-for="' + attemptid + '"]');
 	};
 
-	var render = function (config, root) {
+	var render = function (config, root, preserveSelection) {
 		var grid = root.querySelector('[data-region="webcamguard-live-grid"]');
 		var count = root.querySelector('[data-region="webcamguard-live-count"]');
 		var mode = root.querySelector(
@@ -474,7 +479,20 @@ define(["core/ajax", "require"], function (ajax, require) {
 			state.livePage = pages - 1;
 		}
 		var offset = state.livePage * limit;
-		state.selected = allPicked.slice(offset, offset + limit);
+		if (preserveSelection) {
+			var available = {};
+			state.candidates.forEach(function (candidate) { available[candidate.attemptid] = candidate; });
+			state.selected = state.selected.filter(function (candidate) { return available[candidate.attemptid]; });
+			allPicked.slice(offset).forEach(function (candidate) {
+				if (state.selected.length < limit && !state.selected.some(function (selected) {
+					return selected.attemptid === candidate.attemptid;
+				})) {
+					state.selected.push(candidate);
+				}
+			});
+		} else {
+			state.selected = allPicked.slice(offset, offset + limit);
+		}
 
 		if (count) {
 		count.textContent =
@@ -527,9 +545,20 @@ define(["core/ajax", "require"], function (ajax, require) {
 			return;
 		}
 
-		grid.innerHTML = state.selected
-			.map(function (candidate) {
-				return [
+		// Keep existing DOM nodes: replacing innerHTML destroys attached video tracks and drafts.
+		var existing = {};
+		Array.from(grid.children).forEach(function (tile) {
+			if (tile.dataset.tileFor) {
+				existing[tile.dataset.tileFor] = tile;
+			} else {
+				tile.remove();
+			}
+		});
+		state.selected.forEach(function (candidate) {
+			var tile = existing[candidate.attemptid];
+			if (!tile) {
+				var holder = document.createElement('div');
+				holder.innerHTML = [
 					'<div class="quizaccess-webcamguard-livetile" data-tile-for="' +
 						candidate.attemptid +
 						'">',
@@ -581,9 +610,14 @@ define(["core/ajax", "require"], function (ajax, require) {
 						escapeHtml(config.strings.sendWarning || "Send") + "</button>",
 					"</div>",
 					"</div>",
+					"</div>",
 				].join("");
-			})
-			.join("");
+				tile = holder.firstElementChild;
+			}
+			grid.appendChild(tile);
+			delete existing[candidate.attemptid];
+		});
+		Object.keys(existing).forEach(function (id) { existing[id].remove(); });
 	};
 
 	var attachTrack = function (root, candidate, track) {
@@ -602,18 +636,31 @@ define(["core/ajax", "require"], function (ajax, require) {
 
 	var startCandidate = function (config, root, candidate) {
 		var attemptid = candidate.attemptid;
+		if (!state.pollVisible || !state.monitoring) {
+			return Promise.resolve();
+		}
 		if (state.rooms[attemptid]) {
 			return Promise.resolve(state.rooms[attemptid].room);
 		}
 		if (state.starting[attemptid]) {
-			return state.starting[attemptid];
+			return state.starting[attemptid].promise;
 		}
 
 		setTileStatus(root, candidate.attemptid, config.strings.starting);
 		setLoading(root, candidate.attemptid, true);
 
-		var startPromise = requestLive(config, candidate, "start")
+		var pending = {cancelled: false, candidate: candidate};
+		var ownedRoom = null;
+		var startPromise = Promise.resolve(state.stopping[attemptid]).then(function () {
+			if (pending.cancelled || !state.monitoring || !state.pollVisible) {
+				return null;
+			}
+			return requestLive(config, candidate, "start");
+		})
 			.then(function (live) {
+				if (pending.cancelled || !state.monitoring || !state.pollVisible) {
+					return null;
+				}
 				if (!live || !live.active) {
 					setTileStatus(root, candidate.attemptid, config.strings.failed);
 					setLoading(root, candidate.attemptid, false);
@@ -624,27 +671,35 @@ define(["core/ajax", "require"], function (ajax, require) {
 					var stillSelected = state.selected.some(function (selected) {
 						return Number(selected.attemptid) === Number(candidate.attemptid);
 					});
-					if (!state.pollVisible || !stillSelected) {
-						return requestLive(config, candidate, "stop").catch(function () {
-							return null;
-						});
+					if (pending.cancelled || !state.monitoring || !state.pollVisible || !stillSelected) {
+						return null;
 					}
 
 					var room = new LK.Room({
 						adaptiveStream: true,
 						dynacast: true,
 					});
+					ownedRoom = room;
 					state.rooms[candidate.attemptid] = {
 						room: room,
 						candidate: candidate,
+						hasVideo: false,
 					};
 
 					room.on(LK.RoomEvent.TrackSubscribed, function (track) {
+						if (pending.cancelled || !state.rooms[attemptid] || state.rooms[attemptid].room !== room) {
+							return;
+						}
+						if (track.kind && track.kind !== 'video') { return; }
+						state.rooms[attemptid].hasVideo = true;
 						attachTrack(root, candidate, track);
 						setTileStatus(root, candidate.attemptid, config.strings.connected);
 						setLoading(root, candidate.attemptid, false);
 					});
 					room.on(LK.RoomEvent.Disconnected, function () {
+						if (!state.rooms[attemptid] || state.rooms[attemptid].room !== room) {
+							return;
+						}
 						delete state.rooms[candidate.attemptid];
 						setTileStatus(root, candidate.attemptid, config.strings.stopped);
 						setLoading(root, candidate.attemptid, false);
@@ -655,13 +710,23 @@ define(["core/ajax", "require"], function (ajax, require) {
 							autoSubscribe: true,
 						})
 						.then(function () {
+							if (pending.cancelled || !state.rooms[attemptid] || state.rooms[attemptid].room !== room) {
+								return;
+							}
 							candidate.liveChecked = true;
-							setTileStatus(root, candidate.attemptid, config.strings.waiting);
-							setLoading(root, candidate.attemptid, true);
+							if (!state.rooms[attemptid].hasVideo) {
+								setTileStatus(root, candidate.attemptid, config.strings.waiting);
+								setLoading(root, candidate.attemptid, true);
+							}
 						});
 				});
 			})
 			.catch(function (error) {
+				if (ownedRoom && state.rooms[attemptid] && state.rooms[attemptid].room === ownedRoom) {
+					delete state.rooms[attemptid];
+					ownedRoom.disconnect();
+				}
+				if (pending.cancelled) { return; }
 				var message = config.strings.failed;
 				if (error && error.message) {
 					message += " " + error.message;
@@ -670,25 +735,36 @@ define(["core/ajax", "require"], function (ajax, require) {
 				setLoading(root, candidate.attemptid, false);
 			});
 
-		state.starting[attemptid] = startPromise;
-		return startPromise.then(function (result) {
-			delete state.starting[attemptid];
+		pending.promise = startPromise.then(function (result) {
+			if (state.starting[attemptid] === pending) {
+				delete state.starting[attemptid];
+			}
 			return result;
 		});
+		state.starting[attemptid] = pending;
+		return pending.promise;
 	};
 
 	var stopCandidate = function (config, root, attemptid) {
+		var pending = state.starting[attemptid];
+		if (pending) {
+			pending.cancelled = true;
+			delete state.starting[attemptid];
+		}
 		var active = state.rooms[attemptid];
+		if (!active && !pending) {
+			return state.stopping[attemptid] || Promise.resolve();
+		}
+		delete state.rooms[attemptid];
 		if (active && active.room) {
 			active.room.disconnect();
 		}
-		delete state.rooms[attemptid];
 
 		var candidate = active
 			? active.candidate
-			: state.candidates.find(function (item) {
+			: (pending ? pending.candidate : state.candidates.find(function (item) {
 					return Number(item.attemptid) === Number(attemptid);
-				});
+				}));
 		if (!candidate) {
 			return Promise.resolve();
 		}
@@ -707,13 +783,21 @@ define(["core/ajax", "require"], function (ajax, require) {
 				" - " +
 				(candidate.lastEventDisplay || "-");
 		}
-		return requestLive(config, candidate, "stop").catch(function () {
+		// A late start response must settle before stop; a replacement start waits for this stop.
+		var stopped = Promise.resolve(pending ? pending.promise : state.stopping[attemptid]).then(function () {
+			return requestLive(config, candidate, "stop");
+		}).catch(function () {
 			return null;
+		});
+		state.stopping[attemptid] = stopped;
+		return stopped.then(function () {
+			if (state.stopping[attemptid] === stopped) { delete state.stopping[attemptid]; }
 		});
 	};
 
 	var stopAll = function (config, root) {
-		var attemptids = Object.keys(state.rooms);
+		state.monitoring = false;
+		var attemptids = Array.from(new Set(Object.keys(state.rooms).concat(Object.keys(state.starting))));
 		return Promise.all(
 			attemptids.map(function (attemptid) {
 				return stopCandidate(config, root, attemptid);
@@ -722,12 +806,13 @@ define(["core/ajax", "require"], function (ajax, require) {
 	};
 
 	var startSelection = function (config, root) {
+		if (!state.pollVisible || !state.monitoring) { return; }
 		var selectedids = {};
 		state.selected.forEach(function (candidate) {
 			selectedids[Number(candidate.attemptid)] = true;
 			startCandidate(config, root, candidate);
 		});
-		Object.keys(state.rooms).forEach(function (attemptid) {
+		Array.from(new Set(Object.keys(state.rooms).concat(Object.keys(state.starting)))).forEach(function (attemptid) {
 			if (!selectedids[Number(attemptid)]) {
 				stopCandidate(config, root, Number(attemptid));
 			}
@@ -742,6 +827,9 @@ define(["core/ajax", "require"], function (ajax, require) {
 			if (!root) {
 				return;
 			}
+			if (root.dataset.webcamguardInitialized) { return; }
+			root.dataset.webcamguardInitialized = '1';
+			root.dataset.webcamguardBuild = '20260916-dom-lifecycle';
 
 			state.candidates = (config.candidates || []).map(function (candidate) {
 				candidate.riskScore = Number(candidate.riskScore) || 0;
@@ -765,10 +853,8 @@ define(["core/ajax", "require"], function (ajax, require) {
 				search.addEventListener("input", function () {
 					state.searchQuery = search.value.trim().toLocaleLowerCase();
 					state.livePage = 0;
-					stopAll(config, root).then(function () {
-						render(config, root);
-						startSelection(config, root);
-					});
+					render(config, root);
+					startSelection(config, root);
 				});
 			}
 			var filter = root.querySelector(
@@ -787,26 +873,19 @@ define(["core/ajax", "require"], function (ajax, require) {
 			if (filter) {
 				filter.addEventListener("change", function () {
 					state.livePage = 0;
-					stopAll(config, root).then(function () {
-						render(config, root);
-						window.setTimeout(function () {
-							startSelection(config, root);
-						}, 500);
-					});
+					render(config, root);
+					startSelection(config, root);
 				});
 			}
 			if (refresh) {
 				refresh.addEventListener("click", function () {
-					stopAll(config, root).then(function () {
-						render(config, root);
-						window.setTimeout(function () {
-							startSelection(config, root);
-						}, 500);
-					});
+					render(config, root);
+					startSelection(config, root);
 				});
 			}
 			if (start) {
 				start.addEventListener("click", function () {
+					state.monitoring = true;
 					startSelection(config, root);
 				});
 			}
@@ -819,7 +898,6 @@ define(["core/ajax", "require"], function (ajax, require) {
 			// Pagination: prev / next.
 			var prevBtn = root.querySelector('[data-action="webcamguard-live-prev"]');
 			var nextBtn = root.querySelector('[data-action="webcamguard-live-next"]');
-			var prevSelectedIds = [];
 			var paginate = function (direction) {
 				var newPage = state.livePage + direction;
 				var limit = Math.max(1, config.limit || 20);
@@ -831,25 +909,10 @@ define(["core/ajax", "require"], function (ajax, require) {
 				if (newPage < 0 || newPage >= pages) {
 					return;
 				}
-				prevSelectedIds = state.selected.map(function (c) { return c.attemptid; });
 				state.livePage = newPage;
 				render(config, root);
 
-				var prevSet = new Set(prevSelectedIds);
-				var newIds = new Set(state.selected.map(function (c) { return c.attemptid; }));
-				// Stop candidates no longer visible.
-				Object.keys(state.rooms).forEach(function (attemptid) {
-					var numId = Number(attemptid);
-					if (prevSet.has(numId) && !newIds.has(numId)) {
-						stopCandidate(config, root, numId);
-					}
-				});
-				// Start candidates new to this page.
-				state.selected.forEach(function (candidate) {
-					if (!candidate.liveChecked || !state.rooms[candidate.attemptid]) {
-						startCandidate(config, root, candidate);
-					}
-				});
+				startSelection(config, root);
 			};
 			if (prevBtn) {
 				prevBtn.addEventListener("click", function () {
@@ -936,42 +999,33 @@ define(["core/ajax", "require"], function (ajax, require) {
 				});
 			}
 
+			var show = function () {
+				if (state.pollVisible) { return; }
+				state.monitoring = true;
+				startPolling(config, root);
+				startSelection(config, root);
+			};
+			var hide = function () {
+				stopPolling();
+				stopAll(config, root);
+			};
 			if (window.jQuery) {
 				var $root = window.jQuery(root);
 				var isModal = $root.hasClass('modal') || $root.closest('.modal').length > 0;
 				if (isModal) {
-					$root.on("shown.bs.modal", function () {
-						startPolling(config, root);
-						if (state.candidates.length) {
-							window.setTimeout(function () {
-								startSelection(config, root);
-							}, 500);
-						}
-					});
-					$root.on("hidden.bs.modal", function () {
-						stopPolling();
-						stopAll(config, root);
-					});
+					$root.on("shown.bs.modal", show);
+					$root.on("hidden.bs.modal", hide);
 				} else {
 					// Not a modal — start polling immediately.
-					startPolling(config, root);
+					show();
 				}
 			} else {
 				var isModal = root.classList && root.classList.contains("modal");
 				if (isModal) {
-					root.addEventListener("shown.bs.modal", function () {
-						startPolling(config, root);
-						window.setTimeout(function () {
-							startSelection(config, root);
-						}, 500);
-					});
-					root.addEventListener("hidden.bs.modal", function () {
-						stopPolling();
-						stopAll(config, root);
-					});
+					root.addEventListener("shown.bs.modal", show);
+					root.addEventListener("hidden.bs.modal", hide);
 				} else {
-					startPolling(config, root);
-					startSelection(config, root);
+					show();
 				}
 			}
 		},
