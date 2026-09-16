@@ -547,11 +547,13 @@
     font-size: .9rem;
 }
 .quizaccess-webcamguard-livegrid {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: .75rem;
 }
 .quizaccess-webcamguard-livetile {
+    flex: 0 0 calc((100% - 2.25rem) / 4);
+    min-width: 0;
     overflow: hidden;
     border: 1px solid #e1e6ef;
     border-radius: 8px;
@@ -610,7 +612,7 @@
     font-size: .82rem;
 }
 .quizaccess-webcamguard-liveempty {
-    grid-column: 1 / -1;
+    flex: 1 1 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -646,8 +648,8 @@
     font-size: .88rem;
 }
 @media (max-width: 1199.98px) {
-    .quizaccess-webcamguard-livegrid {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+    .quizaccess-webcamguard-livetile {
+        flex-basis: calc((100% - 1.5rem) / 3);
     }
 }
 @media (max-width: 767.98px) {
@@ -657,13 +659,13 @@
     .quizaccess-webcamguard-livecount {
         justify-self: start;
     }
-    .quizaccess-webcamguard-livegrid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+    .quizaccess-webcamguard-livetile {
+        flex-basis: calc((100% - .75rem) / 2);
     }
 }
 @media (max-width: 575.98px) {
-    .quizaccess-webcamguard-livegrid {
-        grid-template-columns: 1fr;
+    .quizaccess-webcamguard-livetile {
+        flex-basis: 100%;
     }
 }
 
@@ -692,4 +694,3 @@
 .quizaccess-webcamguard-warningbar input {
     flex: 1;
 }
-

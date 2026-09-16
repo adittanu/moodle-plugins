@@ -15,7 +15,6 @@ define(["core/ajax", "require"], function (ajax, require) {
 		livekit: null,
 		pollTimer: null,
 		candidateTimer: null,
-		selectionTimer: null,
 		pollInflight: false,
 		pollVisible: false,
 		lastSeenViolationId: {},
@@ -348,12 +347,6 @@ define(["core/ajax", "require"], function (ajax, require) {
 		state.candidateTimer = window.setInterval(function () {
 			pollCandidates(config, root);
 		}, 5000);
-		state.selectionTimer = window.setInterval(function () {
-			stopAll(config, root).then(function () {
-				render(config, root);
-				startSelection(config, root);
-			});
-		}, Math.max(30, Number(config.selectionIntervalSeconds) || 60) * 1000);
 		// Kick off an immediate refresh so the first frame is fresh.
 		window.setTimeout(function () {
 			pollStats(config, root);
@@ -370,10 +363,6 @@ define(["core/ajax", "require"], function (ajax, require) {
 		if (state.candidateTimer) {
 			window.clearInterval(state.candidateTimer);
 			state.candidateTimer = null;
-		}
-		if (state.selectionTimer) {
-			window.clearInterval(state.selectionTimer);
-			state.selectionTimer = null;
 		}
 	};
 
