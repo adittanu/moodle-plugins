@@ -39,6 +39,39 @@ class generate_form extends \moodleform {
 
         $mform->addElement('header', 'general', get_string('generatequestions', 'local_aiquizgen'));
 
+        // Operation mode: generate new questions or import existing ones from a PDF.
+        $modegroup = [];
+        $modegroup[] = $mform->createElement('radio', 'mode', '',
+            get_string('mode_generate', 'local_aiquizgen'), 'generate');
+        $modegroup[] = $mform->createElement('radio', 'mode', '',
+            get_string('mode_extract', 'local_aiquizgen'), 'extract');
+        $mform->addGroup($modegroup, 'modegroup', get_string('mode', 'local_aiquizgen'), [' '], false);
+        $mform->setDefault('mode', 'generate');
+        $mform->setType('mode', PARAM_ALPHA);
+        $mform->addHelpButton('modegroup', 'mode', 'local_aiquizgen');
+
+        $extractformats = [
+            'asis' => get_string('extractformat_asis', 'local_aiquizgen'),
+            'multichoice' => get_string('extractformat_multichoice', 'local_aiquizgen'),
+        ];
+        $mform->addElement('select', 'extractformat', get_string('extractformat', 'local_aiquizgen'),
+            $extractformats);
+        $mform->setDefault('extractformat', 'asis');
+        $mform->setType('extractformat', PARAM_ALPHA);
+        $mform->addHelpButton('extractformat', 'extractformat', 'local_aiquizgen');
+
+        // Optional marks applied to imported questions before the review page.
+        $mform->addElement('text', 'mcqmaxmark', get_string('mcqmaxmark', 'local_aiquizgen'), ['size' => 6]);
+        $mform->setType('mcqmaxmark', PARAM_FLOAT);
+        $mform->addHelpButton('mcqmaxmark', 'mcqmaxmark', 'local_aiquizgen');
+
+        $mform->addElement('text', 'essaymaxmark', get_string('essaymaxmark', 'local_aiquizgen'), ['size' => 6]);
+        $mform->setType('essaymaxmark', PARAM_FLOAT);
+        $mform->addHelpButton('essaymaxmark', 'essaymaxmark', 'local_aiquizgen');
+
+        $mform->addElement('static', 'extractmarkhint', '',
+            '<small class="text-muted">' . get_string('extractmarkhint', 'local_aiquizgen') . '</small>');
+
         $mform->addElement('textarea', 'topic', get_string('topic', 'local_aiquizgen'), 
             ['rows' => 4, 'cols' => 60]);
         $mform->setType('topic', PARAM_TEXT);
@@ -48,11 +81,12 @@ class generate_form extends \moodleform {
 
         // Source selection
         $pdfsources = [
+            'topic' => get_string('pdfsource_topic', 'local_aiquizgen'),
             'upload' => get_string('pdfsource_upload', 'local_aiquizgen'),
             'course' => get_string('pdfsource_course', 'local_aiquizgen'),
         ];
         $mform->addElement('select', 'pdfsource', get_string('pdfsource', 'local_aiquizgen'), $pdfsources);
-        $mform->setDefault('pdfsource', 'upload');
+        $mform->setDefault('pdfsource', 'topic');
         $mform->setType('pdfsource', PARAM_ALPHA);
         $mform->addHelpButton('pdfsource', 'pdfsource', 'local_aiquizgen');
 
@@ -65,6 +99,8 @@ class generate_form extends \moodleform {
                 'accepted_types' => ['.pdf']
             ]);
         $mform->addHelpButton('pdffile', 'pdffile', 'local_aiquizgen');
+        $mform->addElement('static', 'extractpdfhint', '',
+            '<em>' . get_string('extractpdfhint', 'local_aiquizgen') . '</em>');
         
         // Synced knowledge source from course materials (shown when pdfsource = course)
         if (isset($customdata['courseid'])) {
@@ -108,6 +144,11 @@ class generate_form extends \moodleform {
         $mform->addElement('select', 'questioncount', get_string('questioncount', 'local_aiquizgen'), $countoptions);
         $mform->setDefault('questioncount', 5);
         $mform->addHelpButton('questioncount', 'questioncount', 'local_aiquizgen');
+
+        $mform->addElement('text', 'maxmark', get_string('maxmark', 'local_aiquizgen'), ['size' => 6]);
+        $mform->setType('maxmark', PARAM_FLOAT);
+        $mform->setDefault('maxmark', 1);
+        $mform->addHelpButton('maxmark', 'maxmark', 'local_aiquizgen');
 
         $types = [
             'multichoice' => get_string('multichoice', 'local_aiquizgen'),
@@ -185,47 +226,147 @@ class generate_form extends \moodleform {
 
         $this->add_action_buttons(true, get_string('generate', 'local_aiquizgen'));
         
-        // Add JavaScript for source toggle
+        // Add JavaScript for mode and source toggles.
         global $PAGE;
         $js = "
         document.addEventListener('DOMContentLoaded', function() {
-            function togglePdfFields() {
-                var pdfsourceSelect = document.getElementById('id_pdfsource');
-                if (!pdfsourceSelect) return;
-                
-                var isUpload = pdfsourceSelect.value === 'upload';
-                
-                // Toggle pdffile field
-                var pdffileEl = document.getElementById('id_pdffile');
-                if (pdffileEl) {
-                    var pdffileContainer = pdffileEl.closest('.fitem') || pdffileEl.parentElement;
-                    if (pdffileContainer) pdffileContainer.style.display = isUpload ? '' : 'none';
+            function getMode() {
+                var checked = document.querySelector('input[name=\"mode\"]:checked');
+                return checked ? checked.value : 'generate';
+            }
+
+            function setVisible(fieldName, visible) {
+                var el = document.getElementById('id_' + fieldName)
+                    || document.getElementById('fitem_id_' + fieldName);
+                if (!el) {
+                    return;
                 }
-                
-                // Toggle coursetpdf field
-                var coursetpdfEl = document.getElementById('id_coursetpdf');
-                if (coursetpdfEl) {
-                    var coursetpdfContainer = coursetpdfEl.closest('.fitem') || coursetpdfEl.parentElement;
-                    if (coursetpdfContainer) coursetpdfContainer.style.display = isUpload ? 'none' : '';
+                var container = el.closest('.fitem') || el.parentElement;
+                if (container) {
+                    container.style.display = visible ? '' : 'none';
+                }
+            }
+
+            function getSource() {
+                var el = document.getElementById('id_pdfsource');
+                return el ? el.value : 'topic';
+            }
+
+            function toggleSourceFields(isExtract) {
+                if (isExtract) {
+                    ['topic', 'topicexample', 'pdfornote'].forEach(function(fieldName) {
+                        setVisible(fieldName, false);
+                    });
+                    setVisible('pdffile', true);
+                    setVisible('extractpdfhint', true);
+                    ['coursetpdf', 'sourcehint', 'nocoursepdf'].forEach(function(fieldName) {
+                        setVisible(fieldName, false);
+                    });
+                    var pdfsource = document.getElementById('id_pdfsource');
+                    if (pdfsource) {
+                        pdfsource.value = 'upload';
+                    }
+                    return;
                 }
 
-                ['sourcehint', 'nocoursepdf'].forEach(function(fieldName) {
-                    var staticEl = document.getElementById('id_' + fieldName);
-                    if (staticEl) {
-                        var staticContainer = staticEl.closest('.fitem') || staticEl.parentElement;
-                        if (staticContainer) staticContainer.style.display = isUpload ? 'none' : '';
-                    }
+                var source = getSource();
+                setVisible('topic', source === 'topic');
+                setVisible('topicexample', source === 'topic');
+                setVisible('pdffile', source === 'upload');
+                setVisible('extractpdfhint', false);
+                setVisible('coursetpdf', source === 'course');
+                setVisible('sourcehint', source === 'course');
+                setVisible('nocoursepdf', source === 'course');
+            }
+
+            function toggleMode() {
+                var isExtract = getMode() === 'extract';
+
+                ['topic', 'topicexample', 'pdfsource', 'pdfornote', 'questioncount',
+                 'questiontype', 'answeroptioncount', 'difficulty', 'language', 'maxmark'
+                ].forEach(function(fieldName) {
+                    setVisible(fieldName, !isExtract);
+                });
+
+                setVisible('extractformat', isExtract);
+                setVisible('extractpdfhint', isExtract);
+                ['mcqmaxmark', 'essaymaxmark', 'extractmarkhint'].forEach(function(fieldName) {
+                    setVisible(fieldName, isExtract);
+                });
+                toggleSourceFields(isExtract);
+            }
+
+            document.querySelectorAll('input[name=\"mode\"]').forEach(function(el) {
+                el.addEventListener('change', toggleMode);
+            });
+
+            var pdfsource = document.getElementById('id_pdfsource');
+            if (pdfsource) {
+                pdfsource.addEventListener('change', function() {
+                    toggleSourceFields(getMode() === 'extract');
                 });
             }
-            
-            var pdfsourceSelect = document.getElementById('id_pdfsource');
-            if (pdfsourceSelect) {
-                pdfsourceSelect.addEventListener('change', togglePdfFields);
-                togglePdfFields(); // Initial state
-            }
+
+            toggleMode();
         });
         ";
         $PAGE->requires->js_init_code($js);
+
+        // Show a waiting overlay when a generate request is submitted. Extraction
+        // has its own progress bar on the processing page.
+        $waitstrings = [
+            'title' => get_string('generatewait_title', 'local_aiquizgen'),
+            'message' => get_string('generatewait_message', 'local_aiquizgen'),
+            'loading' => get_string('loading', 'core'),
+        ];
+        $waitjs = <<<'JS'
+document.addEventListener('DOMContentLoaded', function() {
+    var strings = __AIQUIZGEN_STRINGS__;
+
+    function currentMode() {
+        var checked = document.querySelector('input[name="mode"]:checked');
+        return checked ? checked.value : 'generate';
+    }
+
+    var overlay = document.createElement('div');
+    overlay.id = 'aiquizgen-waiting-overlay';
+    overlay.setAttribute('style', 'position: fixed; top: 0; left: 0; right: 0; bottom: 0;'
+        + ' background: rgba(0, 0, 0, 0.55); z-index: 2000; display: none;'
+        + ' align-items: center; justify-content: center; padding: 1rem;');
+    overlay.innerHTML = '<div style="background: #fff; border-radius: 0.5rem; max-width: 520px;'
+        + ' width: 100%; padding: 2rem; text-align: center; box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.3);">'
+        + '<div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">'
+        + '<span class="sr-only">' + strings.loading + '</span></div>'
+        + '<h4 style="margin-top: 1.25rem;">' + strings.title + '</h4>'
+        + '<p style="margin-bottom: 0;">' + strings.message + '</p>'
+        + '</div>';
+    document.body.appendChild(overlay);
+
+    var form = document.querySelector('form.mform');
+    if (!form) {
+        return;
+    }
+
+    form.addEventListener('submit', function(e) {
+        var submitter = e.submitter;
+        if (submitter && (submitter.name === 'cancel' || submitter.id === 'id_cancel')) {
+            return;
+        }
+        if (currentMode() !== 'generate') {
+            return;
+        }
+        window.setTimeout(function() {
+            if (e.defaultPrevented) {
+                return;
+            }
+            overlay.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }, 50);
+    });
+});
+JS;
+        $waitjs = str_replace('__AIQUIZGEN_STRINGS__', json_encode($waitstrings), $waitjs);
+        $PAGE->requires->js_init_code($waitjs);
     }
 
     /**
@@ -376,25 +517,46 @@ class generate_form extends \moodleform {
     public function validation($data, $files) {
         $errors = parent::validation($data, $files);
 
-        // Either topic or source content must be provided
-        $hastopic = !empty($data['topic']) && trim($data['topic']) !== '';
-        $pdfsource = $data['pdfsource'] ?? 'upload';
-        $haspdf = false;
-        
-        if ($pdfsource === 'course') {
-            $haspdf = !empty($data['coursetpdf']);
-            if (!$haspdf) {
-                $errors['coursetpdf'] = get_string('topicorpdf_required', 'local_aiquizgen');
+        $mode = $data['mode'] ?? 'generate';
+
+        if ($mode === 'extract') {
+            // Import mode always needs an uploaded PDF and a target category.
+            if (empty($data['pdffile'])) {
+                $errors['pdffile'] = get_string('extractpdf_required', 'local_aiquizgen');
             }
-        } else {
-            $haspdf = !empty($data['pdffile']);
-            if (!$haspdf) {
-                $errors['pdffile'] = get_string('topicorpdf_required', 'local_aiquizgen');
+
+            if (empty($data['category'])) {
+                $errors['category'] = get_string('nocategory', 'local_aiquizgen');
             }
+
+            if (!in_array($data['extractformat'] ?? 'asis', ['asis', 'multichoice'], true)) {
+                $errors['extractformat'] = get_string('extractformatinvalid', 'local_aiquizgen');
+            }
+
+            foreach (['mcqmaxmark', 'essaymaxmark'] as $field) {
+                if (isset($data[$field]) && (float)$data[$field] < 0) {
+                    $errors[$field] = get_string('maxmark_invalid', 'local_aiquizgen');
+                }
+            }
+
+            return $errors;
         }
-        
-        if (!$hastopic && !$haspdf) {
-            $errors['topic'] = get_string('topicorpdf_required', 'local_aiquizgen');
+
+        // The source determines which field is required: topic, uploaded PDF, or
+        // synced course materials.
+        $hastopic = !empty($data['topic']) && trim($data['topic']) !== '';
+        $pdfsource = $data['pdfsource'] ?? 'topic';
+
+        if ($pdfsource === 'course') {
+            if (empty($data['coursetpdf'])) {
+                $errors['coursetpdf'] = get_string('sourcerequired', 'local_aiquizgen');
+            }
+        } else if ($pdfsource === 'upload') {
+            if (empty($data['pdffile'])) {
+                $errors['pdffile'] = get_string('pdfrequired', 'local_aiquizgen');
+            }
+        } else if (!$hastopic) {
+            $errors['topic'] = get_string('topicrequired', 'local_aiquizgen');
         }
 
         if (empty($data['category'])) {
@@ -404,6 +566,10 @@ class generate_form extends \moodleform {
         if (($data['questiontype'] ?? '') === 'multichoice'
             && (!isset($data['answeroptioncount']) || !in_array((int)$data['answeroptioncount'], range(3, 10), true))) {
             $errors['answeroptioncount'] = get_string('answeroptioncountinvalid', 'local_aiquizgen');
+        }
+
+        if ((float)($data['maxmark'] ?? 0) < 0.01) {
+            $errors['maxmark'] = get_string('maxmark_invalid', 'local_aiquizgen');
         }
 
         return $errors;

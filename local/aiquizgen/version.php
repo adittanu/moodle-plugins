@@ -24,8 +24,8 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->version   = 2026041602;  // Fix essay response format renderer
+$plugin->version   = 2026102800;  // Import progress UI, pre-set marks, structured rubrics
 $plugin->requires  = 2022112800; // Moodle 4.1+
 $plugin->component = 'local_aiquizgen';
 $plugin->maturity  = MATURITY_STABLE;
-$plugin->release   = '1.1.0';
+$plugin->release   = '1.2.0';

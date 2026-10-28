@@ -96,8 +96,13 @@ class auto_grade_question extends external_api
 
         // Get question info.
         $question = $DB->get_record('question', ['id' => $params['questionid']], '*', MUST_EXIST);
-        $questiontext = strip_tags($question->questiontext);
-        $maxgrade = $question->defaultmark;
+        $questiontext = html_to_text((string)$question->questiontext, 0, false);
+
+        // Essay grading rubric / model answer from the question settings.
+        $essayoptions = $DB->get_record('qtype_essay_options', ['questionid' => $params['questionid']]);
+        $graderinfo = !empty($essayoptions->graderinfo)
+            ? html_to_text((string)$essayoptions->graderinfo, 0, false)
+            : '';
 
         // Get ALL ungraded attempts for this question.
         $sql = "SELECT DISTINCT
@@ -155,6 +160,8 @@ class auto_grade_question extends external_api
                 // Load the question usage and get the answer.
                 $quba = \question_engine::load_questions_usage_by_activity($attempt->qubaid);
                 $qa = $quba->get_question_attempt($params['slot']);
+                // Use the actual maximum mark for this question in this quiz attempt.
+                $maxgrade = (float)$qa->get_max_mark();
 
                 // Get the last response (student answer).
                 $response = $qa->get_last_qt_data();
@@ -176,7 +183,7 @@ class auto_grade_question extends external_api
                 }
 
                 // Get AI suggestion.
-                $result = $service->suggest_grade($questiontext, $answertext, $maxgrade);
+                $result = $service->suggest_grade($questiontext, $answertext, $maxgrade, null, $graderinfo);
 
                 if ($result['success']) {
                     // Submit the grade using manual grading.

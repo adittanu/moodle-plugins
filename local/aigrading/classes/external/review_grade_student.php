@@ -89,18 +89,23 @@ class review_grade_student extends external_api {
                 continue;
             }
             $answer = $qa->get_last_qt_data()['answer'] ?? '';
-            if (trim(strip_tags($answer)) === '') {
+            $answertext = html_to_text((string)$answer, 0, false);
+            if (trim($answertext) === '') {
                 continue;
             }
             $question = $qa->get_question();
+            $questiontext = html_to_text((string)$question->questiontext, 0, false);
+            $graderinfo = !empty($question->graderinfo)
+                ? html_to_text((string)$question->graderinfo, 0, false)
+                : '';
             $maxgrade = (float)$qa->get_max_mark();
-            $result = $service->suggest_grade(strip_tags($question->questiontext), $answer, $maxgrade);
+            $result = $service->suggest_grade($questiontext, $answertext, $maxgrade, null, $graderinfo);
             if (empty($result['success'])) {
                 throw new \moodle_exception($result['error'] ?? 'AI grading failed');
             }
             $questions[] = [
-                'slot' => (int)$slot, 'question' => strip_tags($question->questiontext),
-                'answer' => trim(strip_tags($answer)), 'grade' => (float)$result['grade'],
+                'slot' => (int)$slot, 'question' => $questiontext,
+                'answer' => trim($answertext), 'grade' => (float)$result['grade'],
                 'maxgrade' => $maxgrade, 'feedback' => $result['feedback'] ?? '',
                 'explanation' => $result['explanation'] ?? '',
                 'confidence' => $result['confidence'] ?? 'medium',

@@ -26,9 +26,18 @@ namespace local_aiquizgen\util;
 
 defined('MOODLE_INTERNAL') || die();
 
-// Load composer autoload for PDF parser library
-if (file_exists(__DIR__ . '/../../../../vendor/autoload.php')) {
-    require_once __DIR__ . '/../../../../vendor/autoload.php';
+// Load composer autoload for PDF parser library. Support both a site-level vendor
+// directory and a plugin-local vendor directory (useful for standalone installs).
+$autoloadcandidates = [
+    __DIR__ . '/../../../../vendor/autoload.php',
+    __DIR__ . '/../../vendor/autoload.php',
+];
+foreach ($autoloadcandidates as $autoloadfile) {
+    if (file_exists($autoloadfile)) {
+        // Load every available autoloader. A site-level vendor directory may exist
+        // without the PDF parser package while the plugin-local vendor contains it.
+        require_once $autoloadfile;
+    }
 }
 
 class pdf_extractor {
@@ -67,12 +76,43 @@ class pdf_extractor {
 
         // Clean and limit text
         $text = self::clean_text($text);
-        
+
         if ($maxchars > 0 && strlen($text) > $maxchars) {
-            $text = substr($text, 0, $maxchars) . '... [truncated]';
+            $truncated = self::safe_substr($text, 0, $maxchars);
+
+            // Prefer cutting at the last complete question boundary so the AI does
+            // not receive half a question (and half an answer key).
+            if (preg_match_all('/(?im)^[ \t]*(?:soal|question)\s+\d+\s*[.):]/u', $truncated,
+                    $matches, PREG_OFFSET_CAPTURE) && count($matches[0]) > 1) {
+                $lastmatch = end($matches[0]);
+                $laststart = (int)$lastmatch[1];
+                if ($laststart > (int)($maxchars * 0.5)) {
+                    $truncated = rtrim(self::safe_substr($truncated, 0, $laststart));
+                }
+            }
+
+            $text = $truncated . "\n\n[... truncated]";
         }
 
         return $text;
+    }
+
+    /**
+     * Substring helper that is UTF-8 safe and falls back gracefully outside Moodle.
+     *
+     * @param string $text
+     * @param int $start
+     * @param int $length
+     * @return string
+     */
+    private static function safe_substr($text, $start, $length) {
+        if (class_exists('\core_text')) {
+            return \core_text::substr($text, $start, $length);
+        }
+        if (function_exists('mb_substr')) {
+            return mb_substr($text, $start, $length, 'UTF-8');
+        }
+        return substr($text, $start, $length);
     }
 
     /**
@@ -82,17 +122,35 @@ class pdf_extractor {
      * @return string|false Extracted text or false on failure
      */
     private static function extract_with_pdftotext($filepath) {
-        // Check if pdftotext is available
-        $command = 'pdftotext';
-        exec('which pdftotext 2>/dev/null', $output, $returncode);
-        
+        // Check if pdftotext is available. `which` does not exist on Windows.
+        if (!function_exists('exec')) {
+            return false;
+        }
+
+        $iswindows = defined('PHP_OS_FAMILY') && PHP_OS_FAMILY === 'Windows';
+        $checkcommand = $iswindows ? 'where pdftotext 2>NUL' : 'command -v pdftotext 2>/dev/null';
+        $output = [];
+        $returncode = 1;
+        exec($checkcommand, $output, $returncode);
+
+        if ($returncode !== 0) {
+            // Some minimal Windows environments only expose pdftotext on PATH but
+            // not `where`; try the binary directly as a last resort.
+            exec('pdftotext -v 2>&1', $output, $returncode);
+        }
+
         if ($returncode !== 0) {
             return false; // pdftotext not available
         }
 
-        // Create temp file for output
-        $tempfile = tempnam(sys_get_temp_dir(), 'pdf_') . '.txt';
-        
+        // Create temp file for output. tempnam() creates a placeholder file, so
+        // remove it and let pdftotext write to that exact path.
+        $tempfile = tempnam(sys_get_temp_dir(), 'pdf_');
+        if ($tempfile === false) {
+            return false;
+        }
+        @unlink($tempfile);
+
         // Execute pdftotext
         $escapedpath = escapeshellarg($filepath);
         $escapedtemp = escapeshellarg($tempfile);
@@ -273,17 +331,24 @@ class pdf_extractor {
             $text = str_ireplace($artifact, '', $text);
         }
         
+        // Normalize line endings and preserve line structure. The old implementation
+        // collapsed all whitespace into spaces, which destroyed question boundaries
+        // such as "Soal 1." and made chunking impossible.
+        $text = str_replace(["\r\n", "\r"], "\n", $text);
+
         // Remove hex strings (common in PDF)
         $text = preg_replace('/\b[0-9a-fA-F]{16,}\b/', '', $text);
         
         // Remove dates in PDF format
         $text = preg_replace('/D:\d{14}/', '', $text);
+
+        // Collapse spaces and tabs, but keep newlines.
+        $text = preg_replace('/[^\S\n]+/u', ' ', $text) ?? $text;
+        $text = preg_replace("/[ \t]+\n/", "\n", $text) ?? $text;
+        $text = preg_replace("/\n{3,}/", "\n\n", $text) ?? $text;
         
-        // Remove excessive whitespace
-        $text = preg_replace('/\s+/', ' ', $text) ?? $text;
-        
-        // Remove control characters
-        $text = preg_replace('/[\x00-\x1F\x7F]/u', '', $text) ?? $text;
+        // Remove control characters except newline and tab.
+        $text = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', '', $text) ?? $text;
         
         // Trim - ensure $text is not null
         $text = trim($text ?? '');

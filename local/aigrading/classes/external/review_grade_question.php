@@ -75,12 +75,13 @@ class review_grade_question extends external_api {
             if (!$attempt) {
                 throw new \moodle_exception('Attempt is no longer available for grading.');
             }
-            $question = $DB->get_record('question', ['id' => $attempt->questionid], '*', MUST_EXIST);
-            $maxgrade = (float)$question->defaultmark;
+            $quba = \question_engine::load_questions_usage_by_activity($attempt->qubaid);
+            $qa = $quba->get_question_attempt((int)$attempt->slot);
+            // Use the actual maximum mark for this question in this quiz attempt.
+            $maxgrade = (float)$qa->get_max_mark();
             if ($params['grade'] < 0 || $params['grade'] > $maxgrade) {
                 throw new \invalid_parameter_exception("Grade must be between 0 and {$maxgrade}");
             }
-            $quba = \question_engine::load_questions_usage_by_activity($attempt->qubaid);
             $quba->process_action((int)$attempt->slot, [
                 '-mark' => $params['grade'], '-maxmark' => $maxgrade,
                 '-comment' => $params['feedback'], '-commentformat' => FORMAT_PLAIN,
@@ -110,16 +111,29 @@ class review_grade_question extends external_api {
             return self::response(['done' => true]);
         }
         $question = $DB->get_record('question', ['id' => $attempt->questionid], '*', MUST_EXIST);
-        $maxgrade = (float)$question->defaultmark;
         $quba = \question_engine::load_questions_usage_by_activity($attempt->qubaid);
         $qa = $quba->get_question_attempt((int)$attempt->slot);
+        // Use the actual maximum mark for this question in this quiz attempt.
+        $maxgrade = (float)$qa->get_max_mark();
         $answer = $qa->get_last_qt_data()['answer'] ?? '';
-        if (trim(strip_tags($answer)) === '') {
+        $answertext = html_to_text((string)$answer, 0, false);
+        if (trim($answertext) === '') {
             return self::response(['attemptid' => (int)$attempt->attemptid, 'slot' => (int)$attempt->slot,
                 'skipped' => true, 'maxgrade' => $maxgrade]);
         }
 
-        $result = (new dali_service())->suggest_grade(strip_tags($question->questiontext), $answer, $maxgrade);
+        $essayoptions = $DB->get_record('qtype_essay_options', ['questionid' => $attempt->questionid]);
+        $graderinfo = !empty($essayoptions->graderinfo)
+            ? html_to_text((string)$essayoptions->graderinfo, 0, false)
+            : '';
+
+        $result = (new dali_service())->suggest_grade(
+            html_to_text((string)$question->questiontext, 0, false),
+            $answertext,
+            $maxgrade,
+            null,
+            $graderinfo
+        );
         if (empty($result['success'])) {
             throw new \moodle_exception($result['error'] ?? 'AI grading failed');
         }
@@ -128,7 +142,7 @@ class review_grade_question extends external_api {
             'attemptid' => (int)$attempt->attemptid,
             'slot' => (int)$attempt->slot,
             'student' => fullname($user),
-            'answer' => trim(strip_tags($answer)),
+            'answer' => trim($answertext),
             'grade' => (float)$result['grade'],
             'feedback' => $result['feedback'] ?? '',
             'explanation' => $result['explanation'] ?? '',

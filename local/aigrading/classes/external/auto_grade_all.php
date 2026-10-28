@@ -166,14 +166,15 @@ class auto_grade_all extends external_api
 
         foreach ($attempts as $attempt) {
             $lastprocessedid = max($lastprocessedid, (int)$attempt->questionattemptid);
-            $questiontext = strip_tags($attempt->questiontext);
-            $maxgrade = $attempt->defaultmark;
-            $graderinfo = !empty($attempt->graderinfo) ? strip_tags($attempt->graderinfo) : '';
+            $questiontext = html_to_text((string)$attempt->questiontext, 0, false);
+            $graderinfo = !empty($attempt->graderinfo) ? html_to_text((string)$attempt->graderinfo, 0, false) : '';
 
             try {
                 // Load the question usage and get the answer.
                 $quba = \question_engine::load_questions_usage_by_activity($attempt->qubaid);
                 $qa = $quba->get_question_attempt($attempt->slot);
+                // Use the actual maximum mark for this question in this quiz attempt.
+                $maxgrade = (float)$qa->get_max_mark();
 
                 // Get the last response (student answer).
                 $response = $qa->get_last_qt_data();

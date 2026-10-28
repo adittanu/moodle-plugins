@@ -39,17 +39,40 @@ $string['enablelog_desc'] = 'Log all question generation activities for auditing
 
 // Generate form.
 $string['generatequestions'] = 'Generate Quiz Questions with AI';
+$string['mode'] = 'Mode';
+$string['mode_help'] = 'Generate new questions from a topic or source, or import existing questions and answer keys from a PDF.';
+$string['mode_generate'] = 'Create new questions from material/topic';
+$string['mode_extract'] = 'Import questions from a PDF with answer keys';
+$string['extractformat'] = 'Import Format';
+$string['extractformat_help'] = 'Keep the original question types, or convert every imported question into a single-answer multiple choice question with four distractors.';
+$string['extractformat_asis'] = 'As-is (AI detects essay/multiple choice)';
+$string['extractformat_multichoice'] = 'Convert everything to multiple choice (AI creates distractors)';
+$string['extractpdfhint'] = 'Upload a PDF that already contains the questions and their answer keys. The AI detects the question types and total count automatically.';
+$string['extractpdf_required'] = 'Please upload a PDF containing the questions and answer keys.';
+$string['extractformatinvalid'] = 'Invalid import format.';
+$string['mcqmaxmark'] = 'Maximum mark for multiple choice questions';
+$string['mcqmaxmark_help'] = 'Optional. Applied to every imported multiple choice question before the review page. Leave empty to keep the mark detected from the document.';
+$string['essaymaxmark'] = 'Maximum mark for essay questions';
+$string['essaymaxmark_help'] = 'Optional. Applied to every imported essay question before the review page. Leave empty to keep the mark detected from the document.';
+$string['extractmarkhint'] = 'Set a mark once here to avoid editing every question on the review page.';
+$string['maxmark'] = 'Maximum mark per question';
+$string['maxmark_help'] = 'Mark given to each generated question. You can still adjust individual questions on the review page.';
+$string['maxmark_invalid'] = 'Maximum mark must be greater than 0.';
 $string['topic'] = 'Topic/Subject';
-$string['topic_help'] = 'Enter the topic or subject for which you want to generate questions. Be as specific as possible. Leave empty if you are uploading a PDF file or selecting a synced source.';
+$string['topic_help'] = 'Enter the topic or subject for which you want to generate questions. Required when Source is Topic/Subject.';
 $string['topicexample'] = 'Example: "Photosynthesis in plants" or "Python programming loops"';
 $string['pdffile'] = 'Upload PDF Document';
 $string['pdffile_help'] = 'Upload a PDF document to generate questions from its content. The AI will read and understand the document to create relevant questions.';
-$string['pdfornote'] = 'You can either enter a topic above OR upload a PDF/select a synced source (or combine them for more context).';
+$string['pdfornote'] = 'Choose where the questions should come from: a topic, an uploaded PDF, or a synced course source.';
 $string['topicorpdf_required'] = 'Please enter a topic or upload/select a source (or both).';
+$string['topicrequired'] = 'Please enter a topic or subject.';
+$string['pdfrequired'] = 'Please upload a PDF document.';
+$string['sourcerequired'] = 'Please select a course source.';
 
 // Source selection
 $string['pdfsource'] = 'Source';
-$string['pdfsource_help'] = 'Choose whether to upload a PDF or retrieve content from a synced course knowledge source.';
+$string['pdfsource_help'] = 'Choose Topic/Subject to write questions from a subject, Upload new PDF file to read a PDF, or Select from course materials to use a synced course source.';
+$string['pdfsource_topic'] = 'Topic/Subject';
 $string['pdfsource_upload'] = 'Upload new PDF file';
 $string['pdfsource_course'] = 'Select from course materials';
 $string['coursetpdf'] = 'Select Source';
@@ -121,13 +144,53 @@ $string['pdfextracted'] = 'PDF text extracted successfully ({$a} characters).';
 $string['pdferror'] = 'Error processing PDF: {$a}';
 $string['retrievingsource'] = 'Retrieving content from selected knowledge source...';
 $string['source_retrieved'] = 'Source content retrieved successfully ({$a} characters).';
+$string['pdftruncated'] = 'Note: the PDF content was truncated to {$a} characters. Questions after the cut-off were not imported.';
+
+// Import progress.
+$string['importprogress_title'] = 'Importing questions from the PDF';
+$string['importprogress_warning'] = 'Do not close, refresh, or navigate away from this page. The import will be cancelled and no questions will be saved.';
+$string['importprogress_starting'] = 'Preparing the PDF...';
+$string['importprogress_pdf'] = 'PDF text extracted ({$a} characters). Splitting into parts...';
+$string['importprogress_part'] = 'Analyzing part {$a->part} of {$a->total} with AI. This can take up to a minute per part...';
+$string['importprogress_partdone'] = 'Part {$a->part} of {$a->total} done ({$a->count} questions found).';
+$string['importprogress_partfailed'] = 'Part {$a->part} of {$a->total} failed and was skipped.';
+$string['importprogress_done'] = 'Import finished: {$a} questions ready to review.';
+$string['importprogress_failed'] = 'Import failed. See the error below.';
+$string['generatewait_title'] = 'Preparing your questions';
+$string['generatewait_message'] = 'The AI is generating questions. This can take up to a minute or two. Please do not close or refresh this page.';
+$string['generateprogress_title'] = 'Generating questions';
+$string['generateprogress_starting'] = 'Preparing your source and sending the request to the AI...';
+$string['generateprogress_warning'] = 'Do not close, refresh, or navigate away from this page. The request will be cancelled and no questions will be generated.';
+$string['generateprogress_done'] = 'Questions ready to review: {$a}.';
+$string['generateprogress_failed'] = 'Question generation failed. See the error below.';
+
+// Import/extract mode.
+$string['extractingpart'] = 'Extracting questions from part {$a->part} of {$a->total}...';
+$string['extractpartsuccess'] = 'Part {$a} processed.';
+$string['extractchunkfailed'] = 'Part {$a} could not be processed and was skipped.';
+$string['extractpartfailedlist'] = 'Some parts could not be processed: {$a}';
+$string['extractsuccess'] = '{$a} questions extracted from the PDF. Review them before saving.';
+$string['extractduplicates'] = '{$a} duplicate question(s) were removed.';
+$string['noquestionsfound'] = 'No questions were found in the PDF. Make sure the document contains question text with answer keys.';
+$string['reviewgeneratednotice'] = 'Questions generated. Review and edit them first, then save to question bank.';
 
 // Preview.
 $string['previewtitle'] = 'Preview Generated Questions';
+$string['previewextractedtitle'] = 'Review Imported Questions';
 $string['question'] = 'Question';
 $string['answers'] = 'Answers';
 $string['correctanswer'] = 'Correct Answer';
 $string['feedback'] = 'Feedback';
+$string['maximummark'] = 'Maximum mark';
+$string['maximummark_help'] = 'The maximum mark for this question. Essay grading uses this scale (for example 100).';
+$string['graderinfo'] = 'Information for grader (model answer & rubric)';
+$string['graderinfo_help'] = 'Used by AI grading. A percentage-based rubric (total 100%) is recommended so the mark can be changed without rewriting the rubric.';
+$string['acceptedanswers'] = 'Accepted answers (all are treated as correct)';
+$string['shortanswernote'] = 'All non-empty answers below are accepted as correct.';
+$string['skipquestion'] = 'Remove this question';
+$string['applytoessay'] = 'Apply maximum mark to all essay questions';
+$string['apply'] = 'Apply';
+$string['reviewimportednotice'] = 'Questions imported. Review, edit, and remove any PDF artifacts before saving to the question bank.';
 
 // Capabilities.
 $string['aiquizgen:generate'] = 'Generate quiz questions using AI';

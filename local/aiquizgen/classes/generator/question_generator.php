@@ -55,6 +55,16 @@ class question_generator {
 
         foreach ($questions as $qdata) {
             try {
+                if (empty($qdata['questiontext']) || empty($qdata['questiontype'])) {
+                    $errors[] = 'Skipped a question with an empty text or type.';
+                    continue;
+                }
+                if ($qdata['questiontype'] !== 'essay' && empty($qdata['answers'])) {
+                    $errors[] = 'Skipped a non-essay question without answers: ' .
+                        \core_text::substr((string)$qdata['questiontext'], 0, 60);
+                    continue;
+                }
+
                 $question = $this->prepare_question_data($qdata, $categoryid, $courseid);
                 $questionid = $this->save_question($question);
 
@@ -74,18 +84,25 @@ class question_generator {
     }
 
     private function prepare_question_data($qdata, $categoryid, $courseid) {
-        global $USER, $DB;
+        global $USER;
 
         $question = new \stdClass();
         $question->category = $categoryid;
-        $question->name = substr($qdata['questiontext'], 0, 50); // Question name from text
-        $question->questiontext = $qdata['questiontext'];
+
+        $questiontext = trim((string)($qdata['questiontext'] ?? ''));
+        $plainname = trim(strip_tags($questiontext));
+        $question->name = \core_text::substr($plainname !== '' ? $plainname : 'Question', 0, 50);
+        $question->questiontext = $this->plain_text_to_html($questiontext);
         $question->questiontextformat = FORMAT_HTML;
         $question->generalfeedback = '';
         $question->generalfeedbackformat = FORMAT_HTML;
-        $question->defaultmark = 1.0;
+        $question->defaultmark = $this->normalize_mark($qdata['defaultmark'] ?? 1);
         $question->penalty = 0.3333333;
-        $question->qtype = $qdata['questiontype'];
+
+        $allowedtypes = ['multichoice', 'truefalse', 'shortanswer', 'essay'];
+        $qtype = (string)($qdata['questiontype'] ?? '');
+        $question->qtype = in_array($qtype, $allowedtypes, true) ? $qtype : 'shortanswer';
+
         $question->length = 1;
         $question->stamp = make_unique_id_code();
         $question->version = 1;
@@ -96,7 +113,9 @@ class question_generator {
         $question->createdby = $USER->id;
         $question->modifiedby = $USER->id;
 
-        switch ($qdata['questiontype']) {
+        $answers = is_array($qdata['answers'] ?? null) ? $qdata['answers'] : [];
+
+        switch ($question->qtype) {
             case 'multichoice':
                 $question->single = 1;
                 $question->shuffleanswers = 1;
@@ -104,6 +123,7 @@ class question_generator {
                 $question->correctfeedback = ['text' => 'Your answer is correct.', 'format' => FORMAT_HTML];
                 $question->partiallycorrectfeedback = ['text' => 'Your answer is partially correct.', 'format' => FORMAT_HTML];
                 $question->incorrectfeedback = ['text' => 'Your answer is incorrect.', 'format' => FORMAT_HTML];
+                $answers = $this->normalize_multichoice_answers($answers);
                 break;
             case 'truefalse':
                 // True/False questions need specific fields
@@ -111,9 +131,16 @@ class question_generator {
                 $question->incorrectfeedback = ['text' => 'Your answer is incorrect.', 'format' => FORMAT_HTML];
                 $question->feedbacktrue = ['text' => '', 'format' => FORMAT_HTML];
                 $question->feedbackfalse = ['text' => '', 'format' => FORMAT_HTML];
+                $answers = $this->normalize_truefalse_answers($answers);
                 break;
             case 'shortanswer':
                 $question->usecase = 0;
+                // Every accepted answer is correct in Moodle's short answer qtype.
+                foreach ($answers as $index => $answer) {
+                    if (is_array($answer)) {
+                        $answers[$index]['fraction'] = 1.0;
+                    }
+                }
                 break;
             case 'essay':
                 // Essay questions have specific fields
@@ -126,42 +153,61 @@ class question_generator {
                 $question->attachmentsrequired = 0;
                 $question->maxbytes = 0;
                 $question->filetypeslist = '';
-                
-                // For essay, graderinfo contains the model answer (optional)
-                $modelanswer = '';
-                if (!empty($qdata['answers']) && isset($qdata['answers'][0]['text'])) {
-                    $modelanswer = $qdata['answers'][0]['text'];
+
+                // For essay, graderinfo contains the model answer and grading rubric.
+                // Prefer the explicit field, but keep backwards compatibility with
+                // responses that put the model answer in answers[0].text.
+                $graderinfo = trim((string)($qdata['graderinfo'] ?? ''));
+                if ($graderinfo === '' && !empty($answers[0]['text'])) {
+                    $graderinfo = trim((string)$answers[0]['text']);
                 }
-                $question->graderinfo = ['text' => $modelanswer, 'format' => FORMAT_HTML];
+                $question->graderinfo = [
+                    'text' => $this->plain_text_to_html($graderinfo),
+                    'format' => FORMAT_HTML,
+                ];
                 $question->responsetemplate = ['text' => '', 'format' => FORMAT_HTML];
                 break;
         }
 
-        // Essay questions don't use answer/fraction/feedback arrays like other types
-        if ($qdata['questiontype'] !== 'essay') {
+        // Essay questions don't use answer/fraction/feedback arrays like other types.
+        if ($question->qtype !== 'essay') {
             $question->answer = [];
             $question->fraction = [];
             $question->feedback = [];
 
-            foreach ($qdata['answers'] as $index => $answer) {
+            $answerindex = 0;
+            foreach ($answers as $answer) {
+                if (!is_array($answer)) {
+                    continue;
+                }
+
+                $answertext = trim((string)($answer['text'] ?? ''));
+                if ($answertext === '') {
+                    continue;
+                }
+
                 // Handle answer format based on question type
-                if ($qdata['questiontype'] === 'shortanswer') {
+                if ($question->qtype === 'shortanswer') {
                     // Short Answer questions need answer as plain string
-                    $question->answer[$index] = $answer['text'] ?? '';
+                    $question->answer[$answerindex] = $answertext;
                 } else {
                     // Other question types use array format
-                    $question->answer[$index] = [
-                        'text' => $answer['text'],
+                    $question->answer[$answerindex] = [
+                        'text' => $this->plain_text_to_html($answertext),
                         'format' => FORMAT_HTML
                     ];
                 }
 
                 // Ensure fraction is not null - default to 0 if null
-                $question->fraction[$index] = $answer['fraction'] ?? 0;
-                $question->feedback[$index] = [
-                    'text' => $answer['feedback'] ?? '',
+                $fraction = isset($answer['fraction']) && is_numeric($answer['fraction'])
+                    ? (float)$answer['fraction'] : 0.0;
+                $question->fraction[$answerindex] = $question->qtype === 'shortanswer' ? 1.0 : $fraction;
+                $question->feedback[$answerindex] = [
+                    'text' => $this->plain_text_to_html((string)($answer['feedback'] ?? '')),
                     'format' => FORMAT_HTML
                 ];
+
+                $answerindex++;
             }
         } else {
             // For essay, clear answer arrays
@@ -171,38 +217,190 @@ class question_generator {
         }
 
         // Special handling for True/False questions
-        if ($qdata['questiontype'] === 'truefalse') {
+        if ($question->qtype === 'truefalse') {
             // Find which answer is correct (True or False)
             $correctanswer = null;
-            foreach ($qdata['answers'] as $index => $answer) {
+            foreach ($answers as $answer) {
                 if (($answer['fraction'] ?? 0) > 0) {
-                    $correctanswer = strtolower(trim($answer['text']));
+                    $correctanswer = $this->truefalse_value((string)($answer['text'] ?? ''), true);
                     break;
                 }
             }
 
             // Set correctanswer field for True/False questions
-            if ($correctanswer === 'true') {
-                $question->correctanswer = 1;
-            } elseif ($correctanswer === 'false') {
+            if ($correctanswer === 'False') {
                 $question->correctanswer = 0;
             } else {
-                // Default to True if not found
                 $question->correctanswer = 1;
             }
 
             // Set feedbacktrue and feedbackfalse based on answers
-            foreach ($qdata['answers'] as $index => $answer) {
-                $answertext = strtolower(trim($answer['text']));
-                if ($answertext === 'true') {
-                    $question->feedbacktrue = ['text' => $answer['feedback'] ?? '', 'format' => FORMAT_HTML];
-                } elseif ($answertext === 'false') {
-                    $question->feedbackfalse = ['text' => $answer['feedback'] ?? '', 'format' => FORMAT_HTML];
+            foreach ($answers as $answer) {
+                $value = $this->truefalse_value((string)($answer['text'] ?? ''), true);
+                if ($value === 'True') {
+                    $question->feedbacktrue = [
+                        'text' => $this->plain_text_to_html((string)($answer['feedback'] ?? '')),
+                        'format' => FORMAT_HTML,
+                    ];
+                } else if ($value === 'False') {
+                    $question->feedbackfalse = [
+                        'text' => $this->plain_text_to_html((string)($answer['feedback'] ?? '')),
+                        'format' => FORMAT_HTML,
+                    ];
                 }
             }
         }
 
         return $question;
+    }
+
+    /**
+     * Convert plain text to safe HTML, preserving line breaks. Existing HTML is kept.
+     *
+     * @param string $text
+     * @return string
+     */
+    private function plain_text_to_html(string $text): string {
+        $text = trim($text);
+        if ($text === '') {
+            return '';
+        }
+
+        // Keep already-formatted HTML (e.g. rich content from a PDF source).
+        if (preg_match('/<(?:p|br|ul|ol|li|strong|em|b|i|h[1-6])\b[^>]*>/i', $text)) {
+            return $text;
+        }
+
+        return nl2br(s($text), false);
+    }
+
+    /**
+     * Normalize a maximum mark to a safe positive float.
+     *
+     * @param mixed $value
+     * @return float
+     */
+    private function normalize_mark($value): float {
+        if (is_string($value)) {
+            $value = trim($value);
+            $hascomma = strpos($value, ',') !== false;
+            $hasdot = strpos($value, '.') !== false;
+            if ($hascomma && !$hasdot) {
+                $value = str_replace(',', '.', $value);
+            } else if ($hascomma && $hasdot) {
+                $value = str_replace(',', '', $value);
+            }
+
+            $converted = unformat_float($value);
+            if ($converted !== false && is_numeric($converted)) {
+                $value = $converted;
+            }
+        }
+
+        $mark = is_numeric($value) ? (float)$value : 1.0;
+        if ($mark <= 0) {
+            $mark = 1.0;
+        }
+
+        return round(min(1000.0, $mark), 2);
+    }
+
+    /**
+     * Convert an answer text into True/False.
+     *
+     * @param string $text
+     * @param bool $allowletters
+     * @return string|null
+     */
+    private function truefalse_value(string $text, bool $allowletters = false) {
+        $value = strtolower(trim($text));
+        $value = trim($value, " \t\n\r\0\x0B.!:;");
+
+        $truewords = ['true', 'benar', 'betul', 'ya', 'yes', '1'];
+        $falsewords = ['false', 'salah', 'tidak', 'no', '0'];
+
+        if ($allowletters) {
+            $truewords[] = 't';
+            $truewords[] = 'b';
+            $falsewords[] = 'f';
+            $falsewords[] = 's';
+        }
+
+        if (in_array($value, $truewords, true)) {
+            return 'True';
+        }
+        if (in_array($value, $falsewords, true)) {
+            return 'False';
+        }
+        return null;
+    }
+
+    /**
+     * Build exactly two canonical True/False answers.
+     *
+     * @param array $answers
+     * @return array
+     */
+    private function normalize_truefalse_answers(array $answers): array {
+        $correct = null;
+        $feedback = ['True' => '', 'False' => ''];
+
+        foreach ($answers as $answer) {
+            if (!is_array($answer)) {
+                continue;
+            }
+            $value = $this->truefalse_value((string)($answer['text'] ?? ''), true);
+            if ($value === null) {
+                continue;
+            }
+            if (($answer['fraction'] ?? 0) > 0) {
+                $correct = $value;
+            }
+            if (!empty($answer['feedback'])) {
+                $feedback[$value] = (string)$answer['feedback'];
+            }
+        }
+
+        if ($correct === null) {
+            $correct = 'True';
+        }
+
+        return [
+            ['text' => 'True', 'fraction' => $correct === 'True' ? 1.0 : 0.0, 'feedback' => $feedback['True']],
+            ['text' => 'False', 'fraction' => $correct === 'False' ? 1.0 : 0.0, 'feedback' => $feedback['False']],
+        ];
+    }
+
+    /**
+     * Ensure exactly one correct option for multiple choice.
+     *
+     * @param array $answers
+     * @return array
+     */
+    private function normalize_multichoice_answers(array $answers): array {
+        $normalized = [];
+        foreach ($answers as $answer) {
+            if (is_array($answer) && trim((string)($answer['text'] ?? '')) !== '') {
+                $normalized[] = $answer;
+            }
+        }
+
+        $correctindex = null;
+        foreach ($normalized as $index => $answer) {
+            if (($answer['fraction'] ?? 0) > 0) {
+                $correctindex = $index;
+                break;
+            }
+        }
+        if ($correctindex === null && !empty($normalized)) {
+            $correctindex = 0;
+        }
+
+        foreach ($normalized as $index => $answer) {
+            $normalized[$index]['fraction'] = $index === $correctindex ? 1.0 : 0.0;
+        }
+
+        return $normalized;
     }
 
     private function save_question($question) {

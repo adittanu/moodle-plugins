@@ -5,6 +5,66 @@ All notable changes to the AI Quiz Generator plugin will be documented in this f
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-10-28
+
+### Added
+
+- Import mode (`extract`) to upload a PDF that already contains questions and answer keys.
+  - The AI detects each question type and the total question count, so question count,
+    type, difficulty, and language are not required.
+  - Optional conversion of every imported question to single-answer multiple choice with
+    four AI-generated distractors.
+  - Long PDFs are split at question boundaries and processed in parts; each part shows
+    progress and a failed part does not discard the other questions.
+  - Extracted questions are merged and de-duplicated before review.
+- Per-question maximum mark (`defaultmark`) in the review form, including a bulk
+  "apply to all essay questions" control.
+- AI-generated "Information for grader" (answer key + percentage-based rubric) for essay
+  questions, saved to `qtype_essay_options.graderinfo`.
+- Rubrics are now written per question from that question's own text and answer key, so
+  each one names the concrete facts, steps, values, or examples the student must include
+  instead of repeating a generic template.
+- Source selector in generate mode with `Topic/Subject` as the default. The topic field,
+  PDF upload, and course-material selector are shown only for the selected source.
+- Animated progress card while generate mode waits for the AI, with a warning not to
+  close or refresh the page.
+- "Remove this question" checkbox in the review form so PDF artifacts can be discarded.
+- `text_chunker` utility and a new Dali endpoint `POST /api/moodle/quiz/extract`.
+- Import progress card with a percentage bar, per-part status, and a warning that closing
+  or refreshing the page cancels the import.
+- Waiting overlay when generating new questions, shown until the review page loads.
+- Pre-set maximum marks in the initial form for imported multiple choice and essay
+  questions, and one maximum mark for all generated questions.
+- Structured essay grader information with a labelled answer-key section and one rubric
+  criterion per line, so teachers can read and grade it more easily.
+
+### Changed
+
+- Imports now produce only multiple choice and essay questions. True/False is imported as
+  multiple choice with two options, and short answers are imported as essay questions.
+- Essay questions with no answer options are now valid and can be saved.
+- Review form submits one compact JSON payload per question to stay below PHP's
+  `max_input_vars` limit, with a no-JavaScript fallback.
+- AI grading now receives the grader information/rubric and uses the actual question
+  attempt maximum mark, so essays scored on a 10 or 100 scale are graded on that scale.
+- Question text, grader information, and feedback are converted to safe HTML while
+  preserving line breaks.
+- Import chunks now target 4,000 characters instead of 6,000. Fewer questions per AI
+  request gives more detailed and more stable per-question rubrics.
+- Generate mode uses only the selected source: a topic, an uploaded PDF, or a synced
+  course source. A hidden topic is no longer combined with an uploaded PDF.
+
+### Fixed
+
+- PDF extraction no longer collapses all newlines, so question boundaries are preserved.
+- `pdftotext` detection now works on Windows (`where`) as well as Unix (`command -v`).
+- Import no longer stops after the first part when the AI needs more than PHP's default
+  30-second limit. The page raises its execution limit before extracting, and the Dali
+  AI endpoints raise theirs before calling Mastra.
+- PDF truncation is UTF-8 safe and cuts at the last complete question when possible.
+- Generating many questions no longer fails at the client's 60-second timeout; the
+  generate request now allows up to 180 seconds.
+
 ## [1.0.9] - 2025-10-03
 
 ### Fixed
