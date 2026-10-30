@@ -27,6 +27,7 @@ namespace local_daliwidget\task;
 defined('MOODLE_INTERNAL') || die();
 
 use local_daliwidget\sync_helper;
+use local_daliwidget\course_knowledge_status;
 
 /**
  * Adhoc task that uploads one activity's content to the Dali Knowledge Base.
@@ -87,6 +88,7 @@ class sync_activity_task extends \core\task\adhoc_task {
                     'timemodified' => time(),
                 ]);
             }
+            course_knowledge_status::invalidate($courseid);
         } catch (\Throwable $e) {
             $DB->update_record('local_daliwidget_sync_queue', (object)[
                 'id'           => $queueid,
@@ -94,6 +96,7 @@ class sync_activity_task extends \core\task\adhoc_task {
                 'errormessage' => $e->getMessage(),
                 'timemodified' => time(),
             ]);
+            course_knowledge_status::invalidate($courseid);
             // Re-throw so Moodle task runner logs it and can retry.
             throw $e;
         }

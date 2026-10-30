@@ -471,6 +471,8 @@ function local_daliwidget_before_footer() {
 HTML;
 
         echo $html;
+
+        echo \local_daliwidget\course_status_banner::render();
     }
 
     return '';

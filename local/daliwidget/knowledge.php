@@ -29,6 +29,7 @@ require_once(__DIR__ . '/classes/sync_helper.php');
 use local_daliwidget\api_client;
 use local_daliwidget\sync_helper;
 use local_daliwidget\knowledge_lifecycle;
+use local_daliwidget\course_knowledge_status;
 
 // Get course ID parameter
 $courseid = required_param('id', PARAM_INT);
@@ -70,6 +71,7 @@ if ($action === 'sync_activity') {
     get_coursemodule_from_id(null, $cmid, $courseid, false, MUST_EXIST);
 
     $result = sync_helper::sync_or_queue($course, $cmid);
+    course_knowledge_status::invalidate($courseid);
     if (!empty($result['queued'])) {
         redirect($PAGE->url, get_string('sync_queued_desc', 'local_daliwidget'), null, \core\output\notification::NOTIFY_INFO);
     }
@@ -86,6 +88,38 @@ if ($action === 'sync_activity') {
     );
 }
 
+// Queue every supported activity that has not reached the knowledge base yet.
+if ($action === 'syncmissing') {
+    require_sesskey();
+    $result = sync_helper::queue_missing($course);
+    course_knowledge_status::invalidate($courseid);
+
+    if (!empty($result['unavailable'])) {
+        redirect(
+            new moodle_url('/course/view.php', ['id' => $courseid]),
+            get_string('sync_missing_unavailable', 'local_daliwidget'),
+            null,
+            \core\output\notification::NOTIFY_ERROR
+        );
+    }
+
+    if ($result['total'] === 0) {
+        redirect(
+            new moodle_url('/course/view.php', ['id' => $courseid]),
+            get_string('sync_missing_none', 'local_daliwidget'),
+            null,
+            \core\output\notification::NOTIFY_INFO
+        );
+    }
+
+    redirect(
+        new moodle_url('/course/view.php', ['id' => $courseid]),
+        get_string('sync_missing_result', 'local_daliwidget', $result),
+        null,
+        \core\output\notification::NOTIFY_SUCCESS
+    );
+}
+
 // Handle form submissions (POST requests).
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     require_sesskey();
@@ -95,6 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'add_youtube') {
         $url = required_param('youtube_url', PARAM_URL);
         $result = $apiClient->addYoutubeSource($url, null, $courseMetadata, optional_param('additional_text', '', PARAM_RAW_TRIMMED));
+        course_knowledge_status::invalidate($courseid);
         if ($result['success'] ?? false) {
             redirect($PAGE->url, get_string('source_added', 'local_daliwidget'), null, \core\output\notification::NOTIFY_SUCCESS);
         } else {
@@ -109,6 +144,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             throw new moodle_exception('invalidparameter');
         }
         $result = $apiClient->ingestWordpressUrl($connectionid, required_param('wordpress_url', PARAM_URL), $courseMetadata);
+        course_knowledge_status::invalidate($courseid);
         redirect($PAGE->url, ($result['success'] ?? false) ? get_string('source_added', 'local_daliwidget') :
             ($result['error'] ?? get_string('wordpress_action_failed', 'local_daliwidget')), null,
             ($result['success'] ?? false) ? \core\output\notification::NOTIFY_SUCCESS : \core\output\notification::NOTIFY_ERROR);
@@ -136,6 +172,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $metadata = array_merge($courseMetadata, ['moodle_file_id' => $storedfile->get_id()]);
             $result = $apiClient->uploadDocument($_FILES[$fileField], null, $metadata, $sourceType,
                 $sourceType === 'video' ? optional_param('additional_text', '', PARAM_RAW_TRIMMED) : null);
+            course_knowledge_status::invalidate($courseid);
             if ($result['success'] ?? false) {
                 redirect($PAGE->url, get_string('source_added', 'local_daliwidget'), null, \core\output\notification::NOTIFY_SUCCESS);
             }
@@ -153,6 +190,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             static fn(int $sourceid): array => $apiClient->deleteSource($sourceid),
             sesskey()
         );
+        course_knowledge_status::invalidate($courseid);
         redirect($PAGE->url, get_string('unsync_result', 'local_daliwidget', $result), null,
             $result['failed'] ? \core\output\notification::NOTIFY_WARNING : \core\output\notification::NOTIFY_SUCCESS);
     }

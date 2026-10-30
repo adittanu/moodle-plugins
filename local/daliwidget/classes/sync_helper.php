@@ -128,6 +128,33 @@ class sync_helper {
     }
 
     /**
+     * Queue every supported course activity that is not ingested yet.
+     *
+     * @param \stdClass $course Course object
+     * @return array Counters with keys queued, skipped, total, unavailable
+     */
+    public static function queue_missing(\stdClass $course): array {
+        $status = course_knowledge_status::get((int) $course->id, null, false);
+        $counts = [
+            'queued' => 0,
+            'skipped' => 0,
+            'total' => count($status['unsynced_cmids']),
+            'unavailable' => $status['state'] === 'unavailable',
+        ];
+
+        foreach ($status['unsynced_cmids'] as $cmid) {
+            $result = self::queue_activity((int) $course->id, (int) $cmid);
+            if (!empty($result['success']) && empty($result['alreadyQueued'])) {
+                $counts['queued']++;
+            } else {
+                $counts['skipped']++;
+            }
+        }
+
+        return $counts;
+    }
+
+    /**
      * Sync a single course module to the Dali Knowledge Base.
      *
      * @param \stdClass $course Course object

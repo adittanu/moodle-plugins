@@ -29,6 +29,7 @@ require_once(__DIR__ . '/classes/api_client.php');
 require_once(__DIR__ . '/classes/sync_helper.php');
 
 use local_daliwidget\api_client;
+use local_daliwidget\course_knowledge_status;
 use local_daliwidget\sync_helper;
 
 // Get parameters
@@ -55,6 +56,7 @@ try {
             $cmid = required_param('cmid', PARAM_INT);
             get_coursemodule_from_id(null, $cmid, $courseid, false, MUST_EXIST);
             $result = sync_helper::sync_or_queue($course, $cmid);
+            course_knowledge_status::invalidate($courseid);
             echo json_encode($result);
             break;
             
@@ -63,6 +65,7 @@ try {
             $content = required_param('content', PARAM_RAW);
             $courseMetadata = api_client::buildMoodleMetadata($course);
             $result = $apiClient->addTextSource($title, $content, $courseMetadata);
+            course_knowledge_status::invalidate($courseid);
             echo json_encode($result);
             break;
             
@@ -71,6 +74,7 @@ try {
             $name = required_param('name', PARAM_TEXT);
             $courseMetadata = api_client::buildMoodleMetadata($course);
             $result = $apiClient->addUrlSource($url, $name, $courseMetadata);
+            course_knowledge_status::invalidate($courseid);
             echo json_encode($result);
             break;
             
@@ -79,12 +83,14 @@ try {
             $courseMetadata = api_client::buildMoodleMetadata($course);
             $result = $apiClient->addYoutubeSource($url, null, $courseMetadata,
                 optional_param('additional_text', '', PARAM_RAW_TRIMMED));
+            course_knowledge_status::invalidate($courseid);
             echo json_encode($result);
             break;
             
         case 'delete':
             $sourceid = required_param('sourceid', PARAM_INT);
             $result = $apiClient->deleteSource($sourceid);
+            course_knowledge_status::invalidate($courseid);
             echo json_encode($result);
             break;
 
@@ -101,12 +107,14 @@ try {
                 }
                 $result = sync_helper::sync_or_queue($course, $cmid);
                 $result['retry_mode'] = 'moodle_activity';
+                course_knowledge_status::invalidate($courseid);
                 echo json_encode($result);
                 break;
             }
 
             $result = $apiClient->retrySource($sourceid);
             $result['retry_mode'] = 'app_source';
+            course_knowledge_status::invalidate($courseid);
             echo json_encode($result);
             break;
 
@@ -116,6 +124,14 @@ try {
             echo json_encode($result);
             break;
             
+        case 'status':
+            $status = course_knowledge_status::get($courseid);
+            echo json_encode([
+                'success' => true,
+                'data' => array_merge($status, course_knowledge_status::present($status)),
+            ]);
+            break;
+
         case 'list':
             $result = $apiClient->getSources($courseid);
             echo json_encode($result);

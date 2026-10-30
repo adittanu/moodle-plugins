@@ -210,5 +210,10 @@ class before_footer_callback {
 HTML;
 
         $hook->add_html($html);
+
+        $statusbanner = \local_daliwidget\course_status_banner::render();
+        if ($statusbanner !== '') {
+            $hook->add_html($statusbanner);
+        }
     }
 }

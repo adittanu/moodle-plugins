@@ -207,6 +207,27 @@ $string['sync_status_done'] = 'Done';
 $string['sync_status_failed'] = 'Failed';
 $string['task_sync_activity'] = 'AI Assistant: Sync Activity to Knowledge Base';
 
+// Course AI Knowledge Status
+$string['course_status_loading'] = 'Checking AI knowledge status…';
+$string['course_status_empty'] = 'Not ingested to AI yet';
+$string['course_status_empty_detail'] = 'No course knowledge sources yet. Sync course activities or add content in the Knowledge Base.';
+$string['course_status_ready'] = 'AI ready';
+$string['course_status_ready_detail'] = 'Activities ingested: {$a->synced}/{$a->total} · Sources ready: {$a->ready}';
+$string['course_status_partial'] = 'Partially ingested to AI';
+$string['course_status_partial_detail'] = 'Activities ingested: {$a->synced}/{$a->total} · Sources ready: {$a->ready}';
+$string['course_status_processing'] = 'AI is processing sources';
+$string['course_status_processing_detail'] = 'Sources ready: {$a->ready} · Still processing: {$a->processing}';
+$string['course_status_attention'] = 'AI needs attention';
+$string['course_status_attention_detail'] = 'Failed sources: {$a->failed} · Sources ready: {$a->ready}';
+$string['course_status_unavailable'] = 'AI status unavailable';
+$string['course_status_unavailable_detail'] = 'Could not reach the Dali service. Open the Knowledge Base to check manually.';
+$string['course_status_last_sync'] = 'Last sync: {$a}.';
+$string['course_status_open_kb'] = 'Open Knowledge Base';
+$string['course_status_sync_missing'] = 'Sync missing activities ({$a->unsynced})';
+$string['sync_missing_none'] = 'All course activities are already ingested to AI.';
+$string['sync_missing_result'] = 'Queued for AI ingestion: {$a->queued} · Already in progress: {$a->skipped}.';
+$string['sync_missing_unavailable'] = 'Could not check the AI knowledge status. Open the Knowledge Base to sync manually.';
+
 // Debug Mode
 $string['debug_mode'] = 'Debug Mode';
 $string['debug_mode_desc'] = 'Enable debug logging to troubleshoot API connections and widget issues. Debug info will appear in browser console (F12) and in a debug panel on the page.';

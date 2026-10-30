@@ -116,5 +116,10 @@ function xmldb_local_daliwidget_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026082700, 'local', 'daliwidget');
     }
 
+    if ($oldversion < 2026102900) {
+        // The course status cache definition is declared in db/caches.php.
+        upgrade_plugin_savepoint(true, 2026102900, 'local', 'daliwidget');
+    }
+
     return true;
 }
